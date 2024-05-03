@@ -1,50 +1,67 @@
-from typing import Any, Union, List
-from typing import Iterator
+import os
+from abc import ABC, abstractmethod
+from typing import List, Iterator
 
-class Storage:
+class Storage(ABC):
+    """
+    Base class for handling file operations across different storage backends.
+    This abstract class provides a template for uploading, downloading, listing, and deleting
+    files or objects within cloud storage services like AWS S3, Google Cloud Storage, and Azure Blob Storage.
+    """
 
-    def __getitem__(self, key: str) -> bytes:
-        return self._get(key)
-    
-    def __setitem__(self, key: Union[str, List[str]], value: bytes) -> None:
-        if isinstance(key, list):
-            return self._pset(key, value)
-        self._set(key, value)
-    
-    def __delitem__(self, key: str) -> None:
-        raise NotImplementedError()
-    
-    def __contains__(self, key: str) -> bool:
-        raise NotImplementedError()
-    
-    def __len__(self) -> int:
-        raise NotImplementedError()
-    
-    def keys(self) -> Iterator[str]:
-        raise NotImplementedError()
-    
-    def size(self, key: str) -> int:
-        raise NotImplementedError()
-    
-    def clear(self) -> None:
-        raise NotImplementedError()
+    def __init__(self, config):
+        """
+        Initializes the storage with necessary configuration.
+        
+        Parameters:
+            config (dict): Configuration dictionary containing settings like access keys, secrets, and region.
+        """
+        self.config = config
 
-    def get(self, key: str, default: bytes = b"") -> bytes:
-        try:
-            return self._get(key)
-        except KeyError:
-            return default
+    @abstractmethod
+    def upload_file(self, file_path: str, destination: str) -> None:
+        """
+        Uploads a file to the storage backend.
 
-    def _set(self, key: str, value: bytes) -> None:
-        raise NotImplementedError()
+        Parameters:
+            file_path (str): The local path to the file.
+            destination (str): The destination path in the storage backend.
+        """
+        pass
 
-    def _pset(self, keys: List[str], value: List[bytes]) -> None:
-        for key in keys:
-            self._set(key, value)
+    @abstractmethod
+    def download_file(self, source: str, destination: str) -> None:
+        """
+        Downloads a file from the storage backend.
 
-    def _get(self, key: str) -> bytes:
-        raise NotImplementedError()
+        Parameters:
+            source (str): The path of the file in the storage backend.
+            destination (str): The local destination path where the file will be saved.
+        """
+        pass
 
-    def _pget(self, keys: List[str]) -> List[bytes]:
-        return [self._get(key) for key in keys]
+    @abstractmethod
+    def list_files(self, path: str) -> Iterator[str]:
+        """
+        Lists all files under a directory in the storage backend.
 
+        Parameters:
+            path (str): The directory path in the storage backend from which to list files.
+
+        Returns:
+            Iterator[str]: An iterator over the filenames under the given path.
+        """
+        pass
+
+    @abstractmethod
+    def delete_file(self, path: str) -> None:
+        """
+        Deletes a file from the storage backend.
+
+        Parameters:
+            path (str): The path of the file to delete in the storage backend.
+        """
+        pass
+
+    def __str__(self):
+        return f"{self.__class__.__name__} using config: {self.config}"
