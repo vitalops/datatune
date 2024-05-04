@@ -6,6 +6,7 @@ from requests.adapters import HTTPAdapter, Retry
 from .exceptions import DatatuneException
 from .config import DATATUNE_API_BASE_URL
 
+
 # Retry parameters
 HTTP_TOTAL_RETRIES = 3
 HTTP_RETRY_BACKOFF_FACTOR = 2
@@ -14,12 +15,12 @@ HTTP_STATUS_FORCE_LIST = [408, 429, 500, 502, 503, 504]
 class API:
     """Handles HTTP operations for the datatune system"""
 
-    def __init__(self, api_key, verify_ssl=True, proxies=None):
+    def __init__(self, api_key, base_url=None, verify_ssl=True, proxies=None):
         if not api_key:
             raise DatatuneException("API key is required.")
 
         self.api_key = api_key
-        self.base_url = DATATUNE_API_BASE_URL
+        self.base_url = base_url or DATATUNE_API_BASE_URL
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {self.api_key}",
