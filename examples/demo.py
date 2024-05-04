@@ -19,11 +19,22 @@ view.extend(dataset_name="dataset1", slice_range=(20, 100))
 view.extend(dataset_name="dataset2", slice_range=(30, 40))
 
 # Add a new column to the view
-view.add_columns(column_name="new_column", column_type="integer", default_value=0)
+view.add_columns(column_name="new_column",
+                 column_type="integer",
+                 default_value=0)
+
+# Add a filter to the view (similar to UI filters)
+view.add_filter(column_name="score", condition=">=0.5")
+
+# Sort the view by a specific column
+view.sort_by(column_name="score", order="descending")
 
 # List the views available in the workspace
 views = workspace.list_views()
 print("Views in the workspace:", views)
+
+# Optionally, group data within the view
+view.group_by(column_name="label")
 
 # Optionally, delete a dataset if needed
 workspace.delete_dataset("dataset2")

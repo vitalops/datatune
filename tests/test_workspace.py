@@ -19,7 +19,10 @@ class TestWorkspace(unittest.TestCase):
             {'success': True},  # for add_dataset "dataset1"
             {'success': True},  # for add_dataset "dataset2"
             {'success': True},  # for create_view "view1"
-            {'success': True}   # for add_columns
+            {'success': True},  # for add_columns
+            {'success': True},  # for add_filter
+            {'success': True},  # for sort_by
+            {'success': True}   # for group_by
         ]
         mock_put.return_value = {'success': True}  # for extend
         mock_get.side_effect = [
@@ -42,6 +45,10 @@ class TestWorkspace(unittest.TestCase):
         view.extend("dataset1", (20, 100))
         view.extend("dataset2", (30, 40))
         view.add_columns("new_column", "integer", 0)
+        view.add_filter("score", ">=0.5")
+        view.sort_by("score", "descending")
+        view.group_by("label")
+
         views = self.workspace.list_views()
         self.assertIn("view1", views)
 
