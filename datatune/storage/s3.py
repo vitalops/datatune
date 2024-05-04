@@ -1,13 +1,15 @@
 from ..api import API
 from .base import BaseStorage
 from typing import Iterator
+from ..config import DATATUNE_STORAGE_API_BASE_URL
 
 
 class S3Storage(BaseStorage):
-    def __init__(self, config):
-        super().__init__(config)
-        self.api = API(api_key=config['api_key'],
-                       base_url=config.get('DATATUNE_STORAGE_API_BASE_URL'))
+    def __init__(self, api_key: str, config: dict = None):
+        super().__init__(api_key, config)
+        self.api = API(api_key=api_key,
+                       base_url=DATATUNE_STORAGE_API_BASE_URL,
+                       headers=config)
 
     def upload_file(self, file_path: str, destination: str) -> None:
         with open(file_path, 'rb') as file_data:
@@ -23,7 +25,7 @@ class S3Storage(BaseStorage):
     def delete_file(self, path: str) -> None:
         self.api.delete('delete', json={'path': path})
 
-    def list_files(self, path: str):
+    def list_files(self, path: str) -> Iterator[str]:
         response = self.api.get('list', params={'path': path})
         return response.json().get('files', [])
 

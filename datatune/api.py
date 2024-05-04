@@ -12,21 +12,28 @@ HTTP_TOTAL_RETRIES = 3
 HTTP_RETRY_BACKOFF_FACTOR = 2
 HTTP_STATUS_FORCE_LIST = [408, 429, 500, 502, 503, 504]
 
+
 class API:
     """Handles HTTP operations for the datatune system"""
 
-    def __init__(self, api_key, base_url=None, verify_ssl=True, proxies=None):
+    def __init__(self, api_key, base_url=None, verify_ssl=True, proxies=None, headers=None):
         if not api_key:
             raise DatatuneException("API key is required.")
 
         self.api_key = api_key
         self.base_url = base_url or DATATUNE_API_BASE_URL
         self.session = requests.Session()
-        self.session.headers.update({
+        # Initialize with default headers
+        default_headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "User-Agent": self.generate_user_agent(),
-        })
+        }
+        # Update with any custom headers passed during initialization
+        if headers:
+            default_headers.update(headers)
+
+        self.session.headers.update(default_headers)
         self.session.verify = verify_ssl
         if proxies:
             self.session.proxies.update(proxies)
@@ -45,10 +52,8 @@ class API:
         """Send a HTTP request and handle response."""
         url = f"{self.base_url}/{endpoint}"
         response = self.session.request(method, url, params=params, json=json, files=files)
-        
         if response.status_code != 200:
             self.raise_for_status(response)
-        
         return response.json()
 
     def raise_for_status(self, response):

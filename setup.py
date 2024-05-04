@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 package_name = "datatune"
 
@@ -9,7 +9,7 @@ with open("requirements.txt", "r") as f:
 if __name__ == "__main__":
     setup(
         install_requires=install_requires,
-        packages=[package_name],
+        packages=find_packages(),
         zip_safe=False,
         name=package_name,
         version="0.0.1",

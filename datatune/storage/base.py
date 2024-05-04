@@ -7,12 +7,14 @@ class BaseStorage(ABC):
     suitable for a data lakehouse architecture.
     """
 
-    def __init__(self, config):
+    def __init__(self, api_key: str, config: Optional[dict] = None):
         """
-        Initializes the storage with necessary configuration.
+        Initializes the storage with a necessary API key and an optional configuration.
         Parameters:
-            config (dict): Configuration dictionary containing settings like access keys, secrets, and region.
+            api_key (str): API key for accessing the storage backend.
+            config (dict, optional): Configuration dictionary containing additional settings like region or endpoint.
         """
+        self.api_key = api_key
         self.config = config
 
     # Dictionary-like methods
@@ -91,4 +93,4 @@ class BaseStorage(ABC):
         return sum(1 for _ in self.list_files(directory))
 
     def __str__(self):
-        return f"{self.__class__.__name__} using config: {self.config}"
+        return f"{self.__class__.__name__} initialized."
