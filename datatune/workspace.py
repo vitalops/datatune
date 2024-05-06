@@ -1,6 +1,7 @@
 from .api import API
 from .exceptions import DatatuneException
 from .view import View
+from .dataset import Dataset
 
 
 class Workspace:
@@ -37,22 +38,28 @@ class Workspace:
     def add_dataset(self, name, path):
         """Adds a dataset to the cloud."""
         data = {'name': name, 'path': path}
-        response = self.api.post(f"workspaces/{self.workspace_name}/datasets", json=data)
+        response = self.api.post(f"workspaces/{self.workspace_name}/datasets",
+                                 json=data)
         if not response.get('success'):
             raise DatatuneException("Failed to add dataset.")
+
+        return Dataset(self.api, name)
+
 
     def delete_dataset(self, name):
         """Deletes a dataset from the cloud."""
         response = self.api.delete(f"workspaces/{self.workspace_name}/datasets/{name}")
         if not response.get('success'):
             raise DatatuneException("Failed to delete dataset.")
+        return f"Dataset {name} deleted successfully."
 
     def list_datasets(self):
         """Returns a list of all datasets in the workspace."""
         response = self.api.get(f"workspaces/{self.workspace_name}/datasets")
         if not response.get('success'):
             raise DatatuneException("Failed to list datasets.")
-        return response.get('datasets', [])
+        datasets = [Dataset(self.api, ds['name'], ds['path']) for ds in response.get('datasets', [])]
+        return datasets
 
     def create_view(self, name):
         """Creates a new view and returns a View object."""
@@ -66,13 +73,15 @@ class Workspace:
         response = self.api.delete(f"workspaces/{self.workspace_name}/views/{view_name}")
         if not response.get('success'):
             raise DatatuneException("Failed to delete view.")
+        return f"View {view_name} deleted successfully."
 
     def list_views(self):
         """Lists all views in the workspace."""
         response = self.api.get(f"workspaces/{self.workspace_name}/views")
         if not response.get('success'):
             raise DatatuneException("Failed to list views.")
-        return response.get('views', [])
+        views = [View(self, view['name']) for view in response.get('views', [])]
+        return views
 
     def _parse_uri(self, uri):
         scheme, path = uri.split("://")
