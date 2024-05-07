@@ -76,6 +76,15 @@ class API:
         """Wrapper for DELETE requests."""
         return self.request('DELETE', endpoint, json=json)
 
+    def get_presigned_url(self, action, dataset_name):
+        """Request a presigned URL for operations like upload/download."""
+        endpoint = f"presigned/{action}/{dataset_name}"
+        response = self.session.get(f"{self.base_url}/{endpoint}")
+        if response.status_code == 200:
+            return response.json()['url']
+        else:
+            raise DatatuneException("Failed to obtain presigned URL.")
+
     @staticmethod
     def generate_user_agent() -> str:
         """Generate a user agent string with details about the platform."""

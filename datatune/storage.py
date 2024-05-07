@@ -3,6 +3,7 @@ from .exceptions import DatatuneException
 from .dataset import Dataset
 from .config import DATATUNE_STORAGE_API_BASE_URL
 import os
+import requests
 
 
 class Storage:
@@ -25,11 +26,12 @@ class Storage:
         """
         if is_local:
             try:
+                presigned_url = self.api.get_presigned_url('upload', name)
                 with open(path, 'rb') as file_data:
                     files = {'file': (os.path.basename(path), file_data)}
-                    response = self.api.post('datasets/upload',
-                                             files=files,
-                                             data={'name': name})
+                    response = requests.put(presigned_url, files=files)
+                    if response.status_code != 200:
+                        raise DatatuneException("Failed to upload dataset using presigned URL.")
             except Exception as e:
                 raise DatatuneException(f"Failed to load local data and add dataset '{name}': {str(e)}")
         else:
@@ -57,13 +59,16 @@ class Storage:
             name (str): The name of the dataset to download.
             save_path (str): The local path to save the dataset.
         """
-        response = self.api.get(f'datasets/{name}/download')
-        if response.get('success'):
-            with open(save_path, 'wb') as f:
-                f.write(response['data'])
-        else:
-            raise DatatuneException("Failed to download dataset.")
-
+        try:
+            presigned_url = self.api.get_presigned_url('download', name)
+            response = requests.get(presigned_url)
+            if response.status_code == 200:
+                with open(save_path, 'wb') as f:
+                    f.write(response.content)
+            else:
+                raise DatatuneException("Failed to download dataset using presigned URL.")
+        except Exception as e:
+            raise DatatuneException(f"Error downloading dataset '{name}': {str(e)}")
         return Dataset(self.api, name)
 
     def delete_dataset(self, name):
