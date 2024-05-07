@@ -89,26 +89,28 @@ class View:
     def query(self, sql_query):
         """Executes an SQL query on the view using the Query class."""
         query_instance = Query(self)
-        df = query_instance.execute(sql_query)
-        return df
+        query_instance.execute(sql_query)
+        return self
 
-    def head(self, n=5):
+    def display(self, n=5):
         """
-        Returns the first n rows of the view, similar to pandas DataFrame.head().
-   
+        Fetches and displays the latest state of the view, returning the top 'n' rows
+        
         Args:
             n (int): Number of top rows to return from the view. Default is 5.
-   
+        
         Returns:
             pd.DataFrame: A DataFrame containing the top n rows of the view.
-   
+        
         Raises:
-            DatatuneException: If the query execution fails or returns an error.
+            DatatuneException: If the API call fails or an error occurs.
         """
-        sql_query = f"SELECT * FROM {self.name} LIMIT {n}"
-        query_instance = Query(self)
         try:
-            result_df = query_instance.execute(sql_query)
-            return result_df
-        except DatatuneException as e:
-            raise DatatuneException(f"Failed to retrieve the top {n} rows from view '{self.name}': {str(e)}")
+            response = self.workspace.api.get(f"workspaces/{self.workspace.workspace_name}/views/{self.name}/data?limit={n}")
+            if response.get('success'):
+                data = response.get('data', [])
+                return pd.DataFrame(data)
+            else:
+                raise DatatuneException(f"Failed to fetch data for view '{self.name}': {response.get('message', '')}")
+        except Exception as e:
+            raise DatatuneException(f"Error fetching data from view '{self.name}': {str(e)}")

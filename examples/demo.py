@@ -26,11 +26,12 @@ view.add_columns(data=df)
 # Add columns manually without DataFrame
 view.add_columns(column_name="manual_column", column_type="integer", default_value=0)
 view.add_columns(column_name="manual_text", column_type="string", default_value="sample text")
+print("Preview of view data:", view.display())
 
 # Execute a query on the view
 sql_query = "SELECT new_column, manual_column, manual_text FROM view1 WHERE new_column > 1"
-query_result = view.query(sql_query)
-print("Query results:", query_result)
+queried_view = view.query(sql_query)
+print("Preview of queried_view data:", queried_view.display())
 
 # List the views available in the workspace
 views = workspace.list_views()
@@ -48,5 +49,3 @@ updated_views = workspace.list_views()
 print("Updated datasets in the workspace:", [ds.name for ds in updated_datasets])
 print("Updated views in the workspace:", [v.name for v in updated_views])
 
-# Preview the first few records of a view
-print("Preview of view data:", view.head())
