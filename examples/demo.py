@@ -41,6 +41,18 @@ sql_query = "SELECT new_column, manual_column, manual_text FROM view1 WHERE new_
 queried_view = view.query(sql_query)
 print("Preview of queried_view data:", queried_view.display())
 
+
+# streaming use cases
+def train_model_on_batch():
+    pass
+
+
+queried_view = queried_view.convert_to_pytorch()
+ts = dt.TorchStream(queried_view)
+for batch in ts.stream_batches():
+    train_model_on_batch(batch)
+
+
 # List the views available in the workspace
 views = workspace.list_views()
 print("Views in the workspace:", [v.name for v in views])
