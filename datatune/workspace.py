@@ -45,6 +45,14 @@ class Workspace:
 
         return Dataset(self.api, name)
 
+    def load_dataset(self, name):
+        """
+        Fetches a dataset by its name from the workspace.
+        """
+        response = self.api.get(f"workspaces/{self.workspace_name}/datasets/{name}")
+        if not response.get('success'):
+            raise DatatuneException(f"Failed to load dataset '{name}'.")
+        return Dataset(self.api, name, response.get('data', {}).get('path'))
 
     def delete_dataset(self, name):
         """Deletes a dataset from the cloud."""
@@ -67,6 +75,15 @@ class Workspace:
         if not response.get('success'):
             raise DatatuneException("Failed to create view.")
         return View(workspace=self, name=name)
+
+    def load_view(self, name):
+        """
+        Fetches a view by its name from the workspace.
+        """
+        response = self.api.get(f"workspaces/{self.workspace_name}/views/{name}")
+        if not response.get('success'):
+            raise DatatuneException(f"Failed to load view '{name}'.")
+        return View(self, name)
 
     def delete_view(self, view_name):
         """Deletes a view from the workspace."""
