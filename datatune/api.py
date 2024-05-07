@@ -8,8 +8,6 @@ from .config import DATATUNE_API_BASE_URL
 from .constants import HTTP_RETRY_BACKOFF_FACTOR, HTTP_STATUS_FORCE_LIST, HTTP_TOTAL_RETRIES 
 
 
-
-
 class API:
     """Handles HTTP operations for the datatune system"""
 

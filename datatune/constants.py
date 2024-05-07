@@ -1,3 +1,5 @@
+"""Contains constants that are used throughout the datatune platform"""
+
 # Retry parameters
 HTTP_TOTAL_RETRIES = 3
 HTTP_RETRY_BACKOFF_FACTOR = 2

@@ -5,8 +5,7 @@ from .exceptions import DatatuneException
 class Dataset:
     """
     Represents a dataset within the Datatune platform.
-    
-    Provides methods to manage and interact with data for analysis or training.
+
     
     Attributes:
         api (API): An instance of the API class for HTTP requests.
