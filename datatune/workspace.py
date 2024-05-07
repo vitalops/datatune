@@ -111,7 +111,7 @@ class Workspace:
         response = self.api.post(f"workspaces/{self.workspace_name}/views", json={'name': name})
         if not response.get('success'):
             raise DatatuneException("Failed to create view.")
-        return self
+        return View(self, name)
 
     def load_view(self, name):
         """
