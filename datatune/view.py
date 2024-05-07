@@ -113,3 +113,26 @@ class View:
             raise DatatuneException(f"Error displaying data from view '{self.name}': {str(e)}")
 
         return df
+
+    def is_pytorch_converted(self):
+        """
+        Checks if the view's data is already converted to PyTorch format.
+
+        Returns:
+            bool: True if converted, False otherwise.
+        """
+        response = self.workspace.api.get(f"workspaces/{self.workspace.workspace_name}/views/{self.name}/is_pytorch_converted")
+        if response.get('success'):
+            return response.get('data', {}).get('is_pytorch', False)
+        else:
+            raise DatatuneException("Failed to check if view is converted to PyTorch.")
+
+    def convert_to_pytorch(self):
+        """
+        Converts the view's data into a format suitable for PyTorch, making an API call only if not already converted.
+        """
+        if not self.is_pytorch_converted():
+            response = self.workspace.api.post("convert_to_pytorch", json={'workspace_name': self.workspace.workspace_name, 'view_name': self.name})
+            if not response.get('success'):
+                raise DatatuneException(f"Failed to convert view '{self.name}' to PyTorch: {response.get('message', '')}")
+        return self
