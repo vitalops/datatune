@@ -83,16 +83,13 @@ class Workspace:
         if not response.get('success'):
             raise DatatuneException("Failed to add dataset.")
 
-        return Dataset(self.api, name, path)
+        return Dataset(self.api, name)
 
     def load_dataset(self, name):
         """
         Fetches a dataset by its name from the workspace.
         """
-        response = self.api.get(f"workspaces/{self.workspace_name}/datasets/{name}")
-        if not response.get('success'):
-            raise DatatuneException(f"Failed to load dataset '{name}'.")
-        return Dataset(self.api, name, response.get('data', {}).get('path'))
+        return Dataset(self.api, name)
 
     def delete_dataset(self, name):
         """Deletes a dataset from the cloud."""
