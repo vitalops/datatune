@@ -79,8 +79,11 @@ class Workspace:
 
     def load_dataset(self, name):
         """
-        Fetches a dataset by its name from the workspace.
+        Fetches a dataset by its name from the workspace if it exists.
         """
+        existing_datasets = self.list_datasets()
+        if name not in [dataset.name for dataset in existing_datasets]:
+            raise DatatuneException(f"Dataset '{name}' does not exist.")
         return Dataset(self.api, name)
 
     def delete_dataset(self, name):
