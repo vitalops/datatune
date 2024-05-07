@@ -19,14 +19,6 @@ class Workspace:
         api (API): An instance of the API class to handle HTTP requests.
         user (str): The username extracted from the URI.
         workspace_name (str): The name of the workspace extracted from the URI.
-    
-    Methods:
-        add_dataset(name, path): Adds a dataset to the cloud workspace.
-        delete_dataset(name): Removes a dataset from the cloud workspace.
-        list_datasets(): Returns a list of all datasets in the workspace.
-        create_view(name): Creates a new view and returns a corresponding View object.
-        delete_view(view_name): Deletes a view from the workspace.
-        list_views(): Lists all views in the workspace.
     """
 
 
@@ -36,7 +28,7 @@ class Workspace:
         self.api = API(api_key=token)
         self.user, self.workspace_name = self._parse_uri(uri)
 
-    def add_credentials(self, credentials):
+    def add_credentials(self, config):
         """
         Adds cloud storage credentials to the workspace for data handling.
         
@@ -49,7 +41,7 @@ class Workspace:
                 - 'azure_storage_key'
                 - 'huggingface_token'
         """
-        self.credentials = credentials
+        self.credentials = config
 
     def add_dataset(self, name, path, is_local=False):
         """
