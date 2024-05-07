@@ -2,6 +2,7 @@ from .api import API
 from .exceptions import DatatuneException
 from .view import View
 from .dataset import Dataset
+import requests
 
 
 class Workspace:
@@ -35,15 +36,54 @@ class Workspace:
         self.api = API(api_key=token)
         self.user, self.workspace_name = self._parse_uri(uri)
 
-    def add_dataset(self, name, path):
-        """Adds a dataset to the cloud."""
-        data = {'name': name, 'path': path}
-        response = self.api.post(f"workspaces/{self.workspace_name}/datasets",
-                                 json=data)
+    def add_credentials(self, credentials):
+        """
+        Adds cloud storage credentials to the workspace for data handling.
+        
+        Args:
+            config (dict): Configuration dictionary containing credentials for cloud storage.
+                Expected keys:
+                - 'aws_access_key_id'
+                - 'aws_secret_access_key'
+                - 'google_cloud_key'
+                - 'azure_storage_key'
+                - 'huggingface_token'
+        """
+        self.credentials = credentials
+
+    def add_dataset(self, name, path, is_local=False):
+        """
+        Adds a dataset to the workspace, handling both local and cloud data.
+        
+        Args:
+            name (str): Name of the dataset.
+            path (str): Path or URL to the dataset file.
+            is_local (bool): Flag to indicate if the dataset is stored locally.
+        """
+        if is_local:
+            try:
+                with open(path, 'rb') as file:
+                    files = {'file': file}
+                    response = self.api.post(
+                        f"workspaces/{self.workspace_name}/datasets/upload",
+                        files=files,
+                        data={'name': name}
+                    )
+            except Exception as e:
+                raise DatatuneException(f"Failed to upload local data for dataset '{name}': {str(e)}")
+        else:
+            if hasattr(self, 'credentials'):
+                response = self.api.post(
+                    f"workspaces/{self.workspace_name}/datasets",
+                    json={'name': name, 'path': path, 'credentials': self.credentials}
+                )
+            else:
+                raise DatatuneException("Cloud credentials are required to access cloud data.")
+
         if not response.get('success'):
             raise DatatuneException("Failed to add dataset.")
 
-        return self
+        return Dataset(self.api, name, path)
 
     def load_dataset(self, name):
         """

@@ -4,9 +4,17 @@ import pandas as pd
 # Initialize the workspace with URI and token
 workspace = dt.Workspace(uri="dt://user_name/workspace_name", token="xyz")
 
-# Add datasets to the workspace
-dataset1 = workspace.add_dataset(name="dataset1", path="/data/dataset1.parquet")
-dataset2 = workspace.add_dataset(name="dataset2", path="/data/dataset2.parquet")
+dataset1 = workspace.add_dataset(name="dataset1", path="/data/dataset1.parquet", is_local=True)
+
+# Set cloud credentials for accessing S3
+workspace.add_credentials({
+    'aws_access_key_id': 'YOUR_AWS_ACCESS_KEY_ID',
+    'aws_secret_access_key': 'YOUR_AWS_SECRET_ACCESS_KEY',
+    'region_name': 'YOUR_REGION'
+})
+
+# Assuming dataset2 is from S3
+dataset2 = workspace.add_dataset(name="dataset2", path="s3://your-bucket-name/data/dataset2.parquet", is_local=False)
 
 # List datasets initially available in the workspace
 initial_datasets = workspace.list_datasets()

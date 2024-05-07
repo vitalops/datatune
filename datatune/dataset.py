@@ -16,7 +16,22 @@ class Dataset:
         self.api = api
         self.name = name
 
-    def load_data(self, path):
+    def add_credentials(self, config):
+        """
+        Adds cloud storage credentials to the workspace for data handling.
+        
+        Args:
+            config (dict): Configuration dictionary containing credentials for cloud storage.
+                Expected keys:
+                - 'aws_access_key_id'
+                - 'aws_secret_access_key'
+                - 'google_cloud_key'
+                - 'azure_storage_key'
+                - 'huggingface_token'
+        """
+        self.credentials = config
+
+    def add_data(self, path):
         """
         Loads the dataset from the specified storage path, supporting various 
         storage providers and local files using smart_open library.
