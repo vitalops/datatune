@@ -1,96 +1,91 @@
-from abc import ABC, abstractmethod
-from typing import Iterator, List, Optional, Union
+from .api import API
+from .exceptions import DatatuneException
+from .dataset import Dataset
+from .config import DATATUNE_STORAGE_API_BASE_URL
+import os
 
-class BaseStorage(ABC):
+
+class Storage:
     """
-    Base class for handling file and data operations across different storage backends,
-    suitable for a data lakehouse architecture.
+    Handles storage operations for datasets within the Datatune platform.
     """
 
-    def __init__(self, api_key: str, config: Optional[dict] = None):
-        """
-        Initializes the storage with a necessary API key and an optional configuration.
-        Parameters:
-            api_key (str): API key for accessing the storage backend.
-            config (dict, optional): Configuration dictionary containing additional settings like region or endpoint.
-        """
-        self.api_key = api_key
-        self.config = config
+    def __init__(self, api_key):
+        self.api = API(api_key=api_key,
+                       base_url=DATATUNE_STORAGE_API_BASE_URL)
 
-    # Dictionary-like methods
-    def __getitem__(self, key: str) -> bytes:
-        return self._get(key)
+    def upload_dataset(self, name, path, is_local=False):
+        """
+        Uploads a dataset to the Datatune platform, handling local and cloud storage.
 
-    def __setitem__(self, key: Union[str, List[str]], value: bytes) -> None:
-        if isinstance(key, list):
-            self._pset(key, value)
+        Args:
+            name (str): The dataset name.
+            path (str): Path to the dataset.
+            is_local (bool): Specifies if the dataset is stored locally.
+        """
+        if is_local:
+            try:
+                with open(path, 'rb') as file_data:
+                    files = {'file': (os.path.basename(path), file_data)}
+                    response = self.api.post('datasets/upload',
+                                             files=files,
+                                             data={'name': name})
+            except Exception as e:
+                raise DatatuneException(f"Failed to load local data and add dataset '{name}': {str(e)}")
         else:
-            self._set(key, value)
+            response = self.api.post('datasets/upload',
+                                     json={'name': name, 'path': path})
+    
+        if not response.get('success'):
+            raise DatatuneException("Failed to upload dataset.")
+        return Dataset(self.api, name)
 
-    def __delitem__(self, key: str) -> None:
-        self.delete_file(key)
+    def load_dataset(self, name):
+        """
+        Fetches a dataset by its name from the storage if it exists.
+        """
+        existing_datasets = self.list_datasets()
+        if name not in existing_datasets:
+            raise DatatuneException(f"Dataset '{name}' does not exist.")
+        return Dataset(self.api, name)
 
-    def __contains__(self, key: str) -> bool:
-        return self.file_exists(key)
+    def download_dataset(self, name, save_path):
+        """
+        Downloads a dataset from the Datatune platform.
 
-    def __len__(self) -> int:
-        return self.count_files()
+        Args:
+            name (str): The name of the dataset to download.
+            save_path (str): The local path to save the dataset.
+        """
+        response = self.api.get(f'datasets/{name}/download')
+        if response.get('success'):
+            with open(save_path, 'wb') as f:
+                f.write(response['data'])
+        else:
+            raise DatatuneException("Failed to download dataset.")
 
-    @abstractmethod
-    def upload_file(self, file_path: str, destination: str) -> None:
-        pass
+        return Dataset(self.api, name)
 
-    @abstractmethod
-    def download_file(self, source: str, destination: str) -> None:
-        pass
+    def delete_dataset(self, name):
+        """
+        Deletes a dataset from the Datatune platform.
 
-    @abstractmethod
-    def list_files(self, path: str) -> Iterator[str]:
-        pass
+        Args:
+            name (str): The name of the dataset to delete.
+        """
+        response = self.api.delete(f'datasets/{name}')
+        if not response.get('success'):
+            raise DatatuneException("Failed to delete dataset.")
+        return self
 
-    @abstractmethod
-    def delete_file(self, path: str) -> None:
-        pass
+    def list_datasets(self):
+        """
+        Lists all datasets available in the Datatune platform.
 
-    @abstractmethod
-    def get_metadata(self, path: str) -> dict:
-        pass
-
-    @abstractmethod
-    def set_metadata(self, path: str, metadata: dict) -> None:
-        pass
-
-    @abstractmethod
-    def query_data(self, query: str, options: Optional[dict] = None) -> Iterator[dict]:
-        pass
-
-    # Private methods to be implemented by subclasses
-    @abstractmethod
-    def _get(self, key: str) -> bytes:
-        pass
-
-    @abstractmethod
-    def _set(self, key: str, value: bytes) -> None:
-        pass
-
-    @abstractmethod
-    def _pset(self, keys: List[str], values: List[bytes]) -> None:
-        pass
-
-    @abstractmethod
-    def _pget(self, keys: List[str]) -> List[bytes]:
-        pass
-
-    # Example utility methods
-    def file_exists(self, path: str) -> bool:
-        try:
-            self.get_metadata(path)
-            return True
-        except FileNotFoundError:
-            return False
-
-    def count_files(self, directory: str = '') -> int:
-        return sum(1 for _ in self.list_files(directory))
-
-    def __str__(self):
-        return f"{self.__class__.__name__} initialized."
+        Returns:
+            list: A list of dataset names.
+        """
+        response = self.api.get('datasets')
+        if not response.get('success'):
+            raise DatatuneException("Failed to list datasets.")
+        return [dataset['name'] for dataset in response.get('data', [])]
