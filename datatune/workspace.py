@@ -43,7 +43,7 @@ class Workspace:
         if not response.get('success'):
             raise DatatuneException("Failed to add dataset.")
 
-        return Dataset(self.api, name)
+        return self
 
     def load_dataset(self, name):
         """
@@ -59,7 +59,7 @@ class Workspace:
         response = self.api.delete(f"workspaces/{self.workspace_name}/datasets/{name}")
         if not response.get('success'):
             raise DatatuneException("Failed to delete dataset.")
-        return f"Dataset {name} deleted successfully."
+        return self
 
     def list_datasets(self):
         """Returns a list of all datasets in the workspace."""
@@ -74,7 +74,7 @@ class Workspace:
         response = self.api.post(f"workspaces/{self.workspace_name}/views", json={'name': name})
         if not response.get('success'):
             raise DatatuneException("Failed to create view.")
-        return View(workspace=self, name=name)
+        return self
 
     def load_view(self, name):
         """
@@ -90,7 +90,7 @@ class Workspace:
         response = self.api.delete(f"workspaces/{self.workspace_name}/views/{view_name}")
         if not response.get('success'):
             raise DatatuneException("Failed to delete view.")
-        return f"View {view_name} deleted successfully."
+        return self
 
     def list_views(self):
         """Lists all views in the workspace."""
