@@ -14,15 +14,16 @@ class Query:
     def __init__(self, view):
         self.view = view
 
-    def execute(self, query):
+    def execute(self, query, to_df=False):
         """
-        Executes the SQL query against the specified view and returns the results as a pandas DataFrame.
+        Executes the SQL query against the specified view. Optionally returns the results as a pandas DataFrame.
 
         Args:
             query (str): The SQL query to be executed.
+            to_df (bool): If True, returns results as a pandas DataFrame, otherwise returns the Query object.
 
         Returns:
-            pd.DataFrame: The result of the query, typically a DataFrame containing the queried data.
+            pd.DataFrame or Query: Depending on the value of to_df, returns a DataFrame with the results or self.
 
         Raises:
             DatatuneException: If the query fails or the server returns an error.
@@ -32,16 +33,13 @@ class Query:
             'view_name': self.view.name,
             'query': query
         }
-        response = self.view.workspace.api.post(
-            "execute_query",
-            json=data
-        )
+        response = self.view.workspace.api.post("execute_query", json=data)
         if not response.get('success'):
             raise DatatuneException(f"Failed to execute query on view '{self.view.name}': {response.get('message', '')}")
-
-        # Assuming the API response returns the data in a format that pandas can read directly:
-        try:
-            return pd.DataFrame(response.get('data', []))
-        except ValueError as e:
-            raise DatatuneException(f"Failed to convert query results into DataFrame: {str(e)}")
-
+        
+        if to_df:
+            try:
+                return pd.DataFrame(response.get('data', []))
+            except ValueError as e:
+                raise DatatuneException(f"Failed to convert query results into DataFrame: {str(e)}")
+        return self

@@ -94,7 +94,7 @@ class View:
 
     def display(self, n=5):
         """
-        Fetches and displays the latest state of the view, returning the top 'n' rows
+        Fetches and displays the latest state of the view, returning the top 'n' rows.
         
         Args:
             n (int): Number of top rows to return from the view. Default is 5.
@@ -103,14 +103,13 @@ class View:
             pd.DataFrame: A DataFrame containing the top n rows of the view.
         
         Raises:
-            DatatuneException: If the API call fails or an error occurs.
+            DatatuneException: If the query execution fails or returns an error.
         """
+        sql_query = f"SELECT * FROM {self.name} LIMIT {n}"
+        query_instance = Query(self)
         try:
-            response = self.workspace.api.get(f"workspaces/{self.workspace.workspace_name}/views/{self.name}/data?limit={n}")
-            if response.get('success'):
-                data = response.get('data', [])
-                return pd.DataFrame(data)
-            else:
-                raise DatatuneException(f"Failed to fetch data for view '{self.name}': {response.get('message', '')}")
-        except Exception as e:
-            raise DatatuneException(f"Error fetching data from view '{self.name}': {str(e)}")
+            df =  query_instance.execute(sql_query, to_df=True)
+        except DatatuneException as e:
+            raise DatatuneException(f"Error displaying data from view '{self.name}': {str(e)}")
+
+        return df
