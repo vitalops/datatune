@@ -43,7 +43,7 @@ class Workspace:
         """
         self.credentials = config
 
-    def add_dataset(self, name, path, is_local=False):
+    def add_dataset(self, dataset_id, path, is_local=False):
         """
         Adds a dataset to the workspace, handling both local and cloud data.
         
@@ -59,15 +59,17 @@ class Workspace:
                     response = self.api.post(
                         f"workspaces/{self.workspace_name}/datasets/upload",
                         files=files,
-                        data={'name': name}
+                        data={'dataset_id': dataset_id}
                     )
             except Exception as e:
-                raise DatatuneException(f"Failed to upload local data for dataset '{name}': {str(e)}")
+                raise DatatuneException(f"Failed to upload local data for dataset '{dataset_id}': {str(e)}")
         else:
             if hasattr(self, 'credentials'):
                 response = self.api.post(
                     f"workspaces/{self.workspace_name}/datasets",
-                    json={'name': name, 'path': path, 'credentials': self.credentials}
+                    json={'dataset_id': dataset_id,
+                          'path': path,
+                          'credentials': self.credentials}
                 )
             else:
                 raise DatatuneException("Cloud credentials are required to access cloud data.")
@@ -75,20 +77,20 @@ class Workspace:
         if not response.get('success'):
             raise DatatuneException("Failed to add dataset.")
 
-        return Dataset(self.api, name)
+        return Dataset(self.workspace, dataset_id)
 
-    def load_dataset(self, name):
+    def load_dataset(self, dataset_id):
         """
         Fetches a dataset by its name from the workspace if it exists.
         """
         existing_datasets = self.list_datasets()
-        if name not in [dataset.name for dataset in existing_datasets]:
-            raise DatatuneException(f"Dataset '{name}' does not exist.")
-        return Dataset(self.api, name)
+        if dataset_id not in [dataset.dataset_id for dataset in existing_datasets]:
+            raise DatatuneException(f"Dataset '{dataset_id}' does not exist.")
+        return Dataset(self.workspace, dataset_id)
 
-    def delete_dataset(self, name):
+    def delete_dataset(self, dataset_id):
         """Deletes a dataset from the cloud."""
-        response = self.api.delete(f"workspaces/{self.workspace_name}/datasets/{name}")
+        response = self.api.delete(f"workspaces/{self.workspace_name}/datasets/{dataset_id}")
         if not response.get('success'):
             raise DatatuneException("Failed to delete dataset.")
         return self
@@ -98,7 +100,7 @@ class Workspace:
         response = self.api.get(f"workspaces/{self.workspace_name}/datasets")
         if not response.get('success'):
             raise DatatuneException("Failed to list datasets.")
-        datasets = [Dataset(self.api, ds['name'], ds['path']) for ds in response.get('datasets', [])]
+        datasets = [Dataset(self.api, ds['dataset_id']) for ds in response.get('datasets', [])]
         return datasets
 
     def create_view(self, name):
