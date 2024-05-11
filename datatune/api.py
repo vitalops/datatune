@@ -85,6 +85,77 @@ class API:
         else:
             raise DatatuneException("Failed to obtain presigned URL.")
 
+    def add_dataset(self, workspace_name, dataset_id, path, is_local,
+                    credentials=None,
+                    file=None):
+        """Add a dataset to the workspace."""
+        endpoint = f"workspaces/{workspace_name}/datasets"
+        if is_local and file:
+            files = {'file': file}
+            data = {'dataset_id': dataset_id}
+            return self.post(endpoint + "/upload", files=files, json=data)
+        else:
+            json_data = {
+                'dataset_id': dataset_id,
+                'path': path,
+                'credentials': credentials
+            }
+            return self.post(endpoint, json=json_data)
+
+    def delete_dataset(self, workspace_name, dataset_id):
+        """Delete a dataset from the workspace."""
+        endpoint = f"workspaces/{workspace_name}/datasets/{dataset_id}"
+        return self.delete(endpoint)
+
+    def list_datasets(self, workspace_name):
+        """List all datasets in the workspace."""
+        endpoint = f"workspaces/{workspace_name}/datasets"
+        return self.get(endpoint)
+
+    def create_view(self, workspace_name, view_name):
+        """Create a new view in the workspace."""
+        endpoint = f"workspaces/{workspace_name}/views"
+        json_data = {'name': view_name}
+        return self.post(endpoint, json=json_data)
+
+    def delete_view(self, workspace_name, view_name):
+        """Delete a view from the workspace."""
+        endpoint = f"workspaces/{workspace_name}/views/{view_name}"
+        return self.delete(endpoint)
+
+    def list_views(self, workspace_name):
+        """List all views in the workspace."""
+        endpoint = f"workspaces/{workspace_name}/views"
+        return self.get(endpoint)
+
+    def load_view(self, workspace_name, view_name):
+        """Fetch a view by its name from the workspace."""
+        endpoint = f"workspaces/{workspace_name}/views/{view_name}"
+        return self.get(endpoint)
+
+    def extend_view(self,
+                    workspace_name,
+                    view_name,
+                    dataset_name,
+                    slice_range):
+        """Extend a view with a dataset slice."""
+        endpoint = f"workspaces/{workspace_name}/views/{view_name}/extend"
+        json_data = {'dataset_name': dataset_name, 'slice_range': slice_range}
+        return self.put(endpoint, json=json_data)
+
+    def add_column_to_view(self,
+                           workspace_name,
+                           view_name,
+                           column_name,
+                           column_type,
+                           default_value=None):
+        """Add a single column to a view."""
+        endpoint = f"workspaces/{workspace_name}/views/{view_name}/columns"
+        json_data = {'column_name': column_name,
+                     'column_type': column_type,
+                     'default_value': default_value}
+        return self.post(endpoint, json=json_data)
+
     @staticmethod
     def generate_user_agent() -> str:
         """Generate a user agent string with details about the platform."""

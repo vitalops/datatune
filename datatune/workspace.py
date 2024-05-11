@@ -46,38 +46,30 @@ class Workspace:
     def add_dataset(self, dataset_id, path, is_local=False):
         """
         Adds a dataset to the workspace, handling both local and cloud data.
-        
+
         Args:
-            name (str): Name of the dataset.
+            dataset_id (str): Unique identifier of the dataset.
             path (str): Path or URL to the dataset file.
             is_local (bool): Flag to indicate if the dataset is stored locally.
         """
         if is_local:
-            try:
-                with open(path, 'rb') as file:
-                    files = {'file': file}
-                    response = self.api.post(
-                        f"workspaces/{self.workspace_name}/datasets/upload",
-                        files=files,
-                        data={'dataset_id': dataset_id}
-                    )
-            except Exception as e:
-                raise DatatuneException(f"Failed to upload local data for dataset '{dataset_id}': {str(e)}")
+            with open(path, 'rb') as file:
+                response = self.api.add_dataset(self.workspace_name,
+                                                dataset_id,
+                                                path,
+                                                is_local,
+                                                self.credentials,
+                                                file)
         else:
-            if hasattr(self, 'credentials'):
-                response = self.api.post(
-                    f"workspaces/{self.workspace_name}/datasets",
-                    json={'dataset_id': dataset_id,
-                          'path': path,
-                          'credentials': self.credentials}
-                )
-            else:
-                raise DatatuneException("Cloud credentials are required to access cloud data.")
+            response = self.api.add_dataset(self.workspace_name,
+                                            dataset_id,
+                                            path,
+                                            is_local,
+                                            self.credentials)
 
         if not response.get('success'):
             raise DatatuneException("Failed to add dataset.")
-
-        return Dataset(self.workspace, dataset_id)
+        return Dataset(self, dataset_id)
 
     def load_dataset(self, dataset_id):
         """
@@ -89,50 +81,68 @@ class Workspace:
         return Dataset(self.workspace, dataset_id)
 
     def delete_dataset(self, dataset_id):
-        """Deletes a dataset from the cloud."""
-        response = self.api.delete(f"workspaces/{self.workspace_name}/datasets/{dataset_id}")
+        """
+        Deletes a dataset from the workspace.
+        """
+        response = self.api.delete_dataset(self.workspace_name, dataset_id)
         if not response.get('success'):
             raise DatatuneException("Failed to delete dataset.")
         return self
 
     def list_datasets(self):
-        """Returns a list of all datasets in the workspace."""
-        response = self.api.get(f"workspaces/{self.workspace_name}/datasets")
+        """
+        Returns a list of all datasets in the workspace.
+        """
+        response = self.api.list_datasets(self.workspace_name)
         if not response.get('success'):
             raise DatatuneException("Failed to list datasets.")
-        datasets = [Dataset(self.api, ds['dataset_id']) for ds in response.get('datasets', [])]
+        datasets = [Dataset(self, ds['dataset_id']) for ds in response.get('datasets', [])]
         return datasets
 
-    def create_view(self, name):
-        """Creates a new view and returns a View object."""
-        response = self.api.post(f"workspaces/{self.workspace_name}/views", json={'name': name})
+    def create_view(self, view_name):
+        """
+        Creates a new view in the workspace.
+
+        Args:
+            view_name (str): Name of the view to create.
+        """
+        response = self.api.create_view(self.workspace_name, view_name)
         if not response.get('success'):
             raise DatatuneException("Failed to create view.")
-        return View(self, name)
+        return View(self, view_name)
 
-    def load_view(self, name):
+    def load_view(self, view_name):
         """
         Fetches a view by its name from the workspace.
+
+        Args:
+            view_name (str): Name of the view to fetch.
         """
-        response = self.api.get(f"workspaces/{self.workspace_name}/views/{name}")
+        response = self.api.load_view(self.workspace_name, view_name)
         if not response.get('success'):
-            raise DatatuneException(f"Failed to load view '{name}'.")
-        return View(self, name)
+            raise DatatuneException(f"Failed to load view '{view_name}'.")
+        return View(self, view_name)
 
     def delete_view(self, view_name):
-        """Deletes a view from the workspace."""
-        response = self.api.delete(f"workspaces/{self.workspace_name}/views/{view_name}")
+        """
+        Deletes a view from the workspace.
+
+        Args:
+            view_name (str): Name of the view to delete.
+        """
+        response = self.api.delete_view(self.workspace_name, view_name)
         if not response.get('success'):
             raise DatatuneException("Failed to delete view.")
         return self
 
     def list_views(self):
-        """Lists all views in the workspace."""
-        response = self.api.get(f"workspaces/{self.workspace_name}/views")
+        """
+        Lists all views in the workspace.
+        """
+        response = self.api.list_views(self.workspace_name)
         if not response.get('success'):
             raise DatatuneException("Failed to list views.")
-        views = [View(self, view['name']) for view in response.get('views', [])]
-        return views
+        return [View(self, view['name']) for view in response.get('views', [])]
 
     def _parse_uri(self, uri):
         scheme, path = uri.split("://")

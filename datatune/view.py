@@ -16,18 +16,23 @@ class View:
         name (str): The name of the view.
 
     """
+
     def __init__(self, workspace, name):
         self.workspace = workspace
         self.name = name
 
     def extend(self, dataset_name, slice_range):
         """Extends a view with a slice of a dataset."""
-        data = {'dataset_name': dataset_name, 'slice_range': slice_range}
-        response = self.workspace.api.put(f"workspaces/{self.workspace.workspace_name}/views/{self.name}",
-                                          json=data)
+        workspace_name = self.workspace.workspace_name
+        view_name = self.name
+        response = self.workspace.api.extend_view(workspace_name,
+                                                  view_name,
+                                                  dataset_name,
+                                                  slice_range)
         if not response.get('success'):
             raise DatatuneException(f"Failed to extend view '{self.name}'.")
         return self
+
 
     def add_columns(self, data=None, column_name=None, column_type="string", default_value=None):
         """
@@ -47,44 +52,48 @@ class View:
         """
         if data is not None:
             if isinstance(data, pd.DataFrame):
-                columns = data.columns.tolist()
-                for column in columns:
-                    self._add_column_to_view(column, data[column].dtype.name)
+                for column in data.columns:
+                    self.workspace.api.add_column_to_view(
+                        self.workspace.workspace_name,
+                        self.name,
+                        column,
+                        data[column].dtype.name
+                    )
             elif isinstance(data, pd.Series):
                 column_name = data.name if data.name else column_name
                 if not column_name:
                     raise ValueError("Column name must be provided for unnamed Series.")
-                self._add_column_to_view(column_name, data.dtype.name)
+                self.workspace.api.add_column_to_view(
+                    self.workspace.workspace_name,
+                    self.name,
+                    column_name,
+                    data.dtype.name
+                )
             elif isinstance(data, str) and data.endswith('.parquet'):
                 try:
                     df = pd.read_parquet(data)
                     for column in df.columns:
-                        self._add_column_to_view(column, df[column].dtype.name)
+                        self.workspace.api.add_column_to_view(
+                            self.workspace.workspace_name,
+                            self.name,
+                            column,
+                            df[column].dtype.name
+                        )
                 except Exception as e:
                     raise DatatuneException(f"Failed to load data from {data}: {str(e)}")
             else:
                 raise ValueError("Unsupported data input. Provide a DataFrame, Series, or a Parquet file path.")
         elif column_name:
-            self._add_column_to_view(column_name, column_type, default_value)
+            self.workspace.api.add_column_to_view(
+                self.workspace.workspace_name,
+                self.name,
+                column_name,
+                column_type,
+                default_value
+            )
         else:
             raise ValueError("Either provide a data source or column details.")
         return self
-
-    def _add_column_to_view(self, name, type, default=None):
-        """
-        Helper function to add a single column to the view via the API.
-        """
-        data = {'column_name': name,
-                'column_type': type,
-                'default_value': default}
-
-        response = self.workspace.api.post(
-            f"workspaces/{self.workspace.workspace_name}/views/{self.name}/columns",
-            json=data
-        )
-
-        if not response.get('success'):
-            raise DatatuneException(f"Failed to add column '{name}' to view '{self.name}'.")
 
     def query(self, sql_query):
         """Executes an SQL query on the view using the Query class."""
@@ -113,26 +122,3 @@ class View:
             raise DatatuneException(f"Error displaying data from view '{self.name}': {str(e)}")
 
         return df
-
-    def is_pytorch_converted(self):
-        """
-        Checks if the view's data is already converted to PyTorch format.
-
-        Returns:
-            bool: True if converted, False otherwise.
-        """
-        response = self.workspace.api.get(f"workspaces/{self.workspace.workspace_name}/views/{self.name}/is_pytorch_converted")
-        if response.get('success'):
-            return response.get('data', {}).get('is_pytorch', False)
-        else:
-            raise DatatuneException("Failed to check if view is converted to PyTorch.")
-
-    def convert_to_pytorch(self):
-        """
-        Converts the view's data into a format suitable for PyTorch, making an API call only if not already converted.
-        """
-        if not self.is_pytorch_converted():
-            response = self.workspace.api.post("convert_to_pytorch", json={'workspace_name': self.workspace.workspace_name, 'view_name': self.name})
-            if not response.get('success'):
-                raise DatatuneException(f"Failed to convert view '{self.name}' to PyTorch: {response.get('message', '')}")
-        return self
