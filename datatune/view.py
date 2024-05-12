@@ -100,19 +100,28 @@ class View:
         """
         Uses the Query class to build a select query.
         """
-        return self.query.select(columns)
+        response = self.query.select(columns)
+        if not response.get('success'):
+            raise DatatuneException(f"Failed to select columns in view '{self.name}'.")
+        return self
 
     def filter(self, condition):
         """
         Uses the Query class to build a filter query.
         """
-        return self.query.filter(condition)
+        response = self.query.filter(condition)
+        if not response.get('success'):
+            raise DatatuneException(f"Failed to filter view '{self.name}'.")
+        return self
 
     def sort(self, columns, ascending=True):
         """
         Uses the Query class to build a sort query.
         """
-        return self.query.sort(columns, ascending)
+        response =  self.query.sort(columns, ascending)
+        if not response.get('success'):
+            raise DatatuneException(f"Failed to sort view '{self.name}'.")
+        return self
 
     def display(self, n=5):
         """
