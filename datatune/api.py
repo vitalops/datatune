@@ -156,6 +156,15 @@ class API:
                      'default_value': default_value}
         return self.post(endpoint, json=json_data)
 
+    def execute_query(self, workspace_name, view_name, query_str):
+        """
+        Execute a SQL query against a specified view in the workspace.
+        """
+        endpoint = f"workspaces/{workspace_name}/views/{view_name}/query"
+        json_data = {'query': query_str}
+        response = self.post(endpoint, json=json_data)
+        return response
+
     @staticmethod
     def generate_user_agent() -> str:
         """Generate a user agent string with details about the platform."""

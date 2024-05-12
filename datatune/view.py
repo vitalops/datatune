@@ -20,6 +20,7 @@ class View:
     def __init__(self, workspace, name):
         self.workspace = workspace
         self.name = name
+        self.query = Query(self)
 
     def extend(self, dataset_name, slice_range):
         """Extends a view with a slice of a dataset."""
@@ -95,11 +96,23 @@ class View:
             raise ValueError("Either provide a data source or column details.")
         return self
 
-    def query(self, sql_query):
-        """Executes an SQL query on the view using the Query class."""
-        query_instance = Query(self)
-        query_instance.execute(sql_query)
-        return self
+    def select(self, columns="*"):
+        """
+        Uses the Query class to build a select query.
+        """
+        return self.query.select(columns)
+
+    def filter(self, condition):
+        """
+        Uses the Query class to build a filter query.
+        """
+        return self.query.filter(condition)
+
+    def sort(self, columns, ascending=True):
+        """
+        Uses the Query class to build a sort query.
+        """
+        return self.query.sort(columns, ascending)
 
     def display(self, n=5):
         """
