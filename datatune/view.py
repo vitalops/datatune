@@ -98,7 +98,7 @@ class View:
 
     def filter(self, condition):
         """
-        Applies a filtering condition to the data within the view and returns the modified view instance.
+        Applies a filtering condition to the data within the view
 
         Args:
             condition (str): A SQL condition string used for filtering the data. 
@@ -134,7 +134,7 @@ class View:
 
     def display(self, columns="*"):
         """
-        Displays data from the view, optionally specifying which columns to include.
+        Displays data from the view.
 
         Args:
             columns (str or list of str, optional): The column or columns to be selected for display.
