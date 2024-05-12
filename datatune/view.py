@@ -22,13 +22,13 @@ class View:
         self.name = name
         self.query = Query(self)
 
-    def extend(self, dataset_name, slice_range):
+    def extend(self, dataset_id, slice_range):
         """Extends a view with a slice of a dataset."""
         workspace_name = self.workspace.workspace_name
         view_name = self.name
         response = self.workspace.api.extend_view(workspace_name,
                                                   view_name,
-                                                  dataset_name,
+                                                  dataset_id,
                                                   slice_range)
         if not response.get('success'):
             raise DatatuneException(f"Failed to extend view '{self.name}'.")
@@ -96,51 +96,55 @@ class View:
             raise ValueError("Either provide a data source or column details.")
         return self
 
-    def select(self, columns="*"):
-        """
-        Uses the Query class to build a select query.
-        """
-        response = self.query.select(columns)
-        if not response.get('success'):
-            raise DatatuneException(f"Failed to select columns in view '{self.name}'.")
-        return self
-
     def filter(self, condition):
         """
-        Uses the Query class to build a filter query.
+        Applies a filtering condition to the data within the view and returns the modified view instance.
+
+        Args:
+            condition (str): A SQL condition string used for filtering the data. 
+                             This should be a valid SQL WHERE clause condition, such as "age > 30" or "status = 'active'".
+
+        Returns:
+            View: The current View instance with the applied filter condition.
+
         """
         response = self.query.filter(condition)
         if not response.get('success'):
             raise DatatuneException(f"Failed to filter view '{self.name}'.")
         return self
-
+    
     def sort(self, columns, ascending=True):
         """
-        Uses the Query class to build a sort query.
+        Sorts the data in the view based on specified columns and order.
+
+        Args:
+            columns (str or list of str): The column or columns to sort the data by. If a list is provided,
+                                          data will be sorted by multiple columns in the order specified in the list.
+            ascending (bool, optional): Specifies the sort direction. True for ascending, False for descending.
+                                        Default is True.
+
+        Returns:
+            View: The current View instance with the applied sorting.
+
         """
-        response =  self.query.sort(columns, ascending)
+        response = self.query.sort(columns, ascending)
         if not response.get('success'):
             raise DatatuneException(f"Failed to sort view '{self.name}'.")
         return self
 
-    def display(self, n=5):
+    def display(self, columns="*"):
         """
-        Fetches and displays the latest state of the view, returning the top 'n' rows.
-        
-        Args:
-            n (int): Number of top rows to return from the view. Default is 5.
-        
-        Returns:
-            pd.DataFrame: A DataFrame containing the top n rows of the view.
-        
-        Raises:
-            DatatuneException: If the query execution fails or returns an error.
-        """
-        sql_query = f"SELECT * FROM {self.name} LIMIT {n}"
-        query_instance = Query(self)
-        try:
-            df =  query_instance.execute(sql_query, to_df=True)
-        except DatatuneException as e:
-            raise DatatuneException(f"Error displaying data from view '{self.name}': {str(e)}")
+        Displays data from the view, optionally specifying which columns to include.
 
-        return df
+        Args:
+            columns (str or list of str, optional): The column or columns to be selected for display.
+                                                    Defaults to "*" which selects all columns.
+
+        Returns:
+            View: The current View instance after selecting the specified columns.
+
+        """
+        response = self.query.select(columns)
+        if not response.get('success'):
+            raise DatatuneException(f"Failed to select columns in view '{self.name}'.")
+        return self
