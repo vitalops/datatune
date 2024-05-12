@@ -5,15 +5,21 @@ class Dataset:
     Represents a dataset within the Datatune platform.
 
     Attributes:
-        api (API): An instance of the API class for HTTP requests.
-        workspace (Workspace): The workspace instance to which the dataset belongs.
+        api (API): An instance of the API class for HTTP requests. If no workspace is provided,
+                   this should be set directly.
+        workspace (Optional[Workspace]): The workspace instance to which the dataset belongs, if any.
         name (str): The name of the dataset.
         id (str): The unique identifier of the dataset.
     """
-    def __init__(self, workspace, dataset_id):
-        self.workspace = workspace
-        self.api = workspace.api  # Use the API instance from the workspace
+    def __init__(self, dataset_id, api=None, workspace=None):
         self.dataset_id = dataset_id
+        self.workspace = workspace
+        if workspace:
+            self.api = workspace.api
+        elif api:
+            self.api = api
+        else:
+            raise ValueError("API instance must be provided if workspace is not specified.")
 
     def get_metadata(self):
         """

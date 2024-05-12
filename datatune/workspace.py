@@ -69,7 +69,9 @@ class Workspace:
 
         if not response.get('success'):
             raise DatatuneException("Failed to add dataset.")
-        return Dataset(self, dataset_id)
+        return Dataset(dataset_id,
+                       api=self.api,
+                       workspace=self)
 
     def load_dataset(self, dataset_id):
         """
@@ -78,7 +80,9 @@ class Workspace:
         existing_datasets = self.list_datasets()
         if dataset_id not in [dataset.dataset_id for dataset in existing_datasets]:
             raise DatatuneException(f"Dataset '{dataset_id}' does not exist.")
-        return Dataset(self.workspace, dataset_id)
+        return Dataset(dataset_id,
+                       api=self.api,
+                       workspace=self)
 
     def delete_dataset(self, dataset_id):
         """
@@ -96,7 +100,10 @@ class Workspace:
         response = self.api.list_datasets(self.workspace_name)
         if not response.get('success'):
             raise DatatuneException("Failed to list datasets.")
-        datasets = [Dataset(self, ds['dataset_id']) for ds in response.get('datasets', [])]
+        datasets = [Dataset(ds['dataset_id'],
+                            api=self.api,
+                            workspace=self) for ds in response.get('datasets',
+                                                                   [])]
         return datasets
 
     def create_view(self, view_name):

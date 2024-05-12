@@ -1,84 +1,96 @@
+import os
+import requests
 from .api import API
 from .exceptions import DatatuneException
 from .dataset import Dataset
 from .config import DATATUNE_STORAGE_API_BASE_URL
-import os
-import requests
 
 
 class Storage:
     """
-    Handles storage operations for datasets within the Datatune platform.
+    Handles storage operations for datasets within the Datatune platform, supporting both local
+    and external storage including AWS S3, GCP, Azure, and Hugging Face.
     """
 
     def __init__(self, api_key):
-        self.api = API(api_key=api_key,
-                       base_url=DATATUNE_STORAGE_API_BASE_URL)
+        self.api = API(api_key=api_key, base_url=DATATUNE_STORAGE_API_BASE_URL)
+        self.credentials = {}
 
-    def upload_dataset(self, name, path, is_local=False):
+    def set_credentials(self, aws=None, gcp=None, azure=None, huggingface=None):
         """
-        Uploads a dataset to the Datatune platform, handling local and cloud storage.
+        Sets the credentials for accessing external storage services.
 
         Args:
-            name (str): The dataset name.
-            path (str): Path to the dataset.
+            aws (dict): AWS credentials with access_key_id and secret_access_key.
+            gcp (dict): GCP credentials with service_account_info JSON.
+            azure (dict): Azure credentials with storage_account and storage_key.
+            huggingface (str): Hugging Face API token.
+        """
+        if aws:
+            self.credentials['aws'] = aws
+        if gcp:
+            self.credentials['gcp'] = gcp
+        if azure:
+            self.credentials['azure'] = azure
+        if huggingface:
+            self.credentials['huggingface'] = huggingface
+
+    def upload_dataset(self, dataset_id, path, is_local=False, source=None):
+        """
+        Uploads a dataset to the Datatune platform, handling both local and external sources.
+
+        Args:
+            dataset_id (str): The dataset id.
+            path (str): Path to the dataset or URL for external datasets.
             is_local (bool): Specifies if the dataset is stored locally.
+            source (str, optional): Source identifier ('aws', 'gcp', 'azure', 'huggingface') for external datasets.
+
+        Returns:
+            Dataset: An object representing the uploaded dataset.
         """
         if is_local:
             try:
-                presigned_url = self.api.get_presigned_url('upload', name)
+                presigned_url = self.api.get_presigned_url('upload', dataset_id)
                 with open(path, 'rb') as file_data:
                     files = {'file': (os.path.basename(path), file_data)}
                     response = requests.put(presigned_url, files=files)
-                    if response.status_code != 200:
-                        raise DatatuneException("Failed to upload dataset using presigned URL.")
+                    response.raise_for_status()
             except Exception as e:
-                raise DatatuneException(f"Failed to load local data and add dataset '{name}': {str(e)}")
+                raise DatatuneException(f"Failed to upload dataset '{dataset_id}': {str(e)}")
         else:
-            response = self.api.post('datasets/upload',
-                                     json={'name': name, 'path': path})
-    
-        if not response.get('success'):
-            raise DatatuneException("Failed to upload dataset.")
-        return Dataset(self.api, name)
+            credentials = self.credentials.get(source)
+            if not credentials:
+                raise DatatuneException("No credentials provided for the specified source.")
 
-    def load_dataset(self, name):
-        """
-        Fetches a dataset by its name from the storage if it exists.
-        """
-        existing_datasets = self.list_datasets()
-        if name not in existing_datasets:
-            raise DatatuneException(f"Dataset '{name}' does not exist.")
-        return Dataset(self.api, name)
+            response = self.api.upload_storage_dataset(dataset_id,
+                                                       path,
+                                                       is_local,
+                                                       credentials)
+            if not response.get('success'):
+                raise DatatuneException("Failed to upload dataset from external source.")
 
-    def download_dataset(self, name, save_path):
+        return Dataset(dataset_id, self.api)
+
+    def download_dataset(self, dataset_id, save_path):
         """
         Downloads a dataset from the Datatune platform.
-
-        Args:
-            name (str): The name of the dataset to download.
-            save_path (str): The local path to save the dataset.
         """
         try:
-            presigned_url = self.api.get_presigned_url('download', name)
+            presigned_url = self.api.get_presigned_url('download', dataset_id)
             response = requests.get(presigned_url)
-            if response.status_code == 200:
-                with open(save_path, 'wb') as f:
-                    f.write(response.content)
-            else:
-                raise DatatuneException("Failed to download dataset using presigned URL.")
+            response.raise_for_status()
+            with open(save_path, 'wb') as f:
+                f.write(response.content)
         except Exception as e:
-            raise DatatuneException(f"Error downloading dataset '{name}': {str(e)}")
-        return Dataset(self.api, name)
+            raise DatatuneException(f"Error downloading dataset '{dataset_id}': {str(e)}")
 
-    def delete_dataset(self, name):
+        return Dataset(dataset_id, self.api)
+
+    def delete_dataset(self, dataset_id):
         """
         Deletes a dataset from the Datatune platform.
-
-        Args:
-            name (str): The name of the dataset to delete.
         """
-        response = self.api.delete(f'datasets/{name}')
+        response = self.api.delete_storage_dataset(dataset_id)
         if not response.get('success'):
             raise DatatuneException("Failed to delete dataset.")
         return self
@@ -86,11 +98,11 @@ class Storage:
     def list_datasets(self):
         """
         Lists all datasets available in the Datatune platform.
-
-        Returns:
-            list: A list of dataset names.
         """
-        response = self.api.get('datasets')
+        response = self.api.list_storage_datasets()
         if not response.get('success'):
             raise DatatuneException("Failed to list datasets.")
-        return [dataset['name'] for dataset in response.get('data', [])]
+        datasets = [Dataset(dataset['dataset_id'],
+                            self.api) for dataset in response.get('data',
+                                                                  [])]
+        return datasets

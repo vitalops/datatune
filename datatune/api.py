@@ -76,9 +76,9 @@ class API:
         """Wrapper for DELETE requests."""
         return self.request('DELETE', endpoint, json=json)
 
-    def get_presigned_url(self, action, dataset_name):
+    def get_presigned_url(self, action, dataset_id):
         """Request a presigned URL for operations like upload/download."""
-        endpoint = f"presigned/{action}/{dataset_name}"
+        endpoint = f"presigned/{action}/{dataset_id}"
         response = self.session.get(f"{self.base_url}/{endpoint}")
         if response.status_code == 200:
             return response.json()['url']
@@ -136,11 +136,11 @@ class API:
     def extend_view(self,
                     workspace_name,
                     view_name,
-                    dataset_name,
+                    dataset_id,
                     slice_range):
         """Extend a view with a dataset slice."""
         endpoint = f"workspaces/{workspace_name}/views/{view_name}/extend"
-        json_data = {'dataset_name': dataset_name, 'slice_range': slice_range}
+        json_data = {'dataset_id': dataset_id, 'slice_range': slice_range}
         return self.put(endpoint, json=json_data)
 
     def add_column_to_view(self,
@@ -164,6 +164,25 @@ class API:
         json_data = {'query': query_str}
         response = self.post(endpoint, json=json_data)
         return response
+
+    def upload_storage_dataset(self, dataset_id, path, is_local, credentials):
+        """Add a dataset to the storage."""
+        endpoint = f"datasets/upload"
+        json_data = {'dataset_id': dataset_id,
+                     'path': path,
+                     'is_local': is_local,
+                     'credentials': credentials}
+        return self.post(endpoint, json=json_data)
+
+    def list_storage_datasets(self):
+        """Lists all datasets in the storage."""
+        endpoint = "datasets"
+        return self.get(endpoint)
+
+    def delete_storage_dataset(self, dataset_id):
+        """Delete a dataset from the storage."""
+        endpoint = f"datasets/{dataset_id}"
+        return self.delete(endpoint)
 
     @staticmethod
     def generate_user_agent() -> str:
