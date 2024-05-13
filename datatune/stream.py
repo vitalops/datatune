@@ -25,7 +25,7 @@ class Stream(IterableDataset):
             self.remote_url = source.get_remote_url
         elif isinstance(source, str):
             dataset = Storage.load_dataset(source)
-            self.remote_url = dataset.url
+            self.remote_url = dataset.get_metadata()['remote_url']
         else:
             raise DatatuneException("Source must be either a View instance or a storage dataset ID.")
         
