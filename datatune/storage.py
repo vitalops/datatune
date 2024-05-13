@@ -71,6 +71,16 @@ class Storage:
 
         return Dataset(dataset_id, self.api)
 
+    def load_dataset(self, dataset_id):
+        """
+        Fetches a dataset by its name from the workspace if it exists.
+        """
+        existing_datasets = self.list_datasets()
+        if dataset_id not in [dataset.dataset_id for dataset in existing_datasets]:
+            raise DatatuneException(f"Dataset '{dataset_id}' does not exist.")
+        return Dataset(dataset_id,
+                       api=self.api)
+
     def download_dataset(self, dataset_id, save_path):
         """
         Downloads a dataset from the Datatune platform.
