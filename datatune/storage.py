@@ -1,5 +1,6 @@
 import os
 import requests
+from typing import Dict, Optional, List
 from .api import API
 from .exceptions import DatatuneException
 from .dataset import Dataset
@@ -12,11 +13,14 @@ class Storage:
     and external storage including AWS S3, GCP, Azure, and Hugging Face.
     """
 
-    def __init__(self, api_key):
-        self.api = API(api_key=api_key, base_url=DATATUNE_STORAGE_API_BASE_URL)
-        self.credentials = {}
+    def __init__(self, api_key: str):
+        self.api: API = API(api_key=api_key, base_url=DATATUNE_STORAGE_API_BASE_URL)
+        self.credentials: Dict[str, Dict[str, str]] = {}
 
-    def set_credentials(self, aws=None, gcp=None, azure=None, huggingface=None):
+    def set_credentials(self, aws: Optional[Dict[str, str]] = None, 
+                        gcp: Optional[Dict[str, str]] = None, 
+                        azure: Optional[Dict[str, str]] = None, 
+                        huggingface: Optional[str] = None) -> None:
         """
         Sets the credentials for accessing external storage services.
 
@@ -35,7 +39,7 @@ class Storage:
         if huggingface:
             self.credentials['huggingface'] = huggingface
 
-    def upload_dataset(self, dataset_id, path, is_local=False, source=None):
+    def upload_dataset(self, dataset_id: str, path: str, is_local: bool = False, source: Optional[str] = None) -> Dataset:
         """
         Uploads a dataset to the Datatune platform, handling both local and external sources.
 
@@ -62,26 +66,22 @@ class Storage:
             if not credentials:
                 raise DatatuneException("No credentials provided for the specified source.")
 
-            response = self.api.upload_storage_dataset(dataset_id,
-                                                       path,
-                                                       is_local,
-                                                       credentials)
+            response = self.api.upload_storage_dataset(dataset_id, path, is_local, credentials)
             if not response.get('success'):
                 raise DatatuneException("Failed to upload dataset from external source.")
 
         return Dataset(dataset_id, self.api)
 
-    def load_dataset(self, dataset_id):
+    def load_dataset(self, dataset_id: str) -> Dataset:
         """
         Fetches a dataset by its name from the workspace if it exists.
         """
         existing_datasets = self.list_datasets()
         if dataset_id not in [dataset.dataset_id for dataset in existing_datasets]:
             raise DatatuneException(f"Dataset '{dataset_id}' does not exist.")
-        return Dataset(dataset_id,
-                       api=self.api)
+        return Dataset(dataset_id, self.api)
 
-    def download_dataset(self, dataset_id, save_path):
+    def download_dataset(self, dataset_id: str, save_path: str) -> Dataset:
         """
         Downloads a dataset from the Datatune platform.
         """
@@ -96,7 +96,7 @@ class Storage:
 
         return Dataset(dataset_id, self.api)
 
-    def delete_dataset(self, dataset_id):
+    def delete_dataset(self, dataset_id: str) -> 'Storage':
         """
         Deletes a dataset from the Datatune platform.
         """
@@ -105,14 +105,12 @@ class Storage:
             raise DatatuneException("Failed to delete dataset.")
         return self
 
-    def list_datasets(self):
+    def list_datasets(self) -> List[Dataset]:
         """
         Lists all datasets available in the Datatune platform.
         """
         response = self.api.list_storage_datasets()
         if not response.get('success'):
             raise DatatuneException("Failed to list datasets.")
-        datasets = [Dataset(dataset['dataset_id'],
-                            self.api) for dataset in response.get('data',
-                                                                  [])]
+        datasets = [Dataset(dataset['dataset_id'], self.api) for dataset in response.get('data', [])]
         return datasets
