@@ -22,7 +22,7 @@ class Stream(IterableDataset):
             DatatuneException: If neither a valid View instance nor a valid dataset ID is provided.
         """
         if isinstance(source, View):
-            self.remote_url = source.get_remote_url
+            self.remote_url = source.get_remote_url()
         elif isinstance(source, str):
             dataset = Storage.load_dataset(source)
             self.remote_url = dataset.get_metadata()['remote_url']
