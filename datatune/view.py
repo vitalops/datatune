@@ -151,17 +151,8 @@ class View:
 
     def get_remote_url(self):
         """
-        Fetches and returns the streaming configuration for the view by calling the API.
+        Fetches and returns the streaming url for the view by calling the API.
 
-        Args:
-            local_path (str): The local path where data should be cached.
-            shuffle (bool): Whether to shuffle the data.
-
-        Returns:
-            dict: A dictionary containing the config required for streaming
-
-        Raises:
-            DatatuneException: If the configuration cannot be retrieved.
         """
         remote_url = self.workspace.api.remote_stream_endpoint(self.name)
         if not remote_url:
