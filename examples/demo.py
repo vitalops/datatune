@@ -44,9 +44,9 @@ def train(batch):
     pass
 
 stream = dt.Stream(source=filtered_view)
-batches = stream.stream_batches()
+dataloader = stream.get_dataloader()
 
-for batch in batches:
+for batch in dataloader:
     train(batch)
 
 

@@ -26,14 +26,14 @@ print("Available datasets:", [ds.name for ds in datasets])
 
 # Create a stream instance using the dataset name
 stream = Stream(source='storage_dataset1')
-batches =  stream.stream_batches()
+dataloader =  stream.get_dataloader()
 
 # Simple training function to emulate processing streamed batches
-def train(batches):
+def train(dataloader):
     """
     Simple training loop to process streamed data.
     """
-    for batch in batches:
+    for batch in dataloader:
         # Simulate a processing step, e.g., feeding data into a machine learning model
         print("Processing batch of size:", batch.size())
 

@@ -1,6 +1,6 @@
 from typing import Union
 import torch
-from torch.utils.data import IterableDataset
+from torch.utils.data import IterableDataset, DataLoader
 from mosaicml import StreamingDataset
 from .exceptions import DatatuneException
 from .storage import Storage
@@ -34,25 +34,23 @@ class Stream(IterableDataset):
         self.batch_size = batch_size
 
     def __iter__(self):
-        return self.stream_batches()
+        return self.stream_data()
 
-    def stream_batches(self):
+    def stream_data(self):
         stream_dataset = StreamingDataset(
             remote=self.remote_url,
             local=self.local_dir,
-            shuffle=self.shuffle,
-            batch_size=self.batch_size
+            shuffle=self.shuffle
         )
-        batch_data = []
         for data in stream_dataset:
             processed_data = self.process_data(data)
-            batch_data.append(processed_data)
-            if len(batch_data) >= self.batch_size:
-                yield torch.tensor(batch_data, dtype=torch.float32)
-                batch_data = []
-        if batch_data:  # Yield the last batch if there's remaining data
-            yield torch.tensor(batch_data, dtype=torch.float32)
+            yield processed_data
 
     def process_data(self, data):
         # Placeholder for data processing logic, this needs to be customized based on data format
         return data
+
+    def get_dataloader(self):
+        return DataLoader(self, batch_size=self.batch_size, shuffle=self.shuffle)
+
+
