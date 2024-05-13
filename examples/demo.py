@@ -37,9 +37,18 @@ view.add_columns(column_name="manual_column", column_type="integer", default_val
 view.add_columns(column_name="manual_text", column_type="string", default_value="sample text")
 
 # Display the view using filter and sort functionality from Query class
-view.filter("new_column > 1")
-sorted_view = view.sort(columns=["manual_column"], ascending=False)
-print("Preview of view data:", sorted_view.display())
+filtered_view = view.filter("new_column > 1")
+print("Preview of view data:", filtered_view.display())
+
+def train(batch):
+    pass
+
+stream = dt.Stream(source=filtered_view)
+batches = stream.stream_batches()
+
+for batch in batches:
+    train(batch)
+
 
 # List available views in the workspace
 views = workspace.list_views()
