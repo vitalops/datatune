@@ -148,3 +148,22 @@ class View:
         if not response.get('success'):
             raise DatatuneException(f"Failed to select columns in view '{self.name}'.")
         return response
+
+    def get_remote_url(self):
+        """
+        Fetches and returns the streaming configuration for the view by calling the API.
+
+        Args:
+            local_path (str): The local path where data should be cached.
+            shuffle (bool): Whether to shuffle the data.
+
+        Returns:
+            dict: A dictionary containing the config required for streaming
+
+        Raises:
+            DatatuneException: If the configuration cannot be retrieved.
+        """
+        remote_url = self.workspace.api.remote_stream_endpoint(self.name)
+        if not remote_url:
+            raise DatatuneException(f"Failed to fetch stream endpoint for view '{self.name}'.")
+        return remote_url

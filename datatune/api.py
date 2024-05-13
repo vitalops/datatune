@@ -184,6 +184,20 @@ class API:
         endpoint = f"datasets/{dataset_id}"
         return self.delete(endpoint)
 
+    def remote_stream_endpoint(self, view_name):
+        """
+        Fetches the remote streaming URL for a given view.
+        """
+        endpoint = f"workspaces/views/{self.quote_string(view_name)}/stream"
+        try:
+            response = self.get(endpoint)
+            if 'url' in response:
+                return response['url']
+            else:
+                raise DatatuneException("Stream URL not provided in the response.")
+        except Exception as e:
+            raise DatatuneException(f"Failed to fetch stream endpoint for view '{view_name}': {str(e)}")
+
     @staticmethod
     def generate_user_agent() -> str:
         """Generate a user agent string with details about the platform."""
