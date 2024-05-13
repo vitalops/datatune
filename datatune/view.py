@@ -112,25 +112,6 @@ class View:
         if not response.get('success'):
             raise DatatuneException(f"Failed to filter view '{self.name}'.")
         return self
-    
-    def sort(self, columns, ascending=True):
-        """
-        Sorts the data in the view based on specified columns and order.
-
-        Args:
-            columns (str or list of str): The column or columns to sort the data by. If a list is provided,
-                                          data will be sorted by multiple columns in the order specified in the list.
-            ascending (bool, optional): Specifies the sort direction. True for ascending, False for descending.
-                                        Default is True.
-
-        Returns:
-            View: The current View instance with the applied sorting.
-
-        """
-        response = self.query.sort(columns, ascending)
-        if not response.get('success'):
-            raise DatatuneException(f"Failed to sort view '{self.name}'.")
-        return self
 
     def display(self, columns="*"):
         """

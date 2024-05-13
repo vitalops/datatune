@@ -25,14 +25,6 @@ class Query:
         res = self.execute(query_str)
         return res
 
-    def sort(self, columns, ascending=True):
-        order = 'ASC' if ascending else 'DESC'
-        if isinstance(columns, list):
-            columns = ", ".join(columns)
-        query_str = f"SELECT * FROM {self.view.name} ORDER BY {columns} {order}"
-        res = self.execute(query_str)
-        return res
-
     def execute(self, query_str):
         workspace_name = self.view.workspace.workspace_name
         view_name = self.view.name
