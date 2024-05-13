@@ -147,4 +147,4 @@ class View:
         response = self.query.select(columns)
         if not response.get('success'):
             raise DatatuneException(f"Failed to select columns in view '{self.name}'.")
-        return self
+        return response
