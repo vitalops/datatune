@@ -1,1 +1,5 @@
+pandas
+pyarrow
+requests
 s3fs
+torch
