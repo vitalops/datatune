@@ -2,7 +2,8 @@ from datatune.api import API
 from datatune.workspace import Workspace
 from datatune.entity import Entity
 from datatune.dataset import Dataset, DatasetSlice
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Any
+from datatune.extra_column import ExtraColumn
 
 
 class View:
@@ -33,3 +34,28 @@ class View:
         from datatune.extra_column import ExtraColumn
         column_ids = self.api.list_extra_columns(entity=self.entity.id, workspace=self.workspace.id, view=self.id)
         return [ExtraColumn(id=column_id, view=self) for column_id in column_ids]
+
+    def extend(self, dataset_slice: DatasetSlice) -> 'View':
+        self.api.extend_view(
+            entity=self.entity.id,
+            workspace=self.workspace.id,
+            view=self.id,
+            dataset=dataset_slice.dataset.id,
+            range=(dataset_slice.start, dataset_slice.end)
+        )
+        return self
+
+    def add_extra_column(self, column_name: str, column_type: str, labels: Optional[List[str]] = None, default_value: Any = None) -> 'View':
+        self.api.add_extra_column(
+            entity=self.entity.id,
+            workspace=self.workspace.id,
+            view=self.id,
+            column_name=column_name,
+            column_type=column_type,
+            labels=labels,
+            default_value=default_value
+        )
+        return self
+
+    def load_extra_column(self, column_id: str) -> 'View':
+        return ExtraColumn(id=column_id, view=self)
