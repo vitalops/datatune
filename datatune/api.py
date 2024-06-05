@@ -5,34 +5,26 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 from .exceptions import DatatuneException
 from .config import DATATUNE_API_BASE_URL
-from .constants import HTTP_RETRY_BACKOFF_FACTOR, HTTP_STATUS_FORCE_LIST, HTTP_TOTAL_RETRIES 
+from .constants import HTTP_RETRY_BACKOFF_FACTOR, HTTP_STATUS_FORCE_LIST, HTTP_TOTAL_RETRIES
+from typing import Optional, Dict, List, Tuple, Any
 
 
 class API:
-    """Handles HTTP operations for the datatune system"""
-
-    def __init__(self, api_key, base_url=None, verify_ssl=True, proxies=None, headers=None):
-        if not api_key:
-            raise DatatuneException("API key is required.")
-
+    def __init__(self, api_key: str, base_url: Optional[str]=None, verify_ssl: bool=True, proxies: Optional[Dict] = None, headers: Optional[Dict] = None):
         self.api_key = api_key
         self.base_url = base_url or DATATUNE_API_BASE_URL
         self.session = requests.Session()
-        # Initialize with default headers
         default_headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "User-Agent": self.generate_user_agent(),
         }
-        # Update with any custom headers passed during initialization
-        if headers:
-            default_headers.update(headers)
-
+        headers = headers or {}
+        default_headers.update(headers)
         self.session.headers.update(default_headers)
         self.session.verify = verify_ssl
-        if proxies:
-            self.session.proxies.update(proxies)
-
+        proxies = proxies or {}
+        self.session.proxies.update(proxies)
         retry_strategy = Retry(
             total=HTTP_TOTAL_RETRIES,
             backoff_factor=HTTP_RETRY_BACKOFF_FACTOR,
@@ -43,15 +35,15 @@ class API:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount('https://', adapter)
 
-    def request(self, method, endpoint, params=None, json=None, files=None):
-        """Send a HTTP request and handle response."""
+    def request(self, method: str, endpoint: str, params: Optional[Dict]=None, json: Optional[Dict]=None, files: Optional[Dict]=None) -> Dict:
+        assert method in {'GET', 'POST', 'PUT', 'DELETE'}
         url = f"{self.base_url}/{endpoint}"
         response = self.session.request(method, url, params=params, json=json, files=files)
         if response.status_code != 200:
-            self.raise_for_status(response)
+            self.handle_error(response)
         return response.json()
 
-    def raise_for_status(self, response):
+    def handle_error(self, response: requests.Response) -> None:
         """Raise specific exceptions based on the HTTP status code."""
         try:
             message = response.json().get("error", response.text)
@@ -60,150 +52,133 @@ class API:
         error = DatatuneException(message, response.status_code)
         raise error
 
-    def get(self, endpoint, params=None):
+    def get(self, endpoint: str, params: Optional[Dict]=None) -> Dict:
         """Wrapper for GET requests."""
         return self.request('GET', endpoint, params=params)
 
-    def post(self, endpoint, json=None, files=None):
+    def post(self, endpoint: str, json: Optional[Dict]=None, files: Optional[Dict]=None) -> Dict:
         """Wrapper for POST requests."""
         return self.request('POST', endpoint, json=json, files=files)
 
-    def put(self, endpoint, json=None):
+    def put(self, endpoint: str, json: Optional[Dict]=None) -> Dict:
         """Wrapper for PUT requests."""
         return self.request('PUT', endpoint, json=json)
 
-    def delete(self, endpoint, json=None):
+    def delete(self, endpoint: str, json: Optional[Dict]=None) -> Dict:
         """Wrapper for DELETE requests."""
         return self.request('DELETE', endpoint, json=json)
 
-    def get_presigned_url(self, action, dataset_id):
-        """Request a presigned URL for operations like upload/download."""
-        endpoint = f"presigned/{action}/{dataset_id}"
-        response = self.session.get(f"{self.base_url}/{endpoint}")
-        if response.status_code == 200:
-            return response.json()['url']
-        else:
-            raise DatatuneException("Failed to obtain presigned URL.")
 
-    def add_dataset(self, workspace_name, dataset_id, path, is_local,
-                    credentials=None,
-                    file=None):
-        """Add a dataset to the workspace."""
-        endpoint = f"workspaces/{workspace_name}/datasets"
-        if is_local and file:
-            files = {'file': file}
-            data = {'dataset_id': dataset_id}
-            return self.post(endpoint + "/upload", files=files, json=data)
-        else:
-            json_data = {
-                'dataset_id': dataset_id,
-                'path': path,
-                'credentials': credentials
+    def add_dataset(self, entity: str, workspace: str, path: str, creds_key: Optional[str]=None, name: Optional[str]=None) -> str:
+        resp = self.get(
+            endpoint="add_dataset",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "path": path,
+                "creds_key": creds_key,
+                "name": name,
             }
-            return self.post(endpoint, json=json_data)
+        )
+        return resp["dataset_id"]
 
-    def delete_dataset(self, workspace_name, dataset_id):
-        """Delete a dataset from the workspace."""
-        endpoint = f"workspaces/{workspace_name}/datasets/{dataset_id}"
-        return self.delete(endpoint)
+    def delete_dataset(self, entity: str, workspace: str, dataset: str) -> None:
+        self.get(
+            endpoint="delete_dataset",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "dataset": dataset,
+            }
+        )
 
-    def list_datasets(self, workspace_name):
-        """List all datasets in the workspace."""
-        endpoint = f"workspaces/{workspace_name}/datasets"
-        return self.get(endpoint)
+    def list_datasets(self, entity: str, workspace: str) -> List[str]:
+        return self.get(
+            endpoint="list_datasets",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+            }
+        )["datasets"]
 
-    def create_view(self, workspace_name, view_name):
-        """Create a new view in the workspace."""
-        endpoint = f"workspaces/{workspace_name}/views"
-        json_data = {'name': view_name}
-        return self.post(endpoint, json=json_data)
 
-    def delete_view(self, workspace_name, view_name):
-        """Delete a view from the workspace."""
-        endpoint = f"workspaces/{workspace_name}/views/{view_name}"
-        return self.delete(endpoint)
+    def create_view(self, entity: str, workspace: str, view_name: Optional[str]=None):
+        return self.get(
+            endpoint="create_view",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "view": view_name,
+            }
+        )["id"]
 
-    def list_views(self, workspace_name):
-        """List all views in the workspace."""
-        endpoint = f"workspaces/{workspace_name}/views"
-        return self.get(endpoint)
+    def delete_view(self, entity: str, workspace: str, view: str) -> None:
+        self.get(
+            endpoint="delete_view",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "view": view,
+            }
+        )
 
-    def load_view(self, workspace_name, view_name):
-        """Fetch a view by its name from the workspace."""
-        endpoint = f"workspaces/{workspace_name}/views/{view_name}"
-        return self.get(endpoint)
+    def list_views(self, entity: str, workspace: str) -> List[str]:
+        return self.get(
+            endpoint="list_views",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+            }
+        )["views"]
+
+    def get_view(self, entity: str, workspace: str, view: str) -> Dict:
+        return self.get(
+            endpoint="get_view",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "view": view,
+            }
+        )
 
     def extend_view(self,
-                    workspace_name,
-                    view_name,
-                    dataset_id,
-                    slice_range):
-        """Extend a view with a dataset slice."""
-        endpoint = f"workspaces/{workspace_name}/views/{view_name}/extend"
-        json_data = {'dataset_id': dataset_id, 'slice_range': slice_range}
-        return self.put(endpoint, json=json_data)
+                    entity: str,
+                    workspace: str,
+                    view: str,
+                    dataset: str,
+                    range: Optional[Tuple[int, int]]=None) -> None:
+        return self.get(
+            endpoint="extend_view",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "view": view,
+                "dataset": dataset,
+                "range": range,
+            }
+        )
 
-    def add_column_to_view(self,
-                           workspace_name,
-                           view_name,
-                           column_name,
-                           column_type,
-                           default_value=None):
-        """Add a single column to a view."""
-        endpoint = f"workspaces/{workspace_name}/views/{view_name}/columns"
-        json_data = {'column_name': column_name,
-                     'column_type': column_type,
-                     'default_value': default_value}
-        return self.post(endpoint, json=json_data)
+    def add_column(self,
+                            entity: str,
+                            workspace: str,
+                            view: str,
+                            column_name: str,
+                            column_type: str,
+                            default_value: Any=None) -> str:
+        return self.get(
+            endpoint="add_column",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "view": view,
+                "column_name": column_name,
+                "column_type": column_type,
+                "default_value": default_value,
+            }
+        )["column_id"]
 
-    def execute_query(self, workspace_name, view_name, query_str):
-        """
-        Execute a SQL query against a specified view in the workspace.
-        """
-        endpoint = f"workspaces/{workspace_name}/views/{view_name}/query"
-        json_data = {'query': query_str}
-        response = self.post(endpoint, json=json_data)
-        return response
-
-    def upload_storage_dataset(self, dataset_id, path, is_local, credentials):
-        """Add a dataset to the storage."""
-        endpoint = f"datasets/upload"
-        json_data = {'dataset_id': dataset_id,
-                     'path': path,
-                     'is_local': is_local,
-                     'credentials': credentials}
-        return self.post(endpoint, json=json_data)
-
-    def list_storage_datasets(self):
-        """Lists all datasets in the storage."""
-        endpoint = "datasets"
-        return self.get(endpoint)
-
-    def delete_storage_dataset(self, dataset_id):
-        """Delete a dataset from the storage."""
-        endpoint = f"datasets/{dataset_id}"
-        return self.delete(endpoint)
-
-    def remote_stream_endpoint(self, view_name):
-        """
-        Fetches the remote streaming URL for a given view.
-        """
-        endpoint = f"workspaces/views/{self.quote_string(view_name)}/stream"
-        try:
-            response = self.get(endpoint)
-            if 'url' in response:
-                return response['url']
-            else:
-                raise DatatuneException("Stream URL not provided in the response.")
-        except Exception as e:
-            raise DatatuneException(f"Failed to fetch stream endpoint for view '{view_name}': {str(e)}")
 
     @staticmethod
     def generate_user_agent() -> str:
         """Generate a user agent string with details about the platform."""
         return f"Datatune/{platform.system()} {platform.release()} Python/{platform.python_version()}"
-
-    @staticmethod
-    def quote_string(text):
-        """Safely quote strings to be used in URL paths."""
-        return urllib.parse.quote(text, safe='')
