@@ -100,6 +100,44 @@ class API:
                 "workspace": workspace,
             }
         )["datasets"]
+    
+    def list_workspaces(self, entity: str) -> List[str]:
+        return self.get(
+            endpoint="list_workspaces",
+            params={
+                "entity": entity,
+            }
+        )["workspaces"]
+    
+    def create_workspace(self, entity: str, name: str) -> str:
+        return self.get(
+            endpoint="create_workspace",
+            params={
+                "entity": entity,
+                "name": name,
+            }
+        )["id"]
+    
+
+    def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
+        return self.get(
+            endpoint="list_extra_columns",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "view": view,
+            }
+        )["columns"]
+
+    def delete_workspace(self, entity: str, workspace: str) -> None:
+        raise Exception("Unsafe operation")
+        self.get(
+            endpoint="delete_workspace",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+            }
+        )
 
 
     def create_view(self, entity: str, workspace: str, view_name: Optional[str]=None):
@@ -131,13 +169,51 @@ class API:
             }
         )["views"]
 
-    def get_view(self, entity: str, workspace: str, view: str) -> Dict:
+    def get_view(self, id: str, entity: str, workspace: str) -> Dict:
         return self.get(
             endpoint="get_view",
             params={
                 "entity": entity,
                 "workspace": workspace,
+                "id": id,
+            }
+        )
+
+    def get_dataset(self, id: str, entity: str, workspace: str) -> Dict:
+        return self.get(
+            endpoint="get_dataset",
+            params={
+                "entity": entity,
+                "workspace": workspace,
+                "id": id,
+            }
+        )
+
+    def get_extra_column(self, id: str, entity: str, workspace: str, view: str) -> Dict:
+        return self.get(
+            endpoint="get_extra_column",
+            params={
+                "entity": entity,
+                "workspace": workspace,
                 "view": view,
+                "id": id,
+            }
+        )
+
+    def get_entity(self, id: str) -> Dict:
+        return self.get(
+            endpoint="get_entity",
+            params={
+                "id": id,
+            }
+        )
+    
+    def get_workspace(self, id: str, entity: str) -> Dict:
+        return self.get(
+            endpoint="get_workspace",
+            params={
+                "entity": entity,
+                "id": id,
             }
         )
 
@@ -158,21 +234,23 @@ class API:
             }
         )
 
-    def add_column(self,
+    def add_extra_column(self,
                             entity: str,
                             workspace: str,
                             view: str,
                             column_name: str,
-                            column_type: str,
+                            column_type: str,  # one of "int", "float", "str", "bool", "label"
+                            labels: Optional[List[str]]=None,
                             default_value: Any=None) -> str:
         return self.get(
-            endpoint="add_column",
+            endpoint="add_extra_column",
             params={
                 "entity": entity,
                 "workspace": workspace,
                 "view": view,
                 "column_name": column_name,
                 "column_type": column_type,
+                "labels": labels,
                 "default_value": default_value,
             }
         )["column_id"]
