@@ -35,7 +35,8 @@ class View:
         column_ids = self.api.list_extra_columns(entity=self.entity.id, workspace=self.workspace.id, view=self.id)
         return [ExtraColumn(id=column_id, view=self) for column_id in column_ids]
 
-    def extend(self, dataset_slice: DatasetSlice) -> 'View':
+    def extend(self, dataset: Dataset, start: Optional[int] = None, end: Optional[int] = None) -> 'View':
+        dataset_slice = DatasetSlice(dataset=dataset, start=start, end=end)
         self.api.extend_view(
             entity=self.entity.id,
             workspace=self.workspace.id,
