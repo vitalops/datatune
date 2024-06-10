@@ -1,7 +1,7 @@
 from datatune.api import API
 from datatune.entity import Entity
 from datatune.dataset import Dataset, DatasetSlice
-from typing import List, Optional, Tuple, Any, TYPE_CHECKING
+from typing import List, Optional, Union, Tuple, Any, TYPE_CHECKING
 from datatune.extra_column import ExtraColumn
 
 
@@ -38,8 +38,18 @@ class View:
         column_ids = self.api.list_extra_columns(entity=self.entity.id, workspace=self.workspace.id, view=self.id)
         return [ExtraColumn(id=column_id, view=self) for column_id in column_ids]
 
-    def extend(self, dataset: Dataset, start: Optional[int] = None, end: Optional[int] = None) -> 'View':
-        dataset_slice = DatasetSlice(dataset=dataset, start=start, end=end)
+    def extend(self, data: Union[Dataset, DatasetSlice], start: Optional[int] = None, end: Optional[int] = None) -> 'View':
+        if isinstance(data, Dataset):
+            dataset_slice = DatasetSlice(dataset=data, start=start, end=end)
+        elif isinstance(data, DatasetSlice):
+            dataset_slice = data
+            if start is not None:
+                dataset_slice.start = start
+            if end is not None:
+                dataset_slice.end = end
+        else:
+            raise TypeError("data must be either a Dataset or a DatasetSlice")
+
         self.api.extend_view(
             entity=self.entity.id,
             workspace=self.workspace.id,
