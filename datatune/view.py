@@ -1,10 +1,13 @@
 from datatune.api import API
-from datatune.workspace import Workspace
 from datatune.entity import Entity
 from datatune.dataset import Dataset, DatasetSlice
-from typing import List, Optional, Tuple, Any
+from typing import List, Optional, Tuple, Any, TYPE_CHECKING
 from datatune.extra_column import ExtraColumn
 
+
+if TYPE_CHECKING:
+    from datatune.workspace import Workspace  # This import is only processed by type checkers and never at runtime.
+    
 
 class View:
     def __init__(self, id: str, workspace: Workspace):

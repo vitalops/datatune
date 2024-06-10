@@ -1,7 +1,10 @@
 from datatune.api import API
-from datatune.workspace import Workspace
 from datatune.entity import Entity
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from datatune.workspace import Workspace  # This import is only processed by type checkers and never at runtime.
 
 
 class Dataset:
