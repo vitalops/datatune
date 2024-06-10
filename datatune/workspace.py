@@ -46,8 +46,8 @@ class Workspace:
     def load_dataset(self, id: str) -> Dataset:
         return Dataset(id=id, workspace=self)
 
-    def delete_dataset(self, dataset_id: str) -> None:
-        self.api.delete_dataset(self.entity.id, self.id, dataset_id)
+    def delete_dataset(self, id: str) -> None:
+        self.api.delete_dataset(self.entity.id, self.id, id)
 
     def create_view(self, view_name: str) -> View:
         view_id = self.api.create_view(self.entity.id,

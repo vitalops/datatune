@@ -71,5 +71,5 @@ class View:
         )
         return self
 
-    def load_extra_column(self, column_id: str) -> 'ExtraColumn':
-        return ExtraColumn(id=column_id, view=self)
+    def load_extra_column(self, id: str) -> 'ExtraColumn':
+        return ExtraColumn(id=id, view=self)
