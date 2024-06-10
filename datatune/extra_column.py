@@ -3,8 +3,10 @@ from datatune.view import View
 from datatune.entity import Entity
 from datatune.workspace import Workspace
 from enum import Enum
-from typing import List
+from typing import List, TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from datatune.view import View  # This import is only processed by type checkers and never at runtime.
 
 class ColumnType(Enum):
     INT = "int"
