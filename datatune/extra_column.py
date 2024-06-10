@@ -1,5 +1,4 @@
 from datatune.api import API
-from datatune.view import View
 from datatune.entity import Entity
 from datatune.workspace import Workspace
 from enum import Enum
