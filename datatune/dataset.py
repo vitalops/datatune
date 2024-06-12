@@ -1,36 +1,33 @@
-from .exceptions import DatatuneException
+from datatune.api import API
+from datatune.entity import Entity
+from typing import Optional, TYPE_CHECKING
+from datatune.workspace import Workspace
+
 
 class Dataset:
-    """
-    Represents a dataset within the Datatune platform.
-
-    Attributes:
-        api (API): An instance of the API class for HTTP requests. If no workspace is provided,
-                   this should be set directly.
-        workspace (Optional[Workspace]): The workspace instance to which the dataset belongs, if any.
-        name (str): The name of the dataset.
-        id (str): The unique identifier of the dataset.
-    """
-    def __init__(self, dataset_id, api=None, workspace=None):
-        self.dataset_id = dataset_id
+    def __init__(self, id: str, workspace: Workspace):
+        self.id = id
         self.workspace = workspace
-        if workspace:
-            self.api = workspace.api
-        elif api:
-            self.api = api
-        else:
-            raise ValueError("API instance must be provided if workspace is not specified.")
 
-    def get_metadata(self):
-        """
-        Retrieves metadata about the dataset, including dimensions, column names,
-        types, or any other metadata stored in the dataset's catalogue.
+    @property
+    def entity(self) -> Entity:
+        return self.workspace.entity
 
-        Returns:
-            dict: A dictionary containing metadata information.
-        """
-        try:
-            metadata = self.api.get(f"datasets/{self.dataset_id}/metadata")
-            return metadata
-        except Exception as e:
-            raise DatatuneException(f"Failed to retrieve metadata for {self.dataset_id}: {str(e)}")
+    @property
+    def name(self) -> str:
+        return self.workspace.api.get_dataset(
+            self.id, entity=self.workspace.entity.id, workspace=self.workspace.id
+        )["name"]
+
+    @property
+    def api(self) -> API:
+        return self.workspace.api
+
+
+class DatasetSlice:
+    def __init__(
+        self, dataset: Dataset, start: Optional[int] = None, end: Optional[int] = None
+    ):
+        self.dataset = dataset
+        self.start = start
+        self.end = end

@@ -1,141 +1,101 @@
-import pandas as pd
-from .exceptions import DatatuneException
-from .query import Query
+from datatune.api import API
+from datatune.entity import Entity
+from datatune.dataset import Dataset, DatasetSlice
+from typing import List, Optional, Union, Tuple, Any
+from datatune.workspace import Workspace
 
 
 class View:
-    """
-    Represents a view within a workspace on the Datatune platform.
-
-    A view is a user-defined subset of data organized from one or more datasets. This class
-    provides functionalities to modify and manage the structure of a view, such as extending it
-    with additional dataset slices or adding new columns, as well as filtering and sorting the data.
-    
-    Attributes:
-        workspace (Workspace): The workspace to which this view belongs.
-        name (str): The name of the view.
-
-    """
-
-    def __init__(self, workspace, name):
+    def __init__(self, id: str, workspace: Workspace):
+        self.id = id
         self.workspace = workspace
-        self.name = name
-        self.query = Query(self)
 
-    def extend(self, dataset_id, slice_range):
-        """Extends a view with a slice of a dataset."""
-        workspace_name = self.workspace.workspace_name
-        view_name = self.name
-        response = self.workspace.api.extend_view(workspace_name,
-                                                  view_name,
-                                                  dataset_id,
-                                                  slice_range)
-        if not response.get('success'):
-            raise DatatuneException(f"Failed to extend view '{self.name}'.")
-        return self
+    @property
+    def entity(self) -> Entity:
+        return self.workspace.entity
 
+    @property
+    def name(self) -> str:
+        return self.workspace.api.get_view(
+            self.id, entity=self.workspace.entity.id, workspace=self.workspace.id
+        )["name"]
 
-    def add_columns(self, data=None, column_name=None, column_type="string", default_value=None):
-        """
-        Adds columns to the view either from a DataFrame/Series or by specifying column details.
+    @property
+    def api(self) -> API:
+        return self.workspace.api
 
-        Args:
-            data (pd.DataFrame or pd.Series or str, optional): A DataFrame, Series, or path to a Parquet file containing the columns to add.
-            column_name (str, optional): Name of the column to add if not adding from `data` and if `data` is a Series without a name.
-            column_type (str, optional): Type of the column if `column_name` is specified.
-            default_value (optional): Default value for the column if `column_name` is specified.
+    @property
+    def dataset_slices(self) -> List[DatasetSlice]:
+        from datatune.dataset import DatasetSlice
 
-        Returns:
-            View: The view instance to allow method chaining.
-
-        Raises:
-            DatatuneException: If the API call fails or the input is invalid.
-        """
-        if data is not None:
-            if isinstance(data, pd.DataFrame):
-                for column in data.columns:
-                    self.workspace.api.add_column_to_view(
-                        self.workspace.workspace_name,
-                        self.name,
-                        column,
-                        data[column].dtype.name
-                    )
-            elif isinstance(data, pd.Series):
-                column_name = data.name if data.name else column_name
-                if not column_name:
-                    raise ValueError("Column name must be provided for unnamed Series.")
-                self.workspace.api.add_column_to_view(
-                    self.workspace.workspace_name,
-                    self.name,
-                    column_name,
-                    data.dtype.name
-                )
-            elif isinstance(data, str) and data.endswith('.parquet'):
-                try:
-                    df = pd.read_parquet(data)
-                    for column in df.columns:
-                        self.workspace.api.add_column_to_view(
-                            self.workspace.workspace_name,
-                            self.name,
-                            column,
-                            df[column].dtype.name
-                        )
-                except Exception as e:
-                    raise DatatuneException(f"Failed to load data from {data}: {str(e)}")
-            else:
-                raise ValueError("Unsupported data input. Provide a DataFrame, Series, or a Parquet file path.")
-        elif column_name:
-            self.workspace.api.add_column_to_view(
-                self.workspace.workspace_name,
-                self.name,
-                column_name,
-                column_type,
-                default_value
+        slices: List[Tuple[str, Tuple[Optional[int], Optional[int]]]] = (
+            self.api.get_view(
+                self.id, entity=self.entity.id, workspace=self.workspace.id
+            )["dataset_slices"]
+        )
+        return [
+            DatasetSlice(
+                dataset=Dataset(id=dataset_id, workspace=self.workspace),
+                start=start,
+                end=end,
             )
+            for dataset_id, (start, end) in slices
+        ]
+
+    @property
+    def extra_columns(self) -> List:
+        from datatune.extra_column import ExtraColumn
+
+        column_ids = self.api.list_extra_columns(
+            entity=self.entity.id, workspace=self.workspace.id, view=self.id
+        )
+        return [ExtraColumn(id=column_id, view=self) for column_id in column_ids]
+
+    def extend(
+        self,
+        data: Union[Dataset, DatasetSlice],
+        start: Optional[int] = None,
+        end: Optional[int] = None,
+    ) -> "View":
+        if isinstance(data, Dataset):
+            dataset_slice = DatasetSlice(dataset=data, start=start, end=end)
+        elif isinstance(data, DatasetSlice):
+            dataset_slice = data
+            if start is not None:
+                dataset_slice.start = start
+            if end is not None:
+                dataset_slice.end = end
         else:
-            raise ValueError("Either provide a data source or column details.")
+            raise TypeError("data must be either a Dataset or a DatasetSlice")
+
+        self.api.extend_view(
+            entity=self.entity.id,
+            workspace=self.workspace.id,
+            view=self.id,
+            dataset=dataset_slice.dataset.id,
+            range=(dataset_slice.start, dataset_slice.end),
+        )
         return self
 
-    def filter(self, condition):
-        """
-        Applies a filtering condition to the data within the view
-
-        Args:
-            condition (str): A SQL condition string used for filtering the data. 
-                             This should be a valid SQL WHERE clause condition, such as "age > 30" or "status = 'active'".
-
-        Returns:
-            View: The current View instance with the applied filter condition.
-
-        """
-        response = self.query.filter(condition)
-        if not response.get('success'):
-            raise DatatuneException(f"Failed to filter view '{self.name}'.")
+    def add_extra_column(
+        self,
+        column_name: str,
+        column_type: str,
+        labels: Optional[List[str]] = None,
+        default_value: Any = None,
+    ) -> "View":
+        self.api.add_extra_column(
+            entity=self.entity.id,
+            workspace=self.workspace.id,
+            view=self.id,
+            column_name=column_name,
+            column_type=column_type,
+            labels=labels,
+            default_value=default_value,
+        )
         return self
 
-    def display(self, columns="*"):
-        """
-        Displays data from the view.
+    def get_extra_column(self, id: str):
+        from datatune.extra_column import ExtraColumn
 
-        Args:
-            columns (str or list of str, optional): The column or columns to be selected for display.
-                                                    Defaults to "*" which selects all columns.
-
-        Returns:
-            View: The current View instance after selecting the specified columns.
-
-        """
-        response = self.query.select(columns)
-        if not response.get('success'):
-            raise DatatuneException(f"Failed to select columns in view '{self.name}'.")
-        return response
-
-    def get_remote_url(self):
-        """
-        Fetches and returns the streaming url for the view by calling the API.
-
-        """
-        remote_url = self.workspace.api.remote_stream_endpoint(self.name)
-        if not remote_url:
-            raise DatatuneException(f"Failed to fetch stream endpoint for view '{self.name}'.")
-        return remote_url
+        return ExtraColumn(id=id, view=self)

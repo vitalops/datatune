@@ -1,5 +1,6 @@
 from typing import Dict
 
+
 class DatatuneException(Exception):
     """Generic DatatuneException class for all datatune errors"""
 
@@ -13,7 +14,11 @@ class DatatuneException(Exception):
         if errcode:
             self.code = errcode
 
-        super().__init__(f"<Response [{self.code}]> {message}" if self.code else f"<Response> {message}")
+        super().__init__(
+            f"<Response [{self.code}]> {message}"
+            if self.code
+            else f"<Response> {message}"
+        )
 
 
 class DatatuneBadRequest(DatatuneException):
