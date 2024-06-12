@@ -1,6 +1,5 @@
 from datatune.api import API
 from typing import List
-# enum for entity type
 from enum import Enum
 
 
@@ -13,12 +12,15 @@ class Entity:
     def __init__(self, id: str, api: API):
         self.id = id
         self.api = api
-    
+
     @property
     def workspaces(self) -> List[str]:
         from datatune.workspace import Workspace
+
         workspace_ids = self.api.list_workspaces(self.id)
-        return [Workspace(id=workspace_id, entity=self) for workspace_id in workspace_ids]
+        return [
+            Workspace(id=workspace_id, entity=self) for workspace_id in workspace_ids
+        ]
 
     @property
     def name(self) -> str:

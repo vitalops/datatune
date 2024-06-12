@@ -5,12 +5,23 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 from .exceptions import DatatuneException
 from .config import DATATUNE_API_BASE_URL
-from .constants import HTTP_RETRY_BACKOFF_FACTOR, HTTP_STATUS_FORCE_LIST, HTTP_TOTAL_RETRIES
+from .constants import (
+    HTTP_RETRY_BACKOFF_FACTOR,
+    HTTP_STATUS_FORCE_LIST,
+    HTTP_TOTAL_RETRIES,
+)
 from typing import Optional, Dict, List, Tuple, Any
 
 
 class API:
-    def __init__(self, api_key: str, base_url: Optional[str]=None, verify_ssl: bool=True, proxies: Optional[Dict] = None, headers: Optional[Dict] = None):
+    def __init__(
+        self,
+        api_key: str,
+        base_url: Optional[str] = None,
+        verify_ssl: bool = True,
+        proxies: Optional[Dict] = None,
+        headers: Optional[Dict] = None,
+    ):
         self.api_key = api_key
         self.base_url = base_url or DATATUNE_API_BASE_URL
         self.session = requests.Session()
@@ -29,16 +40,25 @@ class API:
             total=HTTP_TOTAL_RETRIES,
             backoff_factor=HTTP_RETRY_BACKOFF_FACTOR,
             status_forcelist=HTTP_STATUS_FORCE_LIST,
-            allowed_methods=frozenset(['GET', 'POST', 'PUT', 'DELETE']),
-            raise_on_status=False
+            allowed_methods=frozenset(["GET", "POST", "PUT", "DELETE"]),
+            raise_on_status=False,
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.session.mount('https://', adapter)
+        self.session.mount("https://", adapter)
 
-    def request(self, method: str, endpoint: str, params: Optional[Dict]=None, json: Optional[Dict]=None, files: Optional[Dict]=None) -> Dict:
-        assert method in {'GET', 'POST', 'PUT', 'DELETE'}
+    def request(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[Dict] = None,
+        json: Optional[Dict] = None,
+        files: Optional[Dict] = None,
+    ) -> Dict:
+        assert method in {"GET", "POST", "PUT", "DELETE"}
         url = f"{self.base_url}/{endpoint}"
-        response = self.session.request(method, url, params=params, json=json, files=files)
+        response = self.session.request(
+            method, url, params=params, json=json, files=files
+        )
         if response.status_code != 200:
             self.handle_error(response)
         return response.json()
@@ -52,24 +72,32 @@ class API:
         error = DatatuneException(message, response.status_code)
         raise error
 
-    def get(self, endpoint: str, params: Optional[Dict]=None) -> Dict:
+    def get(self, endpoint: str, params: Optional[Dict] = None) -> Dict:
         """Wrapper for GET requests."""
-        return self.request('GET', endpoint, params=params)
+        return self.request("GET", endpoint, params=params)
 
-    def post(self, endpoint: str, json: Optional[Dict]=None, files: Optional[Dict]=None) -> Dict:
+    def post(
+        self, endpoint: str, json: Optional[Dict] = None, files: Optional[Dict] = None
+    ) -> Dict:
         """Wrapper for POST requests."""
-        return self.request('POST', endpoint, json=json, files=files)
+        return self.request("POST", endpoint, json=json, files=files)
 
-    def put(self, endpoint: str, json: Optional[Dict]=None) -> Dict:
+    def put(self, endpoint: str, json: Optional[Dict] = None) -> Dict:
         """Wrapper for PUT requests."""
-        return self.request('PUT', endpoint, json=json)
+        return self.request("PUT", endpoint, json=json)
 
-    def delete(self, endpoint: str, json: Optional[Dict]=None) -> Dict:
+    def delete(self, endpoint: str, json: Optional[Dict] = None) -> Dict:
         """Wrapper for DELETE requests."""
-        return self.request('DELETE', endpoint, json=json)
+        return self.request("DELETE", endpoint, json=json)
 
-
-    def add_dataset(self, entity: str, workspace: str, path: str, creds_key: Optional[str]=None, name: Optional[str]=None) -> str:
+    def add_dataset(
+        self,
+        entity: str,
+        workspace: str,
+        path: str,
+        creds_key: Optional[str] = None,
+        name: Optional[str] = None,
+    ) -> str:
         resp = self.get(
             endpoint="add_dataset",
             params={
@@ -78,7 +106,7 @@ class API:
                 "path": path,
                 "creds_key": creds_key,
                 "name": name,
-            }
+            },
         )
         return resp["dataset_id"]
 
@@ -89,7 +117,7 @@ class API:
                 "entity": entity,
                 "workspace": workspace,
                 "dataset": dataset,
-            }
+            },
         )
 
     def list_datasets(self, entity: str, workspace: str) -> List[str]:
@@ -98,26 +126,25 @@ class API:
             params={
                 "entity": entity,
                 "workspace": workspace,
-            }
+            },
         )["datasets"]
-    
+
     def list_workspaces(self, entity: str) -> List[str]:
         return self.get(
             endpoint="list_workspaces",
             params={
                 "entity": entity,
-            }
+            },
         )["workspaces"]
-    
+
     def create_workspace(self, entity: str, name: str) -> str:
         return self.get(
             endpoint="create_workspace",
             params={
                 "entity": entity,
                 "name": name,
-            }
+            },
         )["id"]
-    
 
     def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
         return self.get(
@@ -126,7 +153,7 @@ class API:
                 "entity": entity,
                 "workspace": workspace,
                 "view": view,
-            }
+            },
         )["columns"]
 
     def delete_workspace(self, entity: str, workspace: str) -> None:
@@ -136,18 +163,17 @@ class API:
             params={
                 "entity": entity,
                 "workspace": workspace,
-            }
+            },
         )
 
-
-    def create_view(self, entity: str, workspace: str, view_name: Optional[str]=None):
+    def create_view(self, entity: str, workspace: str, view_name: Optional[str] = None):
         return self.get(
             endpoint="create_view",
             params={
                 "entity": entity,
                 "workspace": workspace,
                 "view": view_name,
-            }
+            },
         )["id"]
 
     def delete_view(self, entity: str, workspace: str, view: str) -> None:
@@ -157,7 +183,7 @@ class API:
                 "entity": entity,
                 "workspace": workspace,
                 "view": view,
-            }
+            },
         )
 
     def list_views(self, entity: str, workspace: str) -> List[str]:
@@ -166,7 +192,7 @@ class API:
             params={
                 "entity": entity,
                 "workspace": workspace,
-            }
+            },
         )["views"]
 
     def get_view(self, id: str, entity: str, workspace: str) -> Dict:
@@ -176,7 +202,7 @@ class API:
                 "entity": entity,
                 "workspace": workspace,
                 "id": id,
-            }
+            },
         )
 
     def get_dataset(self, id: str, entity: str, workspace: str) -> Dict:
@@ -186,7 +212,7 @@ class API:
                 "entity": entity,
                 "workspace": workspace,
                 "id": id,
-            }
+            },
         )
 
     def get_extra_column(self, id: str, entity: str, workspace: str, view: str) -> Dict:
@@ -197,7 +223,7 @@ class API:
                 "workspace": workspace,
                 "view": view,
                 "id": id,
-            }
+            },
         )
 
     def get_entity(self, id: str) -> Dict:
@@ -205,24 +231,26 @@ class API:
             endpoint="get_entity",
             params={
                 "id": id,
-            }
+            },
         )
-    
+
     def get_workspace(self, id: str, entity: str) -> Dict:
         return self.get(
             endpoint="get_workspace",
             params={
                 "entity": entity,
                 "id": id,
-            }
+            },
         )
 
-    def extend_view(self,
-                    entity: str,
-                    workspace: str,
-                    view: str,
-                    dataset: str,
-                    range: Optional[Tuple[int, int]]=None) -> None:
+    def extend_view(
+        self,
+        entity: str,
+        workspace: str,
+        view: str,
+        dataset: str,
+        range: Optional[Tuple[int, int]] = None,
+    ) -> None:
         return self.get(
             endpoint="extend_view",
             params={
@@ -231,17 +259,19 @@ class API:
                 "view": view,
                 "dataset": dataset,
                 "range": range,
-            }
+            },
         )
 
-    def add_extra_column(self,
-                            entity: str,
-                            workspace: str,
-                            view: str,
-                            column_name: str,
-                            column_type: str,  # one of "int", "float", "str", "bool", "label"
-                            labels: Optional[List[str]]=None,
-                            default_value: Any=None) -> str:
+    def add_extra_column(
+        self,
+        entity: str,
+        workspace: str,
+        view: str,
+        column_name: str,
+        column_type: str,  # one of "int", "float", "str", "bool", "label"
+        labels: Optional[List[str]] = None,
+        default_value: Any = None,
+    ) -> str:
         return self.get(
             endpoint="add_extra_column",
             params={
@@ -252,9 +282,8 @@ class API:
                 "column_type": column_type,
                 "labels": labels,
                 "default_value": default_value,
-            }
+            },
         )["column_id"]
-
 
     @staticmethod
     def generate_user_agent() -> str:
