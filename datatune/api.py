@@ -98,17 +98,18 @@ class API:
         creds_key: Optional[str] = None,
         name: Optional[str] = None,
     ) -> str:
-        resp = self.get(
-            endpoint="add_dataset",
-            params={
-                "entity": entity,
-                "workspace": workspace,
+        namespace = f"{entity}-{name}".replace(' ', '-').lower()
+        resp = self.post(
+            endpoint=f'workspaces/{workspace}/datasets',
+            json={
+                "namespace": namespace,
+                "name": name,
                 "path": path,
                 "creds_key": creds_key,
-                "name": name,
+                "description": "Awesome Dataset",
             },
         )
-        return resp["dataset_id"]
+        return resp["id"]
 
     def delete_dataset(self, entity: str, workspace: str, dataset: str) -> None:
         self.get(
@@ -138,13 +139,16 @@ class API:
         )["workspaces"]
 
     def create_workspace(self, entity: str, name: str) -> str:
-        return self.get(
-            endpoint="create_workspace",
-            params={
-                "entity": entity,
-                "name": name,
-            },
-        )["id"]
+        namespace = f"{entity}-{name}".replace(' ', '-').lower()
+        response = self.post(
+            endpoint=f'organizations/{entity}/workspaces',
+            json={
+                "namespace": namespace,
+                "name": f"{name} Workspace",
+                "description": "Awesome Workspace"
+            }
+        )
+        return response['id']
 
     def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
         return self.get(
