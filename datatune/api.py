@@ -280,18 +280,21 @@ class API:
         labels: Optional[List[str]] = None,
         default_value: Any = None,
     ) -> str:
-        return self.get(
-            endpoint="add_extra_column",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-                "view": view,
-                "column_name": column_name,
+        response =  self.post(
+            endpoint="columns",
+            json={
+                "name": column_name,
+                "description": "This column is awesome!",
                 "column_type": column_type,
-                "labels": labels,
                 "default_value": default_value,
+                "labels": labels,
+                "organization_id": entity,
+                "workspace_id": workspace,
+                "dataset_view_id": view
             },
-        )["column_id"]
+        )
+        print(response)
+        return response['id']
 
     @staticmethod
     def generate_user_agent() -> str:
