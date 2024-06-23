@@ -239,11 +239,10 @@ class API:
             },
         )
 
-    def get_workspace(self, id: str, entity: str) -> Dict:
+    def get_workspace(self, id: str) -> Dict:
         return self.get(
-            endpoint="get_workspace",
+            endpoint=f"workspaces/{id}",
             params={
-                "entity": entity,
                 "id": id,
             },
         )
