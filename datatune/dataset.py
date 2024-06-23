@@ -26,8 +26,8 @@ class Dataset:
 
 class DatasetSlice:
     def __init__(
-        self, dataset: Dataset, start: Optional[int] = None, end: Optional[int] = None
+        self, dataset: Dataset, start: Optional[int] = None, stop: Optional[int] = None
     ):
         self.dataset = dataset
         self.start = start
-        self.end = end
+        self.stop = stop
