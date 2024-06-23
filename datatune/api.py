@@ -100,7 +100,7 @@ class API:
     ) -> str:
         namespace = f"{entity}-{name}-dataset".replace(' ', '-').lower()
         resp = self.post(
-            endpoint=f'workspaces/{workspace}/datasets',
+            endpoint=f'workspaces/{workspace}/create_dataset',
             json={
                 "namespace": namespace,
                 "name": name,
@@ -141,7 +141,7 @@ class API:
     def create_workspace(self, entity: str, name: str) -> str:
         namespace = f"{entity}-{name}-workspace".replace(' ', '-').lower()
         response = self.post(
-            endpoint=f'organizations/{entity}/workspaces',
+            endpoint=f'organizations/{entity}/create_workspace',
             json={
                 "namespace": namespace,
                 "name": f"{name} Workspace",
@@ -173,7 +173,7 @@ class API:
     def create_view(self, entity: str, workspace: str, view_name: Optional[str] = None):
         namespace = f"{entity}-{view_name}-view".replace(' ', '-').lower()
         return self.post(
-            endpoint=f'workspaces/{workspace}/views',
+            endpoint=f'workspaces/{workspace}/create_dataset_view',
             json={
                 "namespace": namespace,
                 "name": view_name,
@@ -281,7 +281,7 @@ class API:
         default_value: Any = None,
     ) -> str:
         response =  self.post(
-            endpoint="columns",
+            endpoint="add_extra_column",
             json={
                 "name": column_name,
                 "description": "This column is awesome!",
