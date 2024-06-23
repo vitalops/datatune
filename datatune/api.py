@@ -98,7 +98,7 @@ class API:
         creds_key: Optional[str] = None,
         name: Optional[str] = None,
     ) -> str:
-        namespace = f"{entity}-{name}".replace(' ', '-').lower()
+        namespace = f"{entity}-{name}-dataset".replace(' ', '-').lower()
         resp = self.post(
             endpoint=f'workspaces/{workspace}/datasets',
             json={
@@ -139,7 +139,7 @@ class API:
         )["workspaces"]
 
     def create_workspace(self, entity: str, name: str) -> str:
-        namespace = f"{entity}-{name}".replace(' ', '-').lower()
+        namespace = f"{entity}-{name}-workspace".replace(' ', '-').lower()
         response = self.post(
             endpoint=f'organizations/{entity}/workspaces',
             json={
@@ -171,12 +171,13 @@ class API:
         )
 
     def create_view(self, entity: str, workspace: str, view_name: Optional[str] = None):
-        return self.get(
-            endpoint="create_view",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-                "view": view_name,
+        namespace = f"{entity}-{view_name}-view".replace(' ', '-').lower()
+        return self.post(
+            endpoint=f'workspaces/{workspace}/views',
+            json={
+                "namespace": namespace,
+                "name": view_name,
+                "description": "Awesome View",
             },
         )["id"]
 
@@ -249,22 +250,25 @@ class API:
 
     def extend_view(
         self,
-        entity: str,
-        workspace: str,
         view: str,
         dataset: str,
-        range: Optional[Tuple[int, int]] = None,
+        start: Optional[int] = None,
+        stop: Optional[int] = None
     ) -> None:
-        return self.get(
-            endpoint="extend_view",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-                "view": view,
-                "dataset": dataset,
-                "range": range,
-            },
+        slice = {"dataset": dataset}
+
+        if start is not None:
+            slice['start'] = start
+        if stop is not None:
+            slice['stop'] = stop
+        
+        json_payload = {"slices": [slice]}
+
+        response =  self.put(
+            endpoint=f'views/{view}/extend',
+            json=json_payload
         )
+        return response
 
     def add_extra_column(
         self,
