@@ -293,7 +293,6 @@ class API:
                 "dataset_view_id": view
             },
         )
-        print(response)
         return response['id']
 
     @staticmethod
