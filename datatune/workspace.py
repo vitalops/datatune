@@ -24,7 +24,7 @@ class Workspace:
         from datatune.dataset import Dataset
 
         dataset_ids = self.entity.api.list_datasets(
-            entity=self.entity.id, workspace=self.id
+            workspace=self.id
         )
         return [Dataset(id=dataset_id, workspace=self) for dataset_id in dataset_ids]
 

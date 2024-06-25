@@ -97,17 +97,22 @@ class API:
         path: str,
         credentials: Optional[str] = None,
         name: Optional[str] = None,
+        description: Optional[str] = None
     ) -> str:
         namespace = f"{entity}-{name}-dataset".replace(' ', '-').lower()
-        resp = self.post(
-            endpoint=f'workspaces/{workspace}/datasets',
-            json={
+        json_payload = {     
                 "namespace": namespace,
                 "name": name,
                 "path": path,
-                "credentials_id": credentials,
-                "description": "Awesome Dataset",
-            },
+                "description": description if description else "No description provided",
+                }
+
+        if credentials is not None:
+            json_payload['credentials_id'] = credentials
+
+        resp = self.post(
+            endpoint=f'workspaces/{workspace}/datasets',
+            json=json_payload,
         )
         return resp["id"]
 
@@ -121,38 +126,41 @@ class API:
             },
         )
 
-    def list_datasets(self, entity: str, workspace: str) -> List[str]:
-        return self.get(
-            endpoint="list_datasets",
+    def list_datasets(self, workspace: str) -> List[str]:
+        response =  self.get(
+            endpoint=f"workspaces/{workspace}/datasets",
             params={
-                "entity": entity,
-                "workspace": workspace,
+                "workspace_id": workspace,
             },
-        )["datasets"]
+        )
+        print(response)
+        return response
 
     def list_workspaces(self, entity: str) -> List[str]:
         return self.get(
-            endpoint="list_workspaces",
+            endpoint="workspaces",
             params={
                 "entity": entity,
             },
         )["workspaces"]
 
-    def create_workspace(self, entity: str, name: str) -> str:
+    def create_workspace(self, entity: str, name: str,
+                          description: Optional[str] = None
+                          ) -> str:
         namespace = f"{entity}-{name}-workspace".replace(' ', '-').lower()
         response = self.post(
             endpoint=f'organizations/{entity}/workspaces',
             json={
                 "namespace": namespace,
                 "name": f"{name} Workspace",
-                "description": "Awesome Workspace"
+                "description": description if description else "No description provided"
             }
         )
         return response['id']
 
     def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
         return self.get(
-            endpoint="list_extra_columns",
+            endpoint="columns",
             params={
                 "entity": entity,
                 "workspace": workspace,
@@ -170,14 +178,16 @@ class API:
             },
         )
 
-    def create_view(self, entity: str, workspace: str, view_name: Optional[str] = None):
+    def create_view(self, entity: str, workspace: str,
+                     view_name: Optional[str] = None,
+                     description: Optional[str] = None):
         namespace = f"{entity}-{view_name}-view".replace(' ', '-').lower()
         return self.post(
             endpoint=f'workspaces/{workspace}/views',
             json={
                 "namespace": namespace,
                 "name": view_name,
-                "description": "Awesome View",
+               "description": description if description else "No description provided"
             },
         )["id"]
 
@@ -193,7 +203,7 @@ class API:
 
     def list_views(self, entity: str, workspace: str) -> List[str]:
         return self.get(
-            endpoint="list_views",
+            endpoint="views",
             params={
                 "entity": entity,
                 "workspace": workspace,
@@ -202,7 +212,7 @@ class API:
 
     def get_view(self, id: str, entity: str, workspace: str) -> Dict:
         return self.get(
-            endpoint="get_view",
+            endpoint="views",
             params={
                 "entity": entity,
                 "workspace": workspace,
@@ -210,12 +220,10 @@ class API:
             },
         )
 
-    def get_dataset(self, id: str, entity: str, workspace: str) -> Dict:
+    def get_dataset(self, id: str) -> Dict:
         return self.get(
-            endpoint="get_dataset",
+            endpoint="datasets",
             params={
-                "entity": entity,
-                "workspace": workspace,
                 "id": id,
             },
         )
@@ -278,12 +286,13 @@ class API:
         column_type: str,  # one of "int", "float", "str", "bool", "label"
         labels: Optional[List[str]] = None,
         default_value: Any = None,
+        description: Optional[str] = None
     ) -> str:
         response =  self.post(
             endpoint="columns",
             json={
                 "name": column_name,
-                "description": "This column is awesome!",
+                "description": description if description else "No description provided",
                 "column_type": column_type,
                 "default_value": default_value,
                 "labels": labels,
@@ -305,7 +314,7 @@ class API:
         description: Optional[str] = None
     ) -> Dict:
         """Create a credential in a specific workspace."""
-        namespace = f"{entity}-{name}-workspace".replace(' ', '-').lower()
+        namespace = f"{entity}-{name}-credentials".replace(' ', '-').lower()
         json_payload = {
             "namespace": namespace,
             "name": name,
@@ -341,7 +350,7 @@ class API:
         json_payload = {
             "namespace": namespace,
             "name": name,
-            "description": description,
+            "description": description if description else "No description provided",
             "type": credential_type,
             "path": path,
             "credentials": creds_details
