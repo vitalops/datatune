@@ -37,7 +37,7 @@ class Workspace:
         self.id = None
 
     def add_dataset(
-        self, path: str, creds_key: Optional[str] = None, name: Optional[str] = None
+        self, path: str, name: Optional[str] = None
     ) -> str:
         from datatune.dataset import Dataset
         dataset_id = self.api.add_dataset(
