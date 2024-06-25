@@ -1,11 +1,12 @@
 from datatune.api import API
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 
 class Workspace:
     def __init__(self, id: str, entity):
         self.id = entity.api.create_workspace(entity.id, id)
         self.entity = entity
+        self.credentials_id = None
 
     @property
     def name(self) -> str:
@@ -39,9 +40,8 @@ class Workspace:
         self, path: str, creds_key: Optional[str] = None, name: Optional[str] = None
     ) -> str:
         from datatune.dataset import Dataset
-
         dataset_id = self.api.add_dataset(
-            self.entity.id, self.id, path, creds_key, name
+            self.entity.id, self.id, path, self.credentials_id, name
         )
         return Dataset(id=dataset_id, workspace=self)
 
@@ -66,3 +66,20 @@ class Workspace:
 
     def delete_view(self, view_name: str) -> None:
         self.api.delete_view(self.entity.id, self.id, view_name)
+
+    def add_credentials(self,
+        name: str,
+        credential_type: str,
+        credentials: Dict,
+        path : Optional[str] = None, 
+        description: Optional[str] = None):
+
+        credentials_id = self.api.create_credentials(self.entity.id,
+                                    self.id,
+                                    name,
+                                    credential_type,
+                                    credentials,
+                                    path,
+                                    description
+                                    )
+        self.credentials_id = credentials_id

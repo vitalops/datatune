@@ -95,7 +95,7 @@ class API:
         entity: str,
         workspace: str,
         path: str,
-        creds_key: Optional[str] = None,
+        credentials: Optional[str] = None,
         name: Optional[str] = None,
     ) -> str:
         namespace = f"{entity}-{name}-dataset".replace(' ', '-').lower()
@@ -105,7 +105,7 @@ class API:
                 "namespace": namespace,
                 "name": name,
                 "path": path,
-                "creds_key": creds_key,
+                "credentials_id": credentials,
                 "description": "Awesome Dataset",
             },
         )
@@ -293,6 +293,68 @@ class API:
             },
         )
         return response['id']
+    
+    def create_credentials(
+        self,
+        entity: str,
+        workspace: str,
+        name: str,
+        credential_type: str,
+        creds_details: Dict,
+        path : Optional[str] = None, 
+        description: Optional[str] = None
+    ) -> Dict:
+        """Create a credential in a specific workspace."""
+        namespace = f"{entity}-{name}-workspace".replace(' ', '-').lower()
+        json_payload = {
+            "namespace": namespace,
+            "name": name,
+            "description": description if description else "No description provided",
+            "type": credential_type,
+            "credentials": creds_details
+        }
+        if path is not None:
+            json_payload['path'] = path
+        response =  self.post(f'workspaces/{workspace}/credentials', json=json_payload)
+        return response['id']
+
+    def get_credential(
+        self,
+        workspace_id: str,
+        credential_id: str
+    ) -> Dict:
+        """Retrieve a specific credential by ID within a workspace."""
+        return self.get(f'workspaces/{workspace_id}/credentials/{credential_id}')
+
+    def update_credential(
+        self,
+        workspace_id: str,
+        credential_id: str,
+        namespace: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        credential_type: Optional[str] = None,
+        path: Optional[str] = None,
+        creds_details: Optional[Dict] = None
+    ) -> Dict:
+        """Update a specific credential within a workspace."""
+        json_payload = {
+            "namespace": namespace,
+            "name": name,
+            "description": description,
+            "type": credential_type,
+            "path": path,
+            "credentials": creds_details
+        }
+        return self.put(f'workspaces/{workspace_id}/credentials/{credential_id}', json=json_payload)
+
+    def delete_credential(
+        self,
+        workspace_id: str,
+        credential_id: str
+    ) -> None:
+        """Delete a specific credential."""
+        return self.delete(f'workspaces/{workspace_id}/credentials/{credential_id}')
 
     @staticmethod
     def generate_user_agent() -> str:
