@@ -16,7 +16,7 @@ class Dataset:
     @property
     def name(self) -> str:
         return self.workspace.api.get_dataset(
-            self.id, entity=self.workspace.entity.id, workspace=self.workspace.id
+            self.id
         )["name"]
 
     @property
