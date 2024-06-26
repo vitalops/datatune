@@ -14,12 +14,6 @@ class Credentials:
         return self.workspace.entity
 
     @property
-    def name(self) -> str:
-        return self.workspace.api.get_credentials(
-            self.id
-        )["name"]
-
-    @property
     def api(self) -> API:
         return self.workspace.api
     
@@ -29,11 +23,11 @@ class Credentials:
             self.id
         )
         return {
-            "namespace": credentials_info['namespace'],
             "name": credentials_info['name'], 
             "path": credentials_info['path'],
-            "description": credentials_info['description'] , 
-            "credentials_id": credentials_info['id']
+            "description": credentials_info['description'],
+            "type": credentials_info['type'],
+            "credentials": credentials_info['credentials'] 
         }
     
  
