@@ -29,6 +29,14 @@ class Workspace:
         return [Dataset(id=dataset_id, workspace=self) for dataset_id in dataset_ids]
 
     @property
+    def credentials(self) -> List:
+        from datatune.credentials import Credentials
+        credentials_id = self.entity.api.list_credentials(
+            workspace=self.id
+        )
+        return [Credentials(id=id, workspace=self) for id in credentials_id]
+
+    @property
     def api(self) -> API:
         return self.entity.api
 

@@ -159,14 +159,16 @@ class API:
         return response['id']
 
     def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
-        return self.get(
+        response =  self.get(
             endpoint="columns",
             params={
-                "entity": entity,
-                "workspace": workspace,
-                "view": view,
+                "organization_id": entity,
+                "workspace_id": workspace,
+                "dataset_view_id": view,
             },
-        )["columns"]
+        )
+        ids = [column['id'] for column in response]
+        return ids
 
     def delete_workspace(self, entity: str, workspace: str) -> None:
         raise Exception("Unsafe operation")
@@ -317,35 +319,22 @@ class API:
         response =  self.post(f'workspaces/{workspace}/credentials', json=json_payload)
         return response['id']
 
-    def get_credential(
+    def get_credentials(
         self,
-        workspace_id: str,
         credential_id: str
     ) -> Dict:
         """Retrieve a specific credential by ID within a workspace."""
-        return self.get(f'workspaces/{workspace_id}/credentials/{credential_id}')
+        return self.get(f'credentials/{credential_id}')
 
-    def update_credential(
-        self,
-        workspace_id: str,
-        credential_id: str,
-        namespace: Optional[str] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        credential_type: Optional[str] = None,
-        path: Optional[str] = None,
-        creds_details: Optional[Dict] = None
-    ) -> Dict:
-        """Update a specific credential within a workspace."""
-        json_payload = {
-            "namespace": namespace,
-            "name": name,
-            "description": description if description else "No description provided",
-            "type": credential_type,
-            "path": path,
-            "credentials": creds_details
-        }
-        return self.put(f'workspaces/{workspace_id}/credentials/{credential_id}', json=json_payload)
+    def list_credentials(self, workspace: str) -> List[str]:
+        response =  self.get(
+            endpoint=f"workspaces/{workspace}/credentials",
+            params={
+                "workspace_id": workspace,
+            },
+        )
+        ids = [credentials['id'] for credentials in response]
+        return ids
 
     def delete_credential(
         self,
