@@ -201,23 +201,16 @@ class API:
             },
         )
 
-    def list_views(self, entity: str, workspace: str) -> List[str]:
-        return self.get(
-            endpoint="views",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-            },
-        )["views"]
+    def list_views(self, workspace: str) -> List[str]:
+        response = self.get(
+            endpoint = f"workspaces/{workspace}/views",
+        )
+        ids =  [view['id'] for view in response]
+        return ids
 
-    def get_view(self, id: str, entity: str, workspace: str) -> Dict:
+    def get_view(self, id: str,) -> Dict:
         return self.get(
-            endpoint="views",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-                "id": id,
-            },
+            endpoint = f"views/{id}"
         )
 
     def get_dataset(self, id: str) -> Dict:

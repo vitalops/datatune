@@ -17,7 +17,7 @@ class View:
     @property
     def name(self) -> str:
         return self.workspace.api.get_view(
-            self.id, entity=self.workspace.entity.id, workspace=self.workspace.id
+            self.id
         )["name"]
 
     @property

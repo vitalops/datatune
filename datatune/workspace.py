@@ -16,7 +16,7 @@ class Workspace:
     def views(self) -> List:
         from datatune.view import View
 
-        view_ids = self.entity.api.list_views(entity=self.entity.id, workspace=self.id)
+        view_ids = self.entity.api.list_views(workspace=self.id)
         return [View(id=view_id, workspace=self) for view_id in view_ids]
 
     @property
