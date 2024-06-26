@@ -133,8 +133,8 @@ class API:
                 "workspace_id": workspace,
             },
         )
-        print(response)
-        return response
+        ids = [dataset['id'] for dataset in response]
+        return ids
 
     def list_workspaces(self, entity: str) -> List[str]:
         return self.get(
@@ -222,10 +222,7 @@ class API:
 
     def get_dataset(self, id: str) -> Dict:
         return self.get(
-            endpoint="datasets",
-            params={
-                "id": id,
-            },
+            endpoint=f"datasets/{id}"
         )
 
     def get_extra_column(self, id: str, entity: str, workspace: str, view: str) -> Dict:
