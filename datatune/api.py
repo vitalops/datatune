@@ -165,7 +165,7 @@ class API:
         response =  self.get(
             endpoint="columns",
             params={
-                "username": entity,
+                "entity_id": entity,
                 "workspace_id": workspace,
                 "dataset_view_id": view,
             },
@@ -291,7 +291,7 @@ class API:
                 "column_type": column_type,
                 "default_value": default_value,
                 "labels": labels,
-                "username": entity,
+                "entity_id": entity,
                 "workspace_id": workspace,
                 "dataset_view_id": view
             },
