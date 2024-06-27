@@ -137,12 +137,15 @@ class API:
         return ids
 
     def list_workspaces(self, entity: str) -> List[str]:
-        return self.get(
+        response =  self.get(
             endpoint="workspaces",
             params={
                 "entity": entity,
             },
-        )["workspaces"]
+        )
+
+        ids = [workspace['id'] for workspace in response]
+        return ids
 
     def create_workspace(self, entity: str, name: str,
                           description: Optional[str] = None
