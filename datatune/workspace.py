@@ -3,7 +3,7 @@ from typing import List, Optional, Dict
 
 
 class Workspace:
-    def __init__(self, id: str, entity):
+    def __init__(self, entity, id: Optional[str] = None):
         self.id = entity.api.create_workspace(entity.id, id)
         self.entity = entity
         self.credentials_id = None
