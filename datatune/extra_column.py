@@ -30,9 +30,7 @@ class ExtraColumn:
 
     @property
     def name(self) -> str:
-        return self.view.api.get_extra_column(
-            self.id, entity=self.entity.id, workspace=self.workspace.id
-        )["name"]
+        return self.view.api.get_extra_column(self.id)["name"]
 
     @property
     def type(self) -> ColumnType:

@@ -229,16 +229,9 @@ class API:
             endpoint=f"workspaces/{workspace_id}/datasets/{id}"
         )['data']
 
-    def get_extra_column(self, id: str, entity: str, workspace: str, view: str) -> Dict:
+    def get_extra_column(self, view: str) -> Dict:
         return self.get(
-            endpoint="columns",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-                "view": view,
-                "id": id,
-            },
-        )['data']
+            endpoint=f"columns/{view}")['data']
 
     def get_entity(self, id: str) -> Dict:
         return self.get(
