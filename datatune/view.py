@@ -98,3 +98,6 @@ class View:
         from datatune.extra_column import ExtraColumn
 
         return ExtraColumn(id=id, view=self)
+
+    def delete_extra_column(self, id: str):
+        self.api.delete_extra_column(id)

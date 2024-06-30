@@ -1,10 +1,14 @@
 from datatune.api import API
 from typing import List, Optional, Dict
-
+import logging
 
 class Workspace:
-    def __init__(self, entity, id: Optional[str] = None):
-        self.id = entity.api.create_workspace(entity.id, id)
+    def __init__(self, entity, id: Optional[str] = None, name: Optional[str] = None):
+        if id is None:
+            self.id = entity.api.create_workspace(entity.id, name)
+        else:
+            self.id = id
+
         self.entity = entity
         self.credentials_id = None
 
@@ -82,7 +86,7 @@ class Workspace:
         path : Optional[str] = None, 
         description: Optional[str] = None):
 
-        credentials_id = self.api.create_credentials(self.entity.id,
+        response = self.api.create_credentials(self.entity.id,
                                     self.id,
                                     name,
                                     credential_type,
@@ -90,4 +94,5 @@ class Workspace:
                                     path,
                                     description
                                     )
-        self.credentials_id = credentials_id
+        if response['message'] == 'success':
+            logging.info(f'Credential {name} added to Workspace: {self.id}')

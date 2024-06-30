@@ -1,6 +1,4 @@
-import os
 import platform
-import urllib.parse
 import requests
 from requests.adapters import HTTPAdapter, Retry
 from .exceptions import DatatuneException
@@ -11,6 +9,10 @@ from .constants import (
     HTTP_TOTAL_RETRIES,
 )
 from typing import Optional, Dict, List, Tuple, Any
+import logging
+
+
+logging.basicConfig(level=logging.INFO)
 
 
 class API:
@@ -59,7 +61,7 @@ class API:
         response = self.session.request(
             method, url, params=params, json=json, files=files
         )
-        if response.status_code != 200:
+        if response.status_code not in [200,201] :
             self.handle_error(response)
         return response.json()
 
@@ -113,17 +115,14 @@ class API:
         resp = self.post(
             endpoint=f'workspaces/{workspace}/datasets',
             json=json_payload,
-        )
+        )['data']
+        print(resp)
+        print(type(resp))
         return resp["id"]
 
     def delete_dataset(self, entity: str, workspace: str, dataset: str) -> None:
-        self.get(
-            endpoint="delete_dataset",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-                "dataset": dataset,
-            },
+        self.delete(
+            endpoint=f"workspaces/{workspace}/datasets/{dataset}",
         )
 
     def list_datasets(self, workspace: str) -> List[str]:
@@ -132,7 +131,9 @@ class API:
             params={
                 "workspace_id": workspace,
             },
-        )
+        )['data']
+        print(response)
+        print(type(response))
         ids = [dataset['id'] for dataset in response]
         return ids
 
@@ -143,44 +144,40 @@ class API:
                 "entity": entity,
             },
         )
-
+        response = response['data']
         ids = [workspace['id'] for workspace in response]
         return ids
 
-    def create_workspace(self, entity: str, name: str,
+    def create_workspace(self, entity: str, id: str,
+                          name: Optional[str] = None,
                           description: Optional[str] = None
                           ) -> str:
-        namespace = f"{entity}-{name}-workspace".replace(' ', '-').lower()
+        namespace = f"{entity}-{id}-workspace".replace(' ', '-').lower()
         response = self.post(
             endpoint=f'organizations/{entity}/workspaces',
             json={
                 "namespace": namespace,
-                "name": f"{name} Workspace",
+                "name": name if name else "Awesome Workspace",
                 "description": description if description else "No description provided"
             }
         )
-        return response['id']
+        return response['data']['id']
 
     def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
         response =  self.get(
             endpoint="columns",
             params={
-                "entity_id": entity,
+                "organization_id": entity,
                 "workspace_id": workspace,
                 "dataset_view_id": view,
             },
-        )
+        )['data']
         ids = [column['id'] for column in response]
         return ids
 
     def delete_workspace(self, entity: str, workspace: str) -> None:
-        raise Exception("Unsafe operation")
-        self.get(
-            endpoint="delete_workspace",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-            },
+        self.delete(
+            endpoint=f"organizations/{entity}/workspaces/{workspace}",
         )
 
     def create_view(self, entity: str, workspace: str,
@@ -194,7 +191,7 @@ class API:
                 "name": view_name,
                "description": description if description else "No description provided"
             },
-        )["id"]
+        )['data']['id']
 
     def delete_view(self, entity: str, workspace: str, view: str) -> None:
         self.get(
@@ -209,30 +206,30 @@ class API:
     def list_views(self, workspace: str) -> List[str]:
         response = self.get(
             endpoint = f"workspaces/{workspace}/views",
-        )
+        )['data']
         ids =  [view['id'] for view in response]
         return ids
 
     def get_view(self, id: str,) -> Dict:
         return self.get(
             endpoint = f"views/{id}"
-        )
+        )['data']
 
-    def get_dataset(self, id: str) -> Dict:
+    def get_dataset(self,workspace_id: str,id: str) -> Dict:
         return self.get(
-            endpoint=f"datasets/{id}"
-        )
+            endpoint=f"workspaces/{workspace_id}/datasets/{id}"
+        )['data']
 
     def get_extra_column(self, id: str, entity: str, workspace: str, view: str) -> Dict:
         return self.get(
-            endpoint="get_extra_column",
+            endpoint="columns",
             params={
                 "entity": entity,
                 "workspace": workspace,
                 "view": view,
                 "id": id,
             },
-        )
+        )['data']
 
     def get_entity(self, id: str) -> Dict:
         return self.get(
@@ -240,7 +237,7 @@ class API:
             params={
                 "id": id,
             },
-        )
+        )['data']
 
     def get_workspace(self, id: str) -> Dict:
         return self.get(
@@ -248,7 +245,7 @@ class API:
             params={
                 "id": id,
             },
-        )
+        )['data']
 
     def extend_view(
         self,
@@ -270,7 +267,7 @@ class API:
             endpoint=f'views/{view}/extend',
             json=json_payload
         )
-        return response
+        return response['data']
 
     def add_extra_column(
         self,
@@ -291,12 +288,19 @@ class API:
                 "column_type": column_type,
                 "default_value": default_value,
                 "labels": labels,
-                "entity_id": entity,
+                "organization_id": entity,
                 "workspace_id": workspace,
                 "dataset_view_id": view
             },
-        )
+        )['data']
         return response['id']
+
+    def delete_extra_column(
+        self,
+        id: str
+    ) -> None:
+        """Delete a column."""
+        return self.delete(f'columns/{id}')
     
     def create_credentials(
         self,
@@ -309,7 +313,7 @@ class API:
         description: Optional[str] = None
     ) -> Dict:
         """Create a credential in a specific workspace."""
-        namespace = f"{entity}-{name}-credentials".replace(' ', '-').lower()
+        namespace = f"{entity}-{workspace}-{name}-credentials".replace(' ', '-').lower()
         json_payload = {
             "namespace": namespace,
             "name": name,
@@ -319,15 +323,16 @@ class API:
         }
         if path is not None:
             json_payload['path'] = path
-        response =  self.post(f'workspaces/{workspace}/credentials', json=json_payload)
-        return response['id']
+        
+        response = self.post(f'workspaces/{workspace}/credentials', json=json_payload)
+        return response
 
     def get_credentials(
         self,
         credential_id: str
     ) -> Dict:
         """Retrieve a specific credential by ID within a workspace."""
-        return self.get(f'credentials/{credential_id}')
+        return self.get(f'credentials/{credential_id}')['data']
 
     def list_credentials(self, workspace: str) -> List[str]:
         response =  self.get(
@@ -336,8 +341,9 @@ class API:
                 "workspace_id": workspace,
             },
         )
-        ids = [credentials['id'] for credentials in response]
-        return ids
+
+        response =  response['data']
+        return response
 
     def delete_credential(
         self,
