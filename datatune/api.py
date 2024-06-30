@@ -162,6 +162,20 @@ class API:
             }
         )
         return response['data']['id']
+    
+    def update_workspace(self, id: str,
+                          name: Optional[str] = None,
+                          description: Optional[str] = None
+                          ) -> str:
+       
+        response = self.put(
+            endpoint=f'workspaces/{id}',
+            json={
+                "name": name,
+                "description": description 
+            }
+        )
+        return response
 
     def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
         response =  self.get(

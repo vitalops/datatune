@@ -1,6 +1,5 @@
 from datatune.api import API
 from typing import List, Optional, Dict
-import logging
 
 class Workspace:
     def __init__(self, entity, id: Optional[str] = None, name: Optional[str] = None):
@@ -14,7 +13,7 @@ class Workspace:
 
     @property
     def name(self) -> str:
-        return self.entity.api.get_workspace(self.id, entity=self.entity.id)["name"]
+        return self.entity.api.get_workspace(self.id)["name"]
 
     @property
     def views(self) -> List:
@@ -47,6 +46,11 @@ class Workspace:
     def delete(self):
         self.api.delete_workspace(entity=self.entity.id, workspace=self.id)
         self.id = None
+
+    def update(self, name: Optional[str] = None, description: Optional[str] = None):
+        self.api.update_workspace(id=self.id,
+                                  name=name,
+                                  description=description)
 
     def add_dataset(
         self, path: str, name: Optional[str] = None
@@ -86,7 +90,7 @@ class Workspace:
         path : Optional[str] = None, 
         description: Optional[str] = None):
 
-        response = self.api.create_credentials(self.entity.id,
+        self.api.create_credentials(self.entity.id,
                                     self.id,
                                     name,
                                     credential_type,
@@ -94,5 +98,3 @@ class Workspace:
                                     path,
                                     description
                                     )
-        if response['message'] == 'success':
-            logging.info(f'Credential {name} added to Workspace: {self.id}')
