@@ -101,7 +101,7 @@ class API:
         name: Optional[str] = None,
         description: Optional[str] = None
     ) -> str:
-        namespace = f"{entity}-{name}-dataset".replace(' ', '-').lower()
+        namespace = f"{entity}-{workspace}-{name}-dataset".replace(' ', '-').lower()
         json_payload = {     
                 "namespace": namespace,
                 "name": name,
@@ -197,7 +197,7 @@ class API:
     def create_view(self, entity: str, workspace: str,
                      view_name: Optional[str] = None,
                      description: Optional[str] = None):
-        namespace = f"{entity}-{view_name}-view".replace(' ', '-').lower()
+        namespace = f"{entity}-{workspace}-{view_name}-view".replace(' ', '-').lower()
         return self.post(
             endpoint=f'workspaces/{workspace}/views',
             json={
@@ -208,13 +208,8 @@ class API:
         )['data']['id']
 
     def delete_view(self, entity: str, workspace: str, view: str) -> None:
-        self.get(
-            endpoint="delete_view",
-            params={
-                "entity": entity,
-                "workspace": workspace,
-                "view": view,
-            },
+        self.delete(
+            endpoint=f"workspaces/{workspace}/views/{view}",
         )
 
     def list_views(self, workspace: str) -> List[str]:
