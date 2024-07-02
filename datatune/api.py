@@ -345,7 +345,8 @@ class API:
         )
 
         response =  response['data']
-        return response
+        ids = [credentials['id'] for credentials in response]
+        return ids
 
     def delete_credential(
         self,

@@ -34,10 +34,10 @@ class Workspace:
     @property
     def credentials(self) -> List:
         from datatune.credentials import Credentials
-        credentials_id = self.entity.api.list_credentials(
+        credentials_ids = self.entity.api.list_credentials(
             workspace=self.id
         )
-        return [Credentials(id=id, workspace=self) for id in credentials_id]
+        return [Credentials(id=id, workspace=self) for id in credentials_ids]
 
     @property
     def api(self) -> API:
