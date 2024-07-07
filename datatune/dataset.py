@@ -16,7 +16,8 @@ class Dataset:
     @property
     def name(self) -> str:
         return self.workspace.api.get_dataset(
-            self.id, entity=self.workspace.entity.id, workspace=self.workspace.id
+            self.workspace.id,
+            self.id
         )["name"]
 
     @property
@@ -26,8 +27,8 @@ class Dataset:
 
 class DatasetSlice:
     def __init__(
-        self, dataset: Dataset, start: Optional[int] = None, end: Optional[int] = None
+        self, dataset: Dataset, start: Optional[int] = None, stop: Optional[int] = None
     ):
         self.dataset = dataset
         self.start = start
-        self.end = end
+        self.stop = stop

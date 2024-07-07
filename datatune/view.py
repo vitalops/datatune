@@ -17,7 +17,7 @@ class View:
     @property
     def name(self) -> str:
         return self.workspace.api.get_view(
-            self.id, entity=self.workspace.entity.id, workspace=self.workspace.id
+            self.id
         )["name"]
 
     @property
@@ -55,25 +55,24 @@ class View:
         self,
         data: Union[Dataset, DatasetSlice],
         start: Optional[int] = None,
-        end: Optional[int] = None,
+        stop: Optional[int] = None,
     ) -> "View":
         if isinstance(data, Dataset):
-            dataset_slice = DatasetSlice(dataset=data, start=start, end=end)
+            dataset_slice = DatasetSlice(dataset=data, start=start, stop=stop)
         elif isinstance(data, DatasetSlice):
             dataset_slice = data
             if start is not None:
                 dataset_slice.start = start
-            if end is not None:
-                dataset_slice.end = end
+            if stop is not None:
+                dataset_slice.stop = stop
         else:
             raise TypeError("data must be either a Dataset or a DatasetSlice")
 
         self.api.extend_view(
-            entity=self.entity.id,
-            workspace=self.workspace.id,
             view=self.id,
             dataset=dataset_slice.dataset.id,
-            range=(dataset_slice.start, dataset_slice.end),
+            start=dataset_slice.start,
+            stop=dataset_slice.stop,
         )
         return self
 
@@ -99,3 +98,6 @@ class View:
         from datatune.extra_column import ExtraColumn
 
         return ExtraColumn(id=id, view=self)
+
+    def delete_extra_column(self, id: str):
+        self.api.delete_extra_column(id)

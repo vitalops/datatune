@@ -1,21 +1,25 @@
 from datatune.api import API
-from typing import List, Optional
-
+from typing import List, Optional, Dict
 
 class Workspace:
-    def __init__(self, id: str, entity):
-        self.id = entity.api.create_workspace(entity.id, id)
+    def __init__(self, entity, id: Optional[str] = None, name: Optional[str] = None):
+        if id is None:
+            self.id = entity.api.create_workspace(entity.id, name)
+        else:
+            self.id = id
+
         self.entity = entity
+        self.credentials_id = None
 
     @property
     def name(self) -> str:
-        return self.entity.api.get_workspace(self.id, entity=self.entity.id)["name"]
+        return self.entity.api.get_workspace(self.id)["name"]
 
     @property
     def views(self) -> List:
         from datatune.view import View
 
-        view_ids = self.entity.api.list_views(entity=self.entity.id, workspace=self.id)
+        view_ids = self.entity.api.list_views(workspace=self.id)
         return [View(id=view_id, workspace=self) for view_id in view_ids]
 
     @property
@@ -23,9 +27,17 @@ class Workspace:
         from datatune.dataset import Dataset
 
         dataset_ids = self.entity.api.list_datasets(
-            entity=self.entity.id, workspace=self.id
+            workspace=self.id
         )
         return [Dataset(id=dataset_id, workspace=self) for dataset_id in dataset_ids]
+
+    @property
+    def credentials(self) -> List:
+        from datatune.credentials import Credentials
+        credentials_ids = self.entity.api.list_credentials(
+            workspace=self.id
+        )
+        return [Credentials(id=id, workspace=self) for id in credentials_ids]
 
     @property
     def api(self) -> API:
@@ -35,13 +47,17 @@ class Workspace:
         self.api.delete_workspace(entity=self.entity.id, workspace=self.id)
         self.id = None
 
+    def update(self, name: Optional[str] = None, description: Optional[str] = None):
+        self.api.update_workspace(id=self.id,
+                                  name=name,
+                                  description=description)
+
     def add_dataset(
-        self, path: str, creds_key: Optional[str] = None, name: Optional[str] = None
+        self, path: str, name: Optional[str] = None
     ) -> str:
         from datatune.dataset import Dataset
-
         dataset_id = self.api.add_dataset(
-            self.entity.id, self.id, path, creds_key, name
+            self.entity.id, self.id, path, self.credentials_id, name
         )
         return Dataset(id=dataset_id, workspace=self)
 
@@ -66,3 +82,19 @@ class Workspace:
 
     def delete_view(self, view_name: str) -> None:
         self.api.delete_view(self.entity.id, self.id, view_name)
+
+    def add_credentials(self,
+        name: str,
+        credential_type: str,
+        credentials: Dict,
+        path : Optional[str] = None, 
+        description: Optional[str] = None):
+
+        self.api.create_credentials(self.entity.id,
+                                    self.id,
+                                    name,
+                                    credential_type,
+                                    credentials,
+                                    path,
+                                    description
+                                    )
