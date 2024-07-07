@@ -15,10 +15,7 @@ class Dataset:
 
     @property
     def name(self) -> str:
-        return self.workspace.api.get_dataset(
-            self.workspace.id,
-            self.id
-        )["name"]
+        return self.workspace.api.get_dataset(self.workspace.id, self.id)["name"]
 
     @property
     def api(self) -> API:
