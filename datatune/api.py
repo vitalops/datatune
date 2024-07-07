@@ -61,7 +61,7 @@ class API:
         response = self.session.request(
             method, url, params=params, json=json, files=files
         )
-        if response.status_code not in [200,201] :
+        if response.status_code not in [200, 201]:
             self.handle_error(response)
         return response.json()
 
@@ -99,23 +99,23 @@ class API:
         path: str,
         credentials: Optional[str] = None,
         name: Optional[str] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> str:
-        namespace = f"{entity}-{workspace}-{name}-dataset".replace(' ', '-').lower()
-        json_payload = {     
-                "namespace": namespace,
-                "name": name,
-                "path": path,
-                "description": description if description else "No description provided",
-                }
+        namespace = f"{entity}-{workspace}-{name}-dataset".replace(" ", "-").lower()
+        json_payload = {
+            "namespace": namespace,
+            "name": name,
+            "path": path,
+            "description": description if description else "No description provided",
+        }
 
         if credentials is not None:
-            json_payload['credentials_id'] = credentials
+            json_payload["credentials_id"] = credentials
 
         resp = self.post(
-            endpoint=f'workspaces/{workspace}/datasets',
+            endpoint=f"workspaces/{workspace}/datasets",
             json=json_payload,
-        )['data']
+        )["data"]
         print(resp)
         print(type(resp))
         return resp["id"]
@@ -126,67 +126,66 @@ class API:
         )
 
     def list_datasets(self, workspace: str) -> List[str]:
-        response =  self.get(
+        response = self.get(
             endpoint=f"workspaces/{workspace}/datasets",
             params={
                 "workspace_id": workspace,
             },
-        )['data']
+        )["data"]
         print(response)
         print(type(response))
-        ids = [dataset['id'] for dataset in response]
+        ids = [dataset["id"] for dataset in response]
         return ids
 
     def list_workspaces(self, entity: str) -> List[str]:
-        response =  self.get(
+        response = self.get(
             endpoint="workspaces",
             params={
                 "entity": entity,
             },
         )
-        response = response['data']
-        ids = [workspace['id'] for workspace in response]
+        response = response["data"]
+        ids = [workspace["id"] for workspace in response]
         return ids
 
-    def create_workspace(self, entity: str, id: str,
-                          name: Optional[str] = None,
-                          description: Optional[str] = None
-                          ) -> str:
-        namespace = f"{entity}-{id}-workspace".replace(' ', '-').lower()
+    def create_workspace(
+        self,
+        entity: str,
+        id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> str:
+        namespace = f"{entity}-{id}-workspace".replace(" ", "-").lower()
         response = self.post(
-            endpoint=f'organizations/{entity}/workspaces',
+            endpoint=f"organizations/{entity}/workspaces",
             json={
                 "namespace": namespace,
                 "name": name if name else "Awesome Workspace",
-                "description": description if description else "No description provided"
-            }
+                "description": description
+                if description
+                else "No description provided",
+            },
         )
-        return response['data']['id']
-    
-    def update_workspace(self, id: str,
-                          name: Optional[str] = None,
-                          description: Optional[str] = None
-                          ) -> str:
-       
+        return response["data"]["id"]
+
+    def update_workspace(
+        self, id: str, name: Optional[str] = None, description: Optional[str] = None
+    ) -> str:
         response = self.put(
-            endpoint=f'workspaces/{id}',
-            json={
-                "name": name,
-                "description": description 
-            }
+            endpoint=f"workspaces/{id}", json={"name": name, "description": description}
         )
         return response
 
     def list_extra_columns(self, entity: str, workspace: str, view: str) -> List[str]:
-        response =  self.get(
+        response = self.get(
             endpoint="columns",
             params={
                 "organization_id": entity,
                 "workspace_id": workspace,
                 "dataset_view_id": view,
             },
-        )['data']
-        ids = [column['id'] for column in response]
+        )["data"]
+        ids = [column["id"] for column in response]
         return ids
 
     def delete_workspace(self, entity: str, workspace: str) -> None:
@@ -194,18 +193,24 @@ class API:
             endpoint=f"organizations/{entity}/workspaces/{workspace}",
         )
 
-    def create_view(self, entity: str, workspace: str,
-                     view_name: Optional[str] = None,
-                     description: Optional[str] = None):
-        namespace = f"{entity}-{workspace}-{view_name}-view".replace(' ', '-').lower()
+    def create_view(
+        self,
+        entity: str,
+        workspace: str,
+        view_name: Optional[str] = None,
+        description: Optional[str] = None,
+    ):
+        namespace = f"{entity}-{workspace}-{view_name}-view".replace(" ", "-").lower()
         return self.post(
-            endpoint=f'workspaces/{workspace}/views',
+            endpoint=f"workspaces/{workspace}/views",
             json={
                 "namespace": namespace,
                 "name": view_name,
-               "description": description if description else "No description provided"
+                "description": description
+                if description
+                else "No description provided",
             },
-        )['data']['id']
+        )["data"]["id"]
 
     def delete_view(self, entity: str, workspace: str, view: str) -> None:
         self.delete(
@@ -214,24 +219,22 @@ class API:
 
     def list_views(self, workspace: str) -> List[str]:
         response = self.get(
-            endpoint = f"workspaces/{workspace}/views",
-        )['data']
-        ids =  [view['id'] for view in response]
+            endpoint=f"workspaces/{workspace}/views",
+        )["data"]
+        ids = [view["id"] for view in response]
         return ids
 
-    def get_view(self, id: str,) -> Dict:
-        return self.get(
-            endpoint = f"views/{id}"
-        )['data']
+    def get_view(
+        self,
+        id: str,
+    ) -> Dict:
+        return self.get(endpoint=f"views/{id}")["data"]
 
-    def get_dataset(self,workspace_id: str,id: str) -> Dict:
-        return self.get(
-            endpoint=f"workspaces/{workspace_id}/datasets/{id}"
-        )['data']
+    def get_dataset(self, workspace_id: str, id: str) -> Dict:
+        return self.get(endpoint=f"workspaces/{workspace_id}/datasets/{id}")["data"]
 
     def get_extra_column(self, view: str) -> Dict:
-        return self.get(
-            endpoint=f"columns/{view}")['data']
+        return self.get(endpoint=f"columns/{view}")["data"]
 
     def get_entity(self, id: str) -> Dict:
         return self.get(
@@ -239,7 +242,7 @@ class API:
             params={
                 "id": id,
             },
-        )['data']
+        )["data"]
 
     def get_workspace(self, id: str) -> Dict:
         return self.get(
@@ -247,29 +250,26 @@ class API:
             params={
                 "id": id,
             },
-        )['data']
+        )["data"]
 
     def extend_view(
         self,
         view: str,
         dataset: str,
         start: Optional[int] = None,
-        stop: Optional[int] = None
+        stop: Optional[int] = None,
     ) -> None:
         slice = {"dataset": dataset}
 
         if start is not None:
-            slice['start'] = start
+            slice["start"] = start
         if stop is not None:
-            slice['stop'] = stop
-        
+            slice["stop"] = stop
+
         json_payload = {"slices": [slice]}
 
-        response =  self.put(
-            endpoint=f'views/{view}/extend',
-            json=json_payload
-        )
-        return response['data']
+        response = self.put(endpoint=f"views/{view}/extend", json=json_payload)
+        return response["data"]
 
     def add_extra_column(
         self,
@@ -280,30 +280,29 @@ class API:
         column_type: str,  # one of "int", "float", "str", "bool", "label"
         labels: Optional[List[str]] = None,
         default_value: Any = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> str:
-        response =  self.post(
+        response = self.post(
             endpoint="columns",
             json={
                 "name": column_name,
-                "description": description if description else "No description provided",
+                "description": description
+                if description
+                else "No description provided",
                 "column_type": column_type,
                 "default_value": default_value,
                 "labels": labels,
                 "organization_id": entity,
                 "workspace_id": workspace,
-                "dataset_view_id": view
+                "dataset_view_id": view,
             },
-        )['data']
-        return response['id']
+        )["data"]
+        return response["id"]
 
-    def delete_extra_column(
-        self,
-        id: str
-    ) -> None:
+    def delete_extra_column(self, id: str) -> None:
         """Delete a column."""
-        return self.delete(f'columns/{id}')
-    
+        return self.delete(f"columns/{id}")
+
     def create_credentials(
         self,
         entity: str,
@@ -311,50 +310,43 @@ class API:
         name: str,
         credential_type: str,
         creds_details: Dict,
-        path : Optional[str] = None, 
-        description: Optional[str] = None
+        path: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> Dict:
         """Create a credential in a specific workspace."""
-        namespace = f"{entity}-{workspace}-{name}-credentials".replace(' ', '-').lower()
+        namespace = f"{entity}-{workspace}-{name}-credentials".replace(" ", "-").lower()
         json_payload = {
             "namespace": namespace,
             "name": name,
             "description": description if description else "No description provided",
             "type": credential_type,
-            "credentials": creds_details
+            "credentials": creds_details,
         }
         if path is not None:
-            json_payload['path'] = path
-        
-        response = self.post(f'workspaces/{workspace}/credentials', json=json_payload)
+            json_payload["path"] = path
+
+        response = self.post(f"workspaces/{workspace}/credentials", json=json_payload)
         return response
 
-    def get_credentials(
-        self,
-        credential_id: str
-    ) -> Dict:
+    def get_credentials(self, credential_id: str) -> Dict:
         """Retrieve a specific credential by ID within a workspace."""
-        return self.get(f'credentials/{credential_id}')['data']
+        return self.get(f"credentials/{credential_id}")["data"]
 
     def list_credentials(self, workspace: str) -> List[str]:
-        response =  self.get(
+        response = self.get(
             endpoint=f"workspaces/{workspace}/credentials",
             params={
                 "workspace_id": workspace,
             },
         )
 
-        response =  response['data']
-        ids = [credentials['id'] for credentials in response]
+        response = response["data"]
+        ids = [credentials["id"] for credentials in response]
         return ids
 
-    def delete_credential(
-        self,
-        workspace_id: str,
-        credential_id: str
-    ) -> None:
+    def delete_credential(self, workspace_id: str, credential_id: str) -> None:
         """Delete a specific credential."""
-        return self.delete(f'workspaces/{workspace_id}/credentials/{credential_id}')
+        return self.delete(f"workspaces/{workspace_id}/credentials/{credential_id}")
 
     @staticmethod
     def generate_user_agent() -> str:

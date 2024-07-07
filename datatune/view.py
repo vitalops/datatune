@@ -16,9 +16,7 @@ class View:
 
     @property
     def name(self) -> str:
-        return self.workspace.api.get_view(
-            self.id
-        )["name"]
+        return self.workspace.api.get_view(self.id)["name"]
 
     @property
     def api(self) -> API:
@@ -28,11 +26,13 @@ class View:
     def dataset_slices(self) -> List[DatasetSlice]:
         from datatune.dataset import DatasetSlice
 
-        slices: List[Tuple[str, Tuple[Optional[int], Optional[int]]]] = (
-            self.api.get_view(
-                self.id, entity=self.entity.id, workspace=self.workspace.id
-            )["dataset_slices"]
-        )
+        slices: List[
+            Tuple[str, Tuple[Optional[int], Optional[int]]]
+        ] = self.api.get_view(
+            self.id, entity=self.entity.id, workspace=self.workspace.id
+        )[
+            "dataset_slices"
+        ]
         return [
             DatasetSlice(
                 dataset=Dataset(id=dataset_id, workspace=self.workspace),

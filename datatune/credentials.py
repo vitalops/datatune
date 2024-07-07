@@ -16,19 +16,14 @@ class Credentials:
     @property
     def api(self) -> API:
         return self.workspace.api
-    
+
     @property
     def details(self) -> dict:
-        credentials_info =  self.workspace.api.get_credentials(
-            self.id
-        )
+        credentials_info = self.workspace.api.get_credentials(self.id)
         return {
-            "name": credentials_info['name'], 
-            "path": credentials_info['path'],
-            "description": credentials_info['description'],
-            "type": credentials_info['type'],
-            "credentials": credentials_info['credentials'] 
+            "name": credentials_info["name"],
+            "path": credentials_info["path"],
+            "description": credentials_info["description"],
+            "type": credentials_info["type"],
+            "credentials": credentials_info["credentials"],
         }
-    
- 
- 
