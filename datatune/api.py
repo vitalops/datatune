@@ -116,8 +116,6 @@ class API:
             endpoint=f"workspaces/{workspace}/datasets",
             json=json_payload,
         )["data"]
-        print(resp)
-        print(type(resp))
         return resp["id"]
 
     def delete_dataset(self, entity: str, workspace: str, dataset: str) -> None:
