@@ -130,8 +130,6 @@ class API:
                 "workspace_id": workspace,
             },
         )["data"]
-        print(response)
-        print(type(response))
         ids = [dataset["id"] for dataset in response]
         return ids
 
