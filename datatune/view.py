@@ -54,11 +54,12 @@ class View:
     def extend(
         self,
         data: Union[Dataset, DatasetSlice],
+        table_index: Optional[int] = 0,
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> "View":
         if isinstance(data, Dataset):
-            dataset_slice = DatasetSlice(dataset=data, start=start, stop=stop)
+            dataset_slice = DatasetSlice(dataset=data, table_index=table_index, start=start, stop=stop)
         elif isinstance(data, DatasetSlice):
             dataset_slice = data
             if start is not None:
@@ -71,6 +72,7 @@ class View:
         self.api.extend_view(
             view=self.id,
             dataset=dataset_slice.dataset.id,
+            table = dataset_slice.table_id,
             start=dataset_slice.start,
             stop=dataset_slice.stop,
         )
