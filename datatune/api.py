@@ -8,7 +8,7 @@ from .constants import (
     HTTP_STATUS_FORCE_LIST,
     HTTP_TOTAL_RETRIES,
 )
-from typing import Optional, Dict, List, Tuple, Any
+from typing import Optional, Dict, List, Tuple, Any, Union
 import logging
 
 
@@ -96,7 +96,7 @@ class API:
         self,
         entity: str,
         workspace: str,
-        path: str,
+        path: Union[str, List[str]],
         credentials: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -105,7 +105,7 @@ class API:
         json_payload = {
             "namespace": namespace,
             "name": name,
-            "path": path,
+            "paths": [path] if isinstance(path, str) else path, 
             "description": description if description else "No description provided",
         }
 
@@ -116,7 +116,7 @@ class API:
             endpoint=f"workspaces/{workspace}/datasets",
             json=json_payload,
         )["data"]
-        return resp["id"]
+        return resp['id']
 
     def delete_dataset(self, entity: str, workspace: str, dataset: str) -> None:
         self.delete(
@@ -143,6 +143,7 @@ class API:
         response = response["data"]
         ids = [workspace["id"] for workspace in response]
         return ids
+    
 
     def create_workspace(
         self,
@@ -252,6 +253,7 @@ class API:
         self,
         view: str,
         dataset: str,
+        table: str,
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> None:
@@ -261,6 +263,8 @@ class API:
             slice["start"] = start
         if stop is not None:
             slice["stop"] = stop
+
+        slice['table'] = table
 
         json_payload = {"slices": [slice]}
 

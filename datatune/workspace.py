@@ -1,5 +1,5 @@
 from datatune.api import API
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Union
 
 
 class Workspace:
@@ -48,13 +48,14 @@ class Workspace:
     def update(self, name: Optional[str] = None, description: Optional[str] = None):
         self.api.update_workspace(id=self.id, name=name, description=description)
 
-    def add_dataset(self, path: str, name: Optional[str] = None) -> str:
+    def add_dataset(self, path: Union[str, List[str]], name: Optional[str] = None) -> str:
         from datatune.dataset import Dataset
 
         dataset_id = self.api.add_dataset(
             self.entity.id, self.id, path, self.credentials_id, name
         )
-        return Dataset(id=dataset_id, workspace=self)
+
+        return Dataset(id=dataset_id,  workspace=self)
 
     def load_dataset(self, id: str):
         from datatune.dataset import Dataset
