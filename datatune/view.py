@@ -66,6 +66,7 @@ class View:
                 dataset_slice.start = start
             if stop is not None:
                 dataset_slice.stop = stop
+            dataset_slice.table_index = table_index
         else:
             raise TypeError("data must be either a Dataset or a DatasetSlice")
 
