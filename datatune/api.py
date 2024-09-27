@@ -100,10 +100,10 @@ class API:
         credentials: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
+        dataset_type: Optional[str] = None,
     ) -> str:
-        namespace = f"{entity}-{workspace}-{name}-dataset".replace(" ", "-").lower()
+
         json_payload = {
-            "namespace": namespace,
             "name": name,
             "paths": [path] if isinstance(path, str) else path, 
             "description": description if description else "No description provided",
@@ -111,6 +111,9 @@ class API:
 
         if credentials is not None:
             json_payload["credentials_id"] = credentials
+        
+        if dataset_type is not None:
+            json_payload["dataset_type"] = dataset_type
 
         resp = self.post(
             endpoint=f"workspaces/{workspace}/datasets",
@@ -152,11 +155,9 @@ class API:
         name: Optional[str] = None,
         description: Optional[str] = None,
     ) -> str:
-        namespace = f"{entity}-{id}-workspace".replace(" ", "-").lower()
         response = self.post(
             endpoint=f"organizations/{entity}/workspaces",
             json={
-                "namespace": namespace,
                 "name": name if name else "Awesome Workspace",
                 "description": description
                 if description
@@ -197,11 +198,9 @@ class API:
         view_name: Optional[str] = None,
         description: Optional[str] = None,
     ):
-        namespace = f"{entity}-{workspace}-{view_name}-view".replace(" ", "-").lower()
         return self.post(
             endpoint=f"workspaces/{workspace}/views",
             json={
-                "namespace": namespace,
                 "name": view_name,
                 "description": description
                 if description
@@ -296,7 +295,7 @@ class API:
                 "workspace_id": workspace,
                 "dataset_view_id": view,
             },
-        )["data"]
+        )["data"][0] #temporary, will change this to add multiple columns
         return response["id"]
 
     def delete_extra_column(self, id: str) -> None:
@@ -314,9 +313,7 @@ class API:
         description: Optional[str] = None,
     ) -> Dict:
         """Create a credential in a specific workspace."""
-        namespace = f"{entity}-{workspace}-{name}-credentials".replace(" ", "-").lower()
         json_payload = {
-            "namespace": namespace,
             "name": name,
             "description": description if description else "No description provided",
             "type": credential_type,

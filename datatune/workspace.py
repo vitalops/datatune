@@ -48,11 +48,21 @@ class Workspace:
     def update(self, name: Optional[str] = None, description: Optional[str] = None):
         self.api.update_workspace(id=self.id, name=name, description=description)
 
-    def add_dataset(self, path: Union[str, List[str]], name: Optional[str] = None) -> str:
+    def add_dataset(self,
+                     path: Union[str, List[str]],
+                     name: Optional[str] = None, 
+                     dataset_type: Optional[str] = None,
+                     description: Optional[str] = None) -> str:
         from datatune.dataset import Dataset
 
         dataset_id = self.api.add_dataset(
-            self.entity.id, self.id, path, self.credentials_id, name
+            self.entity.id, 
+            self.id, 
+            path, 
+            self.credentials_id, 
+            name, 
+            description,
+            dataset_type
         )
 
         return Dataset(id=dataset_id,  workspace=self)
