@@ -94,7 +94,6 @@ class API:
 
     def add_dataset(
         self,
-        entity: str,
         workspace: str,
         path: Union[str, List[str]],
         credentials: Optional[str] = None,
@@ -105,7 +104,7 @@ class API:
 
         json_payload = {
             "name": name,
-            "paths": [path] if isinstance(path, str) else path, 
+            "paths": path, 
             "description": description if description else "No description provided",
         }
 
@@ -151,17 +150,14 @@ class API:
     def create_workspace(
         self,
         entity: str,
-        id: str,
         name: Optional[str] = None,
         description: Optional[str] = None,
     ) -> str:
         response = self.post(
             endpoint=f"organizations/{entity}/workspaces",
             json={
-                "name": name if name else "Awesome Workspace",
+                "name": name,
                 "description": description
-                if description
-                else "No description provided",
             },
         )
         return response["data"]["id"]
