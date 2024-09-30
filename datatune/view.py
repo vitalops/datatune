@@ -85,6 +85,7 @@ class View:
         column_type: str,
         labels: Optional[List[str]] = None,
         default_value: Any = None,
+        num_rows:int=0
     ) -> "View":
         self.api.add_extra_column(
             entity=self.entity.id,
@@ -94,6 +95,7 @@ class View:
             column_type=column_type,
             labels=labels,
             default_value=default_value,
+            num_rows=num_rows
         )
         return self
 

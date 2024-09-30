@@ -275,6 +275,7 @@ class API:
         column_type: str,  # one of "int", "float", "str", "bool", "label"
         labels: Optional[List[str]] = None,
         default_value: Any = None,
+        num_rows: int=0,
         description: Optional[str] = None,
     ) -> str:
         response = self.post(
@@ -289,6 +290,7 @@ class API:
                 "labels": labels,
                 "organization_id": entity,
                 "workspace_id": workspace,
+                'num_rows':num_rows,
                 "dataset_view_id": view,
             },
         )["data"][0] #temporary, will change this to add multiple columns
