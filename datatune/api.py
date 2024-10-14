@@ -8,8 +8,9 @@ from .constants import (
     HTTP_STATUS_FORCE_LIST,
     HTTP_TOTAL_RETRIES,
 )
-from typing import Optional, Dict, List, Tuple, Any, Union
+from typing import Optional, Dict, List, Tuple, Any, Union, Generator
 import logging
+import json
 
 
 logging.basicConfig(level=logging.INFO)
@@ -342,6 +343,40 @@ class API:
     def delete_credential(self, workspace_id: str, credential_id: str) -> None:
         """Delete a specific credential."""
         return self.delete(f"workspaces/{workspace_id}/credentials/{credential_id}")
+
+    def get_dataset_view_details(self, workspace_id: str, view_id: str) -> Dict:
+        endpoint = f"workspaces/{workspace_id}/views/{view_id}/details"
+        response = self.get(endpoint)
+        return response["data"]
+
+    def get_batches(
+        self,
+        workspace_id: str,
+        view_id: str,
+        start_index: int = 0,
+        batch_size: int = 100,
+        num_batches: int = 10
+    ) -> Generator[Dict, None, None]:
+        endpoint = f"workspaces/{workspace_id}/views/{view_id}/stream/batches"
+        params = {
+            "start_index": start_index,
+            "batch_size": batch_size,
+            "num_batches": num_batches
+        }
+
+        response = self.session.get(
+            f"{self.base_url}/{endpoint}",
+            params=params,
+            stream=True
+        )
+
+        for line in response.iter_lines():
+            if line:
+                response_data = json.loads(line)
+                if isinstance(response_data, dict) and 'data' in response_data:
+                    yield response_data['data']
+                else:
+                    raise DatatuneException("Unexpected response format", 500)
 
     @staticmethod
     def generate_user_agent() -> str:
