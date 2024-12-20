@@ -1,7 +1,7 @@
 from datatune.api import API
 from datatune.entity import Entity
 from datatune.dataset import Dataset, DatasetSlice
-from typing import List, Optional, Union, Tuple, Any
+from typing import List, Optional, Union, Tuple, Any, Dict
 from datatune.workspace import Workspace
 
 
@@ -57,7 +57,9 @@ class View:
         table_index: Optional[int] = 0,
         start: Optional[int] = None,
         stop: Optional[int] = None,
+        column_maps: Optional[Dict[str, str]] = None,
     ) -> "View":
+
         if isinstance(data, Dataset):
             dataset_slice = DatasetSlice(dataset=data, table_index=table_index, start=start, stop=stop)
         elif isinstance(data, DatasetSlice):
@@ -73,7 +75,8 @@ class View:
         self.api.extend_view(
             view=self.id,
             dataset=dataset_slice.dataset.id,
-            table = dataset_slice.table_id,
+            table=dataset_slice.table_id,
+            column_maps=column_maps,
             start=dataset_slice.start,
             stop=dataset_slice.stop,
         )
@@ -85,6 +88,7 @@ class View:
         column_type: str,
         labels: Optional[List[str]] = None,
         default_value: Any = None,
+        num_rows:int=0
     ) -> "View":
         self.api.add_extra_column(
             entity=self.entity.id,
@@ -94,6 +98,7 @@ class View:
             column_type=column_type,
             labels=labels,
             default_value=default_value,
+            num_rows=num_rows
         )
         return self
 

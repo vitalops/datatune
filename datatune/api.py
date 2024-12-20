@@ -8,8 +8,9 @@ from .constants import (
     HTTP_STATUS_FORCE_LIST,
     HTTP_TOTAL_RETRIES,
 )
-from typing import Optional, Dict, List, Tuple, Any, Union
+from typing import Optional, Dict, List, Tuple, Any, Union, Generator
 import logging
+import json
 
 
 logging.basicConfig(level=logging.INFO)
@@ -94,7 +95,6 @@ class API:
 
     def add_dataset(
         self,
-        entity: str,
         workspace: str,
         path: Union[str, List[str]],
         credentials: Optional[str] = None,
@@ -105,7 +105,7 @@ class API:
 
         json_payload = {
             "name": name,
-            "paths": [path] if isinstance(path, str) else path, 
+            "paths": path, 
             "description": description if description else "No description provided",
         }
 
@@ -151,17 +151,14 @@ class API:
     def create_workspace(
         self,
         entity: str,
-        id: str,
         name: Optional[str] = None,
         description: Optional[str] = None,
     ) -> str:
         response = self.post(
             endpoint=f"organizations/{entity}/workspaces",
             json={
-                "name": name if name else "Awesome Workspace",
+                "name": name,
                 "description": description
-                if description
-                else "No description provided",
             },
         )
         return response["data"]["id"]
@@ -253,9 +250,11 @@ class API:
         view: str,
         dataset: str,
         table: str,
+        column_maps: Optional[Dict[str, str]] = None,
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> None:
+
         slice = {"dataset": dataset}
 
         if start is not None:
@@ -264,8 +263,12 @@ class API:
             slice["stop"] = stop
 
         slice['table'] = table
-
         json_payload = {"slices": [slice]}
+    
+        if column_maps is not None:
+            json_payload['column_maps'] = column_maps
+
+        
 
         response = self.put(endpoint=f"views/{view}/extend", json=json_payload)
         return response["data"]
@@ -279,6 +282,7 @@ class API:
         column_type: str,  # one of "int", "float", "str", "bool", "label"
         labels: Optional[List[str]] = None,
         default_value: Any = None,
+        num_rows: int=0,
         description: Optional[str] = None,
     ) -> str:
         response = self.post(
@@ -293,6 +297,7 @@ class API:
                 "labels": labels,
                 "organization_id": entity,
                 "workspace_id": workspace,
+                'num_rows':num_rows,
                 "dataset_view_id": view,
             },
         )["data"][0] #temporary, will change this to add multiple columns
@@ -344,6 +349,40 @@ class API:
     def delete_credential(self, workspace_id: str, credential_id: str) -> None:
         """Delete a specific credential."""
         return self.delete(f"workspaces/{workspace_id}/credentials/{credential_id}")
+
+    def get_dataset_view_details(self, workspace_id: str, view_id: str) -> Dict:
+        endpoint = f"workspaces/{workspace_id}/views/{view_id}/details"
+        response = self.get(endpoint)
+        return response["data"]
+
+    def get_batches(
+        self,
+        workspace_id: str,
+        view_id: str,
+        start_index: int = 0,
+        batch_size: int = 100,
+        num_batches: int = 10
+    ) -> Generator[Dict, None, None]:
+        endpoint = f"workspaces/{workspace_id}/views/{view_id}/stream/batches"
+        params = {
+            "start_index": start_index,
+            "batch_size": batch_size,
+            "num_batches": num_batches
+        }
+
+        response = self.session.get(
+            f"{self.base_url}/{endpoint}",
+            params=params,
+            stream=True
+        )
+
+        for line in response.iter_lines():
+            if line:
+                response_data = json.loads(line)
+                if isinstance(response_data, dict) and 'data' in response_data:
+                    yield response_data['data']
+                else:
+                    raise DatatuneException("Unexpected response format", 500)
 
     @staticmethod
     def generate_user_agent() -> str:

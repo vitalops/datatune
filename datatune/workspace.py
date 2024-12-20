@@ -3,9 +3,11 @@ from typing import List, Optional, Dict, Union
 
 
 class Workspace:
-    def __init__(self, entity, id: Optional[str] = None, name: Optional[str] = None):
+    def __init__(self, entity, id: Optional[str] = None, name: Optional[str] = None, description: Optional[str] = None):
         if id is None:
-            self.id = entity.api.create_workspace(entity.id, name)
+            self.id = entity.api.create_workspace(entity.id,
+                                                   name or "Awesome Workspace",
+                                                   description or "No description provided")
         else:
             self.id = id
 
@@ -56,8 +58,7 @@ class Workspace:
         from datatune.dataset import Dataset
 
         dataset_id = self.api.add_dataset(
-            self.entity.id, 
-            self.id, 
+            self.id,
             path, 
             self.credentials_id, 
             name, 
