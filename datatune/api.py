@@ -250,9 +250,11 @@ class API:
         view: str,
         dataset: str,
         table: str,
+        column_maps: Optional[Dict[str, str]] = None,
         start: Optional[int] = None,
         stop: Optional[int] = None,
     ) -> None:
+
         slice = {"dataset": dataset}
 
         if start is not None:
@@ -261,8 +263,12 @@ class API:
             slice["stop"] = stop
 
         slice['table'] = table
-
         json_payload = {"slices": [slice]}
+    
+        if column_maps is not None:
+            json_payload['column_maps'] = column_maps
+
+        
 
         response = self.put(endpoint=f"views/{view}/extend", json=json_payload)
         return response["data"]
