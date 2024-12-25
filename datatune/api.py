@@ -388,3 +388,9 @@ class API:
     def generate_user_agent() -> str:
         """Generate a user agent string with details about the platform."""
         return f"Datatune/{platform.system()} {platform.release()} Python/{platform.python_version()}"
+
+    def get_view_by_name(self, workspace_id: str, name: str) -> str:
+        response = self.get(
+            endpoint=f"workspaces/{workspace_id}/views/by-name/{name}",
+        )
+        return response["data"]["id"]

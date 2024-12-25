@@ -1,6 +1,6 @@
 from datatune.api import API
 from typing import List, Optional, Dict, Union
-
+from .exceptions import DatatuneException
 
 class Workspace:
     def __init__(self, entity, id: Optional[str] = None, name: Optional[str] = None, description: Optional[str] = None):
@@ -82,10 +82,10 @@ class Workspace:
         view_id = self.api.create_view(self.entity.id, self.id, view_name)
         return View(id=view_id, workspace=self)
 
-    def load_view(self, id: str):
+    def load_view(self, name: Union[str, 'View']) -> 'View':
         from datatune.view import View
-
-        return View(id=id, workspace=self)
+        view_id = self.api.get_view_by_name(self.id, name)          
+        return View(id=view_id, workspace=self)
 
     def delete_view(self, view_name: str) -> None:
         self.api.delete_view(self.entity.id, self.id, view_name)
@@ -107,3 +107,4 @@ class Workspace:
             path,
             description,
         )
+    
