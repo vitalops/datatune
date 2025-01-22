@@ -1,0 +1,61 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>view Documentation</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+                pre { background-color: #f5f5f5; padding: 10px; border-radius: 5px; }
+                code { font-family: 'Courier New', monospace; }
+            </style>
+        </head>
+        <body>
+            <h1>view</h1>
+<h2>view.View</h2>
+<p>A class representing a view in Datatune that can combine and manipulate datasets.</p>
+<p>Args:
+    id (str): The unique identifier of the view
+    workspace (Workspace): The workspace object that contains this view</p>
+<h2>view.dataset_slices</h2>
+<p>Returns a list of dataset slices associated with this view.</p>
+<p>Returns:
+    List[DatasetSlice]: List of DatasetSlice objects representing portions of datasets in the view</p>
+<h2>view.extra_columns</h2>
+<p>Returns a list of extra columns added to this view.</p>
+<p>Returns:
+    List[ExtraColumn]: List of ExtraColumn objects associated with the view</p>
+<h2>view.extend</h2>
+<p>Extends the view with data from a dataset or dataset slice.</p>
+<p>Args:
+    data (Union[Dataset, DatasetSlice]): The dataset or slice to add to the view
+    table_index (Optional[int]): Index of the table in the dataset. Defaults to 0
+    start (Optional[int]): Starting index for the slice
+    stop (Optional[int]): Ending index for the slice
+    column_maps (Optional[Dict[str, str]]): Mapping of source column names to target column names</p>
+<p>Returns:
+    View: The updated view object</p>
+<p>Raises:
+    TypeError: If data is neither a Dataset nor a DatasetSlice</p>
+<h2>view.add_extra_column</h2>
+<p>Adds a new column to the view.</p>
+<p>Args:
+    column_name (str): Name of the new column
+    column_type (str): Data type of the column
+    labels (Optional[List[str]]): List of possible labels for categorical columns
+    default_value (Any): Default value for the column
+    num_rows (int): Number of rows to initialize. Defaults to 0</p>
+<p>Returns:
+    View: The updated view object</p>
+<h2>view.get_extra_column</h2>
+<p>Retrieves an extra column by its ID.</p>
+<p>Args:
+    id (str): ID of the extra column to retrieve</p>
+<p>Returns:
+    ExtraColumn: The requested extra column object</p>
+<h2>view.delete_extra_column</h2>
+<p>Deletes an extra column from the view.</p>
+<p>Args:
+    id (str): ID of the extra column to delete</p>
+        </body>
+        </html>
+        
