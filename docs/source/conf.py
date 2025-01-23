@@ -18,7 +18,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'myst_parser',
-    'sphinx_rtd_theme',
+    'sphinx_book_theme',
     'sphinx_design'
 ]
 
