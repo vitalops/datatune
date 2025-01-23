@@ -4,15 +4,16 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build-docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Add this explicit permission
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper versioning
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -21,8 +22,7 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install sphinx myst-parser sphinxawesome_theme
-          # Add any other dependencies your docs need
+          pip install sphinx myst-parser sphinx-rtd-theme
           
       - name: Build documentation
         run: |
@@ -31,7 +31,7 @@ jobs:
           
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'  # only deploy on main branch push
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/build/html
+          force_orphan: true  # Create a new orphan branch for gh-pages
