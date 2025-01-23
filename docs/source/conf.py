@@ -14,15 +14,28 @@ release = '0.0.2'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-# Add these to the extensions list
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'myst_parser'
+    'myst_parser',
+    'sphinx_rtd_theme',
+    'sphinx_design'
+]
+
+# Enable MyST features
+myst_enable_extensions = [
+    "colon_fence",
+    "attrs_inline",
+    "deflist"
+]
+
+# Custom CSS
+html_css_files = [
+    'css/custom.css',
 ]
 
 # Change the theme to Read the Docs
-html_theme = 'sphinxawesome_theme'
+html_theme = 'sphinx_book_theme'
 
 # Add markdown support
 source_suffix = {
