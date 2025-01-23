@@ -6,7 +6,19 @@
 [![Documentation](https://img.shields.io/badge/docs-datatune.ai-blue)](https://docs.datatune.ai)
 [![Downloads](https://static.pepy.tech/badge/datatune-client)](https://pepy.tech/project/datatune-client)
 
-SDK for [Datatune](https://datatune.ai), a unified platform for AI data workflows
+DataTune is a unified platform for AI data workflows that simplifies how you manage, process, and stream training data for machine learning models.
+
+The client sdk allows you to connect with the platform via code and continue with your data workflows with ease.
+
+[Website](https://datatune.ai) • [Documentation](https://docs.datatune.ai) • [Blog](https://medium.com/@abhijithneilabraham/simplifying-llm-training-with-datatune-a-beginners-guide-4492c6ca5812) • [Quick Start](#quick-start)
+
+## Key Features
+
+- **Unified Data Management**: Centralize your datasets from multiple sources in one place
+- **Efficient Streaming**: Stream data in batches directly to your machines
+- **Simple Integration**: Get started with just a few lines of code
+- **Intuitive Dataset Views**: Easy-to-use interface for data labeling and editing.
+- **Parallel processing Support**: Scale your data processing with parallel workers
 
 ## Installation
 
@@ -37,6 +49,11 @@ for batch in dataloader.stream():
     pass
 ```
 
+## Documentation
+
+For detailed documentation and guides, visit [docs.datatune.ai](https://docs.datatune.ai)
+
+
 ## License
 
-MIT License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
