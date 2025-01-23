@@ -21,14 +21,13 @@ jobs:
       - name: Install dependencies
         run: |
           pip install sphinx myst-parser sphinx-book-theme sphinx-design
-
           
       - name: Build documentation
         run: |
           cd docs
           make docs
-          # Add a .nojekyll file to bypass Jekyll processing
           touch build/html/.nojekyll
+          echo "docs.datatune.ai" > build/html/CNAME
           
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
@@ -36,3 +35,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/build/html
           force_orphan: true
+          cname: docs.datatune.ai
