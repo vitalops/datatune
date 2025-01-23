@@ -22,3 +22,17 @@ div[class^='highlight'] {
 div[class^='highlight'] pre {
     padding: 1rem;
 }
+
+/* Dark mode fixes */
+[data-theme="dark"] div[class^='highlight'] {
+    background: #1a1a1a;
+}
+
+[data-theme="dark"] .highlight {
+    color: #ffffff;
+}
+
+/* Remove lined bars from titles */
+h1::after, h2::after, h3::after {
+    display: none !important;
+}

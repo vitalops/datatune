@@ -35,7 +35,7 @@ html_css_files = [
 ]
 
 # Change the theme to Read the Docs
-html_theme = 'sphinxawesome_theme'
+html_theme = 'sphinx_book_theme'
 
 # Add markdown support
 source_suffix = {
