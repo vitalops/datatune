@@ -36,3 +36,8 @@ div[class^='highlight'] pre {
 h1::after, h2::after, h3::after {
     display: none !important;
 }
+
+.navbar-brand.logo img {
+    max-width: 150px !important;
+    height: 100px !important;
+}
