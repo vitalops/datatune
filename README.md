@@ -1,5 +1,11 @@
 # DataTune Client
 
+[![PyPI version](https://badge.fury.io/py/datatune-client.svg)](https://badge.fury.io/py/datatune-client)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.7+](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Documentation](https://img.shields.io/badge/docs-datatune.ai-blue)](https://docs.datatune.ai)
+[![Downloads](https://static.pepy.tech/badge/datatune-client)](https://pepy.tech/project/datatune-client)
+
 SDK for [Datatune](https://datatune.ai), a unified platform for AI data workflows
 
 ## Installation
@@ -30,7 +36,6 @@ for batch in dataloader.stream():
     # Process your batch
     pass
 ```
-
 
 ## License
 
