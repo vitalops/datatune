@@ -14,7 +14,8 @@ The client sdk allows you to connect with the platform via code and continue wit
     <a href="https://datatune.ai"><strong>Website</strong></a> • 
     <a href="https://docs.datatune.ai"><strong>Documentation</strong></a> • 
     <a href="https://medium.com/@abhijithneilabraham/simplifying-llm-training-with-datatune-a-beginners-guide-4492c6ca5812"><strong>Blog</strong></a> • 
-    <a href="#quick-start"><strong>Quick Start</strong></a>
+    <a href="#quick-start"><strong>Quick Start</strong></a>•
+    <a href="#contact-us"><strong>Contact Us</strong></a>
 </div>
 
 ## Key Features
@@ -57,6 +58,11 @@ for batch in dataloader.stream():
 ## Documentation
 
 For detailed documentation and guides, visit [docs.datatune.ai](https://docs.datatune.ai)
+
+## Contact Us
+
+• Email: hello@vitalops.ai   
+• Twitter: https://x.com/datatune_ai
 
 
 ## License
