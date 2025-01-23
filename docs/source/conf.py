@@ -33,6 +33,10 @@ source_suffix = {
 templates_path = ['_templates']
 exclude_patterns = []
 
+# for GitHub Pages
+html_baseurl = 'https://vitalops.github.io/datatune'
+html_static_path = ['_static']
+
 
 
 # -- Options for HTML output -------------------------------------------------
