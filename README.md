@@ -10,7 +10,12 @@ DataTune is a unified platform for AI data workflows that simplifies how you man
 
 The client sdk allows you to connect with the platform via code and continue with your data workflows with ease.
 
-[Website](https://datatune.ai) • [Documentation](https://docs.datatune.ai) • [Blog](https://medium.com/@abhijithneilabraham/simplifying-llm-training-with-datatune-a-beginners-guide-4492c6ca5812) • [Quick Start](#quick-start)
+<div align="center" style="font-size: 1.5em; line-height: 2em; margin: 20px 0;">
+    <a href="https://datatune.ai"><strong>Website</strong></a> • 
+    <a href="https://docs.datatune.ai"><strong>Documentation</strong></a> • 
+    <a href="https://medium.com/@abhijithneilabraham/simplifying-llm-training-with-datatune-a-beginners-guide-4492c6ca5812"><strong>Blog</strong></a> • 
+    <a href="#quick-start"><strong>Quick Start</strong></a>
+</div>
 
 ## Key Features
 
