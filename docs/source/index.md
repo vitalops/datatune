@@ -65,12 +65,6 @@ view.md
 workspace.md
 streaming.md
 extra_column.md
-build/html/_sources/entity.md
-build/html/_sources/dataset.md
-build/html/_sources/view.md
-build/html/_sources/workspace.md
-build/html/_sources/streaming.md
-build/html/_sources/extra_column.md
 ```
 ## License
 
