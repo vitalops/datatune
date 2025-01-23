@@ -61,8 +61,8 @@ For detailed documentation and guides, visit [docs.datatune.ai](https://docs.dat
 
 ## Contact Us
 
-Email: hello@vitalops.ai   
-Twitter: https://x.com/datatune_ai
+• Email: hello@vitalops.ai   
+• Twitter: https://x.com/datatune_ai
 
 
 ## License
