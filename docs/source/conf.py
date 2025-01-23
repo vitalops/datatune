@@ -51,6 +51,12 @@ html_baseurl = 'https://vitalops.github.io/datatune'
 html_static_path = ['_static']
 
 
-
+html_logo = "_static/datatune_logo.png"
+html_theme_options = {
+    "logo": {
+        "image_light": "_static/datatune_logo.png",
+        "image_dark": "_static/datatune_logo.png"
+    }
+}
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
