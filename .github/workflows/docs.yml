@@ -9,11 +9,9 @@ jobs:
   build-docs:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Add this explicit permission
+      contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for proper versioning
       
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -22,16 +20,18 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install sphinx myst-parser sphinxawesome_theme
+          pip install sphinx myst-parser sphinx-rtd-theme
           
       - name: Build documentation
         run: |
           cd docs
           make docs
+          # Add a .nojekyll file to bypass Jekyll processing
+          touch build/html/.nojekyll
           
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/build/html
-          force_orphan: true  # Create a new orphan branch for gh-pages
+          force_orphan: true
