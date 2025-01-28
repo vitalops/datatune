@@ -31,23 +31,24 @@ for batch in dataloader.stream():
     pass
 ```
 
-## Resources
+## Blogs
 
 :::::{grid} 2
-
-::::{grid-item-card} Latest Blog Posts
+::::{grid-item-card} Simplifying LLM Training with DataTune: A Beginner's Guide
 :link: https://medium.com/@abhijithneilabraham/simplifying-llm-training-with-datatune-a-beginners-guide-4492c6ca5812
-
-**Simplifying LLM Training with DataTune: A Beginner's Guide**
-
 Learn how to get started with DataTune for LLM training workflows.
 ::::
 
-::::{grid-item-card} SDK Examples
+::::{grid-item-card} Simplify Large Data Processing with DataTune
+:link: https://medium.com/@abhijithneilabraham/simplify-large-data-processing-with-datatune-01ecfb736bcd
+Explore techniques for handling and processing large datasets efficiently with DataTune.
+::::
+:::::
+
+## SDK Examples
+:::::{grid} 2
+::::{grid-item-card} Jupyter Notebook Examples
 :link: https://github.com/vitalops/datatune/blob/main/examples/sdk_example.ipynb
-
-**Jupyter Notebook Examples**
-
 Explore practical examples of using the DataTune SDK.
 ::::
 
