@@ -394,3 +394,11 @@ class API:
             endpoint=f"workspaces/{workspace_id}/views/by-name/{name}",
         )
         return response["data"]["id"]
+    
+    def get_extra_columns_details(self, workspace_id: str, view_id: str) -> Dict[str, Any]:
+        """
+        Get detailed information about extra columns in a dataset view.
+        """
+        endpoint = f"workspaces/{workspace_id}/views/{view_id}/columns/details"
+        response = self.get(endpoint)
+        return response["data"]
