@@ -26,6 +26,10 @@ The client sdk allows you to connect with the platform via code and continue wit
 - **Intuitive Dataset Views**: Easy-to-use interface for data labeling and editing.
 - **Parallel processing Support**: Scale your data processing with parallel workers
 
+## Platform
+
+Head over to https://datatune.ai/ to request access to the platform.
+
 ## Installation
 
 ```bash
