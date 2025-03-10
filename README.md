@@ -66,6 +66,6 @@ dataloader = ds3.pytorch()
 
 ### Sample a random subsest
 
-```
+```python
 print(ds3.sample(10))
 ```
