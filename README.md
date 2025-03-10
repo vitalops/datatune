@@ -63,3 +63,9 @@ ds4 = llm_transform(ds3)  # or ds4 = ds3.transform(llm_transform)?
 ```python
 dataloader = ds3.pytorch()
 ```
+
+### Sample a random subsest
+
+```
+print(ds3.sample(10))
+```
