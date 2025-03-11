@@ -1,0 +1,6 @@
+boto3
+black
+s3fs==2024.6.1
+pandas
+pyarrow
+datasets
