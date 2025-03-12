@@ -1,17 +1,16 @@
 """
 Datatune: Your backend for LLM powered Big Data Apps
-==================================================
-
-Datatune provides a unified interface for working with large datasets
-and building LLM-powered data applications.
 """
 
+__version__ = "0.1.0"
 
 from .dataset import dataset, Dataset
+from .operations import concat
 from . import apps
 
 __all__ = [
     "dataset",
     "Dataset",
     "apps",
+    "concat",
 ]
