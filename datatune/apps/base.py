@@ -1,4 +1,4 @@
-from ..dataset import Dataset
+from datatune.dataset import Dataset
 
 class BaseApp:
     def __init__(self, dataset: Dataset):
