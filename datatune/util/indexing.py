@@ -1,8 +1,36 @@
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional, Tuple, Union
 from functools import partial
 
 
-INDEX = Union[int, slice, Iterable[int]]
+ROW_INDEX_TYPE = Union[int, slice, Iterable[int]]
+COLUMN_INDEX_TYPE = Union[str, Iterable[str]]
+INDEX_TYPE = Union[
+    ROW_INDEX_TYPE, COLUMN_INDEX_TYPE, Tuple[ROW_INDEX_TYPE, COLUMN_INDEX_TYPE]
+]
+
+
+def parse_row_and_column_indices(
+    item: INDEX_TYPE,
+) -> Tuple[ROW_INDEX_TYPE, COLUMN_INDEX_TYPE]:
+    if isinstance(item, str):
+        return slice(None), item
+    if isinstance(item, int):
+        return item, None
+    if isinstance(item, slice):
+        return item, None
+    if isinstance(item, Iterable):
+        if isinstance(item, tuple):
+            if not item:
+                return slice(None), []
+            if isinstance(item[0], str):
+                if len(item) == 1:
+                    return slice(None), item[0]
+                if isinstance(item[1], str):
+                    return slice(None), item
+                else:
+                    assert len(item) == 2
+                    return item[1], item[0]
+        return item, None
 
 
 def slice_length(s: slice, length: int) -> int:
@@ -118,7 +146,7 @@ def apply_slice_on_slice(s1: slice, s2: slice) -> slice:
     return slice(start, stop, step)
 
 
-def apply_slice(s1: INDEX, s2: INDEX, length: int) -> Union[
+def apply_slice(s1: INDEX_TYPE, s2: INDEX_TYPE, length: int) -> Union[
     slice,
     Iterable[int],
 ]:

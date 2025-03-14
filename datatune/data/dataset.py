@@ -1,12 +1,14 @@
 import numpy as np
 from dataclasses import dataclass
 import abc
-from typing import Iterable, List, Tuple, Union, Dict
+from typing import Dict
 from copy import deepcopy
-
-
-row_index_type = Union[int, slice, Iterable[int]]
-column_index_type = Union[str, Iterable[str]]
+from datatune.util.indexing import (
+    apply_slice,
+    ROW_INDEX_TYPE,
+    INDEX_TYPE,
+    parse_row_and_column_indices,
+)
 
 
 @dataclass
@@ -19,7 +21,7 @@ class Dataset(abc.ABC):
 
     def __init__(self):
         self.columns: Dict[str, Column] = {}
-        self.slice: Union[slice, Iterable[int]] = slice(None)
+        self.slice: ROW_INDEX_TYPE = slice(None)
 
     def copy(self) -> "Dataset":
         return deepcopy(self)
@@ -28,10 +30,14 @@ class Dataset(abc.ABC):
     def __len__(self) -> int:
         pass
 
-    def __getitem__(
-        self,
-        item: Union[
-            row_index_type, column_index_type, Tuple[row_index_type, column_index_type]
-        ],
-    ) -> "Dataset":
+    def __getitem__(self, item: INDEX_TYPE) -> "Dataset":
+        ret = self.copy()
+        row_idx, col_idx = parse_row_and_column_indices(item)
+        ret.slice = apply_slice(row_idx, ret.slice, len(self))
+        if col_idx is not None:
+            ret.columns = {col: self.columns[col] for col in col_idx}
+        return ret
+
+    @abc.abstractmethod
+    def realize(self):
         pass
