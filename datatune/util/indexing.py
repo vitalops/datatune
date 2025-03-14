@@ -10,7 +10,36 @@ INDEX_TYPE = Union[
 ]
 
 
-def slice_length(s: slice, length: int) -> int:
+def parse_row_and_column_indices(
+    item: INDEX_TYPE,
+) -> Tuple[ROW_INDEX_TYPE, COLUMN_INDEX_TYPE]:
+    if isinstance(item, str):
+        return slice(None), item
+    if isinstance(item, int):
+        return item, None
+    if isinstance(item, slice):
+        return item, None
+    if isinstance(item, Iterable):
+        if not isinstance(item, (list, tuple)):
+            item = tuple(item)
+        if not item:
+            return slice(None), []
+        if isinstance(item[0], str):
+            if len(item) == 1:
+                return slice(None), item[0]
+            if isinstance(item[1], str):
+                return slice(None), item
+            else:
+                assert len(item) == 2
+                return item[1], item[0]
+        return item, None
+
+
+def slice_length(s: ROW_INDEX_TYPE, length: int) -> int:
+    if isinstance(s, int):
+        return 1
+    if hasattr(s, "__len__"):
+        return len(s)
     start, stop, step = s.start, s.stop, s.step
     if start is None:
         start = 0
