@@ -92,14 +92,14 @@ def apply_int_on_slice(
             raise IndexError(
                 f"Index {orig_i} is out of bounds for slice {orig_s} over length {length}"
             )
-    resolved = start + i * step
-    if (step > 0 and ((resolved < start) or (resolved >= stop))) or (
-        step < 0 and ((resolved > start) or (resolved <= stop))
+    resolved_index = start + i * step
+    if (step > 0 and ((resolved_index < start) or (resolved_index >= stop))) or (
+        step < 0 and ((resolved_index > start) or (resolved_index <= stop))
     ):
         raise IndexError(
             f"Index {orig_i} is out of bounds for slice {orig_s} over length {length}"
         )
-    return resolved
+    return resolved_index
 
 
 def apply_int_on_iterable(i: int, indices: Iterable[int]) -> int:
