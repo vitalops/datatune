@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datatune"
+version = "0.0.1"
+description = "Your backend for LLM powered Big Data Apps"
+readme = "README.md"
+authors = [
+    {name = "Abhijith Neil Abraham", email = "abhijith@vitalops.ai"},
+    {name = "Fariz Rahman", email = "fariz@vitalops.ai"},
+]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/vitalops/datatune"
+"Bug Tracker" = "https://github.com/vitalops/datatune/issues"
+
+[tool.black]
+line-length = 88
+target-version = ["py38", "py39", "py310"]
