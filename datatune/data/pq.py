@@ -9,12 +9,21 @@ from copy import deepcopy
 
 
 class ParquetDataset(Dataset):
-    def __init__(self, parquet_path: str):
+    def __init__(self, source: Union[str, pq.ParquetFile]):
         super().__init__()
-        self.parquet_path = parquet_path
-
-        # Open the file for metadata only - doesn't load data
-        self.parquet_file = pq.ParquetFile(parquet_path)
+        
+        # Store the source information
+        self.source = source
+        
+        # Initialize the ParquetFile object based on the source type
+        if isinstance(source, str):
+            self.parquet_path = source
+            self.parquet_file = pq.ParquetFile(source)
+        elif isinstance(source, pq.ParquetFile):
+            self.parquet_path = None  # No local path for remote files
+            self.parquet_file = source
+        else:
+            raise TypeError(f"Expected str path or ParquetFile object, got {type(source)}")
 
         # Get file metadata
         self.num_row_groups = self.parquet_file.num_row_groups
@@ -54,8 +63,8 @@ class ParquetDataset(Dataset):
             self.columns[field] = Column(field, np_type)
 
     def copy(self) -> "ParquetDataset":
-        # Create a new instance with the same parquet file
-        new_ds = ParquetDataset(self.parquet_path)
+        # Create a new instance with the same source
+        new_ds = ParquetDataset(self.source)
 
         # Copy the columns dictionary (this can be safely deepcopied)
         new_ds.columns = deepcopy(self.columns)
@@ -319,3 +328,11 @@ class ParquetDataset(Dataset):
         temp_dataset = self.copy()
         temp_dataset.slice = slice(0, n)
         return temp_dataset.realize()
+
+    @classmethod
+    def from_file_path(cls, file_path: str) -> "ParquetDataset":
+        return cls(file_path)
+
+    @classmethod
+    def from_parquet_file(cls, parquet_file: pq.ParquetFile) -> "ParquetDataset":
+        return cls(parquet_file)
