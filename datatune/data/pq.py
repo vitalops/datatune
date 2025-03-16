@@ -183,7 +183,7 @@ class ParquetDataset(Dataset):
         row_groups = self._get_row_groups_for_slice(self.slice)
         
         # Get column names to read
-        column_names = list(self.columns.keys())
+        column_names = list(self.columns)
         
         # Special case for integer index (single row)
         if isinstance(self.slice, int):
