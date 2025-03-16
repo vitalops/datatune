@@ -19,7 +19,6 @@ class Column:
 
 
 class Dataset(abc.ABC):
-
     def __init__(self):
         self.columns: Dict[str, Column] = {}
         self.slice: ROW_INDEX_TYPE = slice(None)

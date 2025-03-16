@@ -176,10 +176,9 @@ def apply_iterable_on_iterable(
     return [indices2[i] for i in indices]
 
 
-def apply_slice(s1: ROW_INDEX_TYPE, s2: ROW_INDEX_TYPE, length: int) -> Union[
-    slice,
-    Iterable[int],
-]:
+def apply_slice(
+    s1: ROW_INDEX_TYPE, s2: ROW_INDEX_TYPE, length: int
+) -> Union[slice, Iterable[int],]:
     if s1 == slice(None):
         return s2
     if s2 == slice(None):
