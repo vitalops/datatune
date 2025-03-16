@@ -8,6 +8,11 @@ import pyarrow.parquet as pq
 from datetime import datetime
 
 from datatune.data.pq import ParquetDataset
+from datatune.util.indexing import (
+    get_row_groups_for_slice,
+    map_slice_to_row_group
+)
+
 
 
 @pytest.fixture
@@ -93,7 +98,7 @@ def test_custom_copy(sample_parquet_file):
 
     # Test copy with default slice
     ds_copy = ds.copy()
-    assert ds_copy.parquet_path == ds.parquet_path
+    assert ds_copy.source == ds.source  # Changed to check source instead of parquet_path
     assert ds_copy.slice == ds.slice
     assert ds_copy.base_length == ds.base_length
     assert list(ds_copy.columns.keys()) == list(ds.columns.keys())
@@ -109,29 +114,29 @@ def test_get_row_groups_for_slice(sample_parquet_file):
     ds = ParquetDataset(sample_parquet_file)
 
     # Test integer index
-    assert ds._get_row_groups_for_slice(50) == [0]
-    assert ds._get_row_groups_for_slice(150) == [1]
-    assert ds._get_row_groups_for_slice(250) == [2]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, 50) == [0]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, 150) == [1]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, 250) == [2]
 
     # Test slice that spans one row group
-    assert ds._get_row_groups_for_slice(slice(50, 70)) == [0]
-    assert ds._get_row_groups_for_slice(slice(150, 170)) == [1]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(50, 70)) == [0]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(150, 170)) == [1]
 
     # Test slice that spans multiple row groups
-    assert ds._get_row_groups_for_slice(slice(90, 110)) == [0, 1]
-    assert ds._get_row_groups_for_slice(slice(190, 210)) == [1, 2]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(90, 110)) == [0, 1]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(190, 210)) == [1, 2]
 
     # Test slice that spans all row groups
-    assert ds._get_row_groups_for_slice(slice(50, 250)) == [0, 1, 2]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(50, 250)) == [0, 1, 2]
 
     # Test negative indices
-    assert ds._get_row_groups_for_slice(slice(-100, None)) == [2]
-    assert ds._get_row_groups_for_slice(slice(-200, -50)) == [1, 2]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(-100, None)) == [2]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(-200, -50)) == [1, 2]
 
     # Test list of indices
-    assert ds._get_row_groups_for_slice([50, 150, 250]) == [0, 1, 2]
-    assert ds._get_row_groups_for_slice([50, 51, 52]) == [0]
-    assert ds._get_row_groups_for_slice([99, 100]) == [0, 1]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, [50, 150, 250]) == [0, 1, 2]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, [50, 51, 52]) == [0]
+    assert get_row_groups_for_slice(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, [99, 100]) == [0, 1]
 
 
 def test_map_slice_to_row_group(sample_parquet_file):
@@ -139,30 +144,30 @@ def test_map_slice_to_row_group(sample_parquet_file):
     ds = ParquetDataset(sample_parquet_file)
 
     # Test integer mapping
-    assert ds._map_slice_to_row_group(50, 0) == [
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, 50, 0) == [
         50
     ]  # Row 50 in group 0 -> local index [50]
-    assert ds._map_slice_to_row_group(150, 1) == [
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, 150, 1) == [
         50
     ]  # Row 150 in group 1 -> local index [50]
-    assert ds._map_slice_to_row_group(50, 1) == []  # Row 50 not in group 1
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, 50, 1) == []  # Row 50 not in group 1
 
     # Test slice mapping
     # Slice [50:70] in group 0 -> local slice [50:70]
-    assert ds._map_slice_to_row_group(slice(50, 70), 0) == slice(50, 70, 1)
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(50, 70), 0) == slice(50, 70, 1)
 
     # Slice [90:110] in group 0 -> local slice [90:100]
-    assert ds._map_slice_to_row_group(slice(90, 110), 0) == slice(90, 100, 1)
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(90, 110), 0) == slice(90, 100, 1)
 
     # Slice [90:110] in group 1 -> local slice [0:10]
-    assert ds._map_slice_to_row_group(slice(90, 110), 1) == slice(0, 10, 1)
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, slice(90, 110), 1) == slice(0, 10, 1)
 
     # Test list mapping
     # Indices [50, 60, 150] in group 0 -> local indices [50, 60]
-    assert ds._map_slice_to_row_group([50, 60, 150], 0) == [50, 60]
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, [50, 60, 150], 0) == [50, 60]
 
     # Indices [50, 60, 150] in group 1 -> local indices [50]
-    assert ds._map_slice_to_row_group([50, 60, 150], 1) == [50]
+    assert map_slice_to_row_group(ds.base_length, ds.row_group_sizes, ds.row_group_offsets, [50, 60, 150], 1) == [50]
 
 
 def test_parquet_dataset_indexing(sample_parquet_file):

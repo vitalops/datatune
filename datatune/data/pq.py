@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Union, Optional, Iterable, Any
 from datatune.data.dataset import Dataset, Column
-from datatune.util.indexing import ROW_INDEX_TYPE, slice_length
+from datatune.util.indexing import ROW_INDEX_TYPE, slice_length, get_row_groups_for_slice, map_slice_to_row_group
 from copy import deepcopy
 
 
@@ -75,125 +75,14 @@ class ParquetDataset(Dataset):
         # The other attributes are recreated in the constructor
         return new_ds
 
-    def _get_row_groups_for_slice(self, sl: ROW_INDEX_TYPE) -> List[int]:
-        if isinstance(sl, int):
-            # Convert single index to iterable
-            adjusted_idx = sl if sl >= 0 else sl + self.base_length
-
-            # Ensure index is in bounds
-            if not (0 <= adjusted_idx < self.base_length):
-                # This ensures an IndexError will be raised later
-                return []
-
-            return self._get_row_groups_for_slice([adjusted_idx])
-
-        elif isinstance(sl, slice):
-            # Handle slice
-            start, stop, step = sl.start, sl.stop, sl.step
-            if start is None:
-                start = 0
-            if stop is None:
-                stop = self.base_length
-            if step is None:
-                step = 1
-
-            # Adjust negative indices
-            if start < 0:
-                start += self.base_length
-            if stop < 0:
-                stop += self.base_length
-
-            # Ensure bounds
-            start = max(0, min(start, self.base_length))
-            stop = max(0, min(stop, self.base_length))
-
-            # Find row groups that contain rows in the slice
-            required_groups = []
-            for i, offset in enumerate(self.row_group_offsets):
-                group_end = offset + self.row_group_sizes[i]
-                # If this row group contains any rows in the slice
-                if (offset < stop) and (group_end > start):
-                    required_groups.append(i)
-            return required_groups
-
-        elif isinstance(sl, Iterable):
-            # Handle list of indices
-            indices = sorted(
-                set(int(i) if i >= 0 else int(i + self.base_length) for i in sl)
-            )
-            required_groups = set()
-
-            for idx in indices:
-                if 0 <= idx < self.base_length:
-                    # Find the row group containing this index
-                    for group_idx, offset in enumerate(self.row_group_offsets):
-                        if idx < offset + self.row_group_sizes[group_idx]:
-                            required_groups.add(group_idx)
-                            break
-
-            return sorted(required_groups)
-
-        # Should not reach here due to type checking in the indexing utils
-        raise ValueError(f"Unsupported index type: {type(sl)}")
-
-    def _map_slice_to_row_group(
-        self, sl: ROW_INDEX_TYPE, group_idx: int
-    ) -> ROW_INDEX_TYPE:
-        group_offset = self.row_group_offsets[group_idx]
-        group_size = self.row_group_sizes[group_idx]
-
-        if isinstance(sl, int):
-            # Single index - convert to local index
-            adjusted_idx = sl if sl >= 0 else sl + self.base_length
-            local_idx = adjusted_idx - group_offset
-
-            # Check if the index is in this group
-            if 0 <= local_idx < group_size:
-                return [local_idx]  # Return as iterable
-            return []  # Index not in this group, return empty list
-
-        elif isinstance(sl, slice):
-            # Slice
-            start, stop, step = sl.start, sl.stop, sl.step
-            if start is None:
-                start = 0
-            if stop is None:
-                stop = self.base_length
-            if step is None:
-                step = 1
-
-            # Adjust for negative indices
-            if start < 0:
-                start += self.base_length
-            if stop < 0:
-                stop += self.base_length
-
-            # Map to local coordinates
-            local_start = max(0, start - group_offset)
-            local_stop = min(group_size, stop - group_offset)
-
-            if local_start >= group_size or local_stop <= 0:
-                return None  # Slice doesn't overlap this group
-
-            return slice(local_start, local_stop, step)
-
-        elif isinstance(sl, Iterable):
-            # List of indices
-            local_indices = []
-            for idx in sl:
-                if idx < 0:
-                    idx += self.base_length
-                local_idx = idx - group_offset
-                if 0 <= local_idx < group_size:
-                    local_indices.append(local_idx)
-            return local_indices if local_indices else None
-
-        # Should not reach here
-        return None
-
     def realize(self):
         # Determine which row groups contain our slice
-        row_groups = self._get_row_groups_for_slice(self.slice)
+        row_groups = get_row_groups_for_slice(
+            self.base_length, 
+            self.row_group_sizes, 
+            self.row_group_offsets, 
+            self.slice
+        )
 
         # Get column names to read
         column_names = list(self.columns)
@@ -245,7 +134,13 @@ class ParquetDataset(Dataset):
 
         for group_idx in row_groups:
             # Map the slice to this row group's local coordinates
-            local_slice = self._map_slice_to_row_group(self.slice, group_idx)
+            local_slice = map_slice_to_row_group(
+                self.base_length,
+                self.row_group_sizes,
+                self.row_group_offsets,
+                self.slice,
+                group_idx
+            )
 
             if local_slice is not None:
                 # Read the row group
