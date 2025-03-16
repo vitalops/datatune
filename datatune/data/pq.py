@@ -25,9 +25,7 @@ class ParquetDataset(Dataset):
         self.row_group_offsets = [0]
         for size in self.row_group_sizes[:-1]:
             self.row_group_offsets.append(self.row_group_offsets[-1] + size)
-            
-        # Initialize columns
-        self.columns = {}
+
         
         # Get schema using PyArrow's schema property
         schema = self.parquet_file.schema_arrow
