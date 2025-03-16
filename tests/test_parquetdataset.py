@@ -132,9 +132,9 @@ def test_map_slice_to_row_group(sample_parquet_file):
     ds = ParquetDataset(sample_parquet_file)
     
     # Test integer mapping
-    assert ds._map_slice_to_row_group(50, 0) == 50  # Row 50 in group 0 -> local index 50
-    assert ds._map_slice_to_row_group(150, 1) == 50  # Row 150 in group 1 -> local index 50
-    assert ds._map_slice_to_row_group(50, 1) is None  # Row 50 not in group 1
+    assert ds._map_slice_to_row_group(50, 0) == [50]  # Row 50 in group 0 -> local index [50]
+    assert ds._map_slice_to_row_group(150, 1) == [50]  # Row 150 in group 1 -> local index [50]
+    assert ds._map_slice_to_row_group(50, 1) == []  # Row 50 not in group 1
     
     # Test slice mapping
     # Slice [50:70] in group 0 -> local slice [50:70]
@@ -152,7 +152,6 @@ def test_map_slice_to_row_group(sample_parquet_file):
     
     # Indices [50, 60, 150] in group 1 -> local indices [50]
     assert ds._map_slice_to_row_group([50, 60, 150], 1) == [50]
-
 
 def test_parquet_dataset_indexing(sample_parquet_file):
     """Test that ParquetDataset indexing works correctly."""
