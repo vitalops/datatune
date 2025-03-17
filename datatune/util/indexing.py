@@ -15,7 +15,7 @@ def parse_row_and_column_indices(
 ) -> Tuple[ROW_INDEX_TYPE, COLUMN_INDEX_TYPE]:
     """
     Parse an index item into row and column components.
-    
+
     This function handles various input formats used to index a dataset:
     - String: Interpreted as a column name (column index with all rows)
     - Integer: Interpreted as a row index (one row with all columns)
@@ -23,12 +23,12 @@ def parse_row_and_column_indices(
     - Iterable of strings: Interpreted as multiple column names
     - Iterable of integers: Interpreted as multiple row indices
     - Tuple of (column, row): Interpreted as specific column(s) and row(s)
-    
+
     Parameters:
     -----------
     item : INDEX_TYPE
         The index item to parse
-        
+
     Returns:
     --------
     Tuple[ROW_INDEX_TYPE, COLUMN_INDEX_TYPE]
@@ -59,19 +59,19 @@ def parse_row_and_column_indices(
 def slice_length(s: ROW_INDEX_TYPE, length: int) -> int:
     """
     Calculate the number of elements that a slice or index will produce.
-    
+
     This function handles various index types:
     - Integer: Single element (length 1)
     - Slice: Number of elements in the slice applied to a sequence of the given length
     - Iterable: Number of elements in the iterable
-    
+
     Parameters:
     -----------
     s : ROW_INDEX_TYPE
         The slice, integer index, or iterable of indices
     length : int
         The length of the sequence being indexed
-        
+
     Returns:
     --------
     int
@@ -108,10 +108,10 @@ def apply_int_on_slice(
 ) -> int:
     """
     Apply an integer index to a sliced sequence to get the final index.
-    
+
     This function converts an index into a sliced sequence to the corresponding
     index in the original sequence.
-    
+
     Parameters:
     -----------
     i : int
@@ -122,12 +122,12 @@ def apply_int_on_slice(
         The length of the original sequence
     base_length : Optional[int]
         The length of the sliced sequence, calculated if not provided
-        
+
     Returns:
     --------
     int
         The index in the original sequence
-        
+
     Raises:
     -------
     IndexError
@@ -173,14 +173,14 @@ def apply_int_on_slice(
 def apply_int_on_iterable(i: int, indices: Iterable[int]) -> int:
     """
     Apply an integer index to an iterable of indices to get the final index.
-    
+
     Parameters:
     -----------
     i : int
         The index within the iterable
     indices : Iterable[int]
         The iterable of indices
-        
+
     Returns:
     --------
     int
@@ -194,7 +194,7 @@ def apply_iterable_on_slice(
 ) -> Iterable[int]:
     """
     Apply an iterable of indices to a sliced sequence to get the final indices.
-    
+
     Parameters:
     -----------
     indices : Iterable[int]
@@ -203,7 +203,7 @@ def apply_iterable_on_slice(
         The slice applied to the original sequence
     length : int
         The length of the original sequence
-        
+
     Returns:
     --------
     Iterable[int]
@@ -236,14 +236,14 @@ def apply_iterable_on_slice(
 def apply_slice_on_slice(s1: slice, s2: slice) -> slice:
     """
     Compose two slices to create a new slice that has the same effect as applying both sequentially.
-    
+
     Parameters:
     -----------
     s1 : slice
         The first slice to apply
     s2 : slice
         The second slice to apply
-        
+
     Returns:
     --------
     slice
@@ -289,14 +289,14 @@ def apply_iterable_on_iterable(
 ) -> Iterable[int]:
     """
     Apply an iterable of indices to another iterable to get the final indices.
-    
+
     Parameters:
     -----------
     indices : Iterable[int]
         The indices to apply
     indices2 : Iterable[int]
         The iterable to index into
-        
+
     Returns:
     --------
     Iterable[int]
@@ -311,7 +311,7 @@ def apply_slice(
 ) -> Union[slice, Iterable[int],]:
     """
     Apply one index to another to create a composite index.
-    
+
     This function handles various combinations of index types:
     - slice + slice: Creates a composed slice
     - iterable + slice: Applies the iterable to the slice
@@ -319,7 +319,7 @@ def apply_slice(
     - slice + iterable: Slices the iterable
     - iterable + iterable: Applies one iterable to another
     - int + iterable: Gets a specific element from the iterable
-    
+
     Parameters:
     -----------
     s1 : ROW_INDEX_TYPE
@@ -328,12 +328,12 @@ def apply_slice(
         The second index to apply
     length : int
         The length of the sequence being indexed
-        
+
     Returns:
     --------
     Union[slice, Iterable[int]]
         The composite index
-        
+
     Raises:
     -------
     ValueError
@@ -362,14 +362,18 @@ def apply_slice(
     raise TypeError(f"Invalid index types {s1} and {s2}. Expected {ROW_INDEX_TYPE}.")
 
 
-def get_row_groups_for_slice(base_length: int, row_group_sizes: List[int], 
-                            row_group_offsets: List[int], sl: ROW_INDEX_TYPE) -> List[int]:
+def get_row_groups_for_slice(
+    base_length: int,
+    row_group_sizes: List[int],
+    row_group_offsets: List[int],
+    sl: ROW_INDEX_TYPE,
+) -> List[int]:
     """
     Determine which row groups contain the rows referenced by a slice or index.
-    
+
     This function identifies which row groups in a partitioned dataset need to be
     read to satisfy a particular row selection.
-    
+
     Parameters:
     -----------
     base_length : int
@@ -380,12 +384,12 @@ def get_row_groups_for_slice(base_length: int, row_group_sizes: List[int],
         The starting offset of each row group
     sl : ROW_INDEX_TYPE
         The slice, integer index, or iterable of indices to evaluate
-        
+
     Returns:
     --------
     List[int]
         A list of row group indices that contain the requested rows
-        
+
     Raises:
     -------
     ValueError
@@ -400,7 +404,9 @@ def get_row_groups_for_slice(base_length: int, row_group_sizes: List[int],
             # This ensures an IndexError will be raised later
             return []
 
-        return get_row_groups_for_slice(base_length, row_group_sizes, row_group_offsets, [adjusted_idx])
+        return get_row_groups_for_slice(
+            base_length, row_group_sizes, row_group_offsets, [adjusted_idx]
+        )
 
     elif isinstance(sl, slice):
         # Handle slice
@@ -433,9 +439,7 @@ def get_row_groups_for_slice(base_length: int, row_group_sizes: List[int],
 
     elif isinstance(sl, Iterable):
         # Handle list of indices
-        indices = sorted(
-            set(int(i) if i >= 0 else int(i + base_length) for i in sl)
-        )
+        indices = sorted(set(int(i) if i >= 0 else int(i + base_length) for i in sl))
         required_groups = set()
 
         for idx in indices:
@@ -453,15 +457,18 @@ def get_row_groups_for_slice(base_length: int, row_group_sizes: List[int],
 
 
 def map_slice_to_row_group(
-    base_length: int, row_group_sizes: List[int], row_group_offsets: List[int],
-    sl: ROW_INDEX_TYPE, group_idx: int
+    base_length: int,
+    row_group_sizes: List[int],
+    row_group_offsets: List[int],
+    sl: ROW_INDEX_TYPE,
+    group_idx: int,
 ) -> ROW_INDEX_TYPE:
     """
     Map a global dataset slice to a local slice within a specific row group.
-    
+
     This function transforms indices that reference the entire dataset into
     indices that reference rows within a specific row group.
-    
+
     Parameters:
     -----------
     base_length : int
@@ -474,7 +481,7 @@ def map_slice_to_row_group(
         The slice, integer index, or iterable of indices to map
     group_idx : int
         The index of the row group to map to
-        
+
     Returns:
     --------
     ROW_INDEX_TYPE or None

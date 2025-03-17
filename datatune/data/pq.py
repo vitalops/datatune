@@ -4,17 +4,22 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Union, Optional, Iterable, Any
 from datatune.data.dataset import Dataset, Column
-from datatune.util.indexing import ROW_INDEX_TYPE, slice_length, get_row_groups_for_slice, map_slice_to_row_group
+from datatune.util.indexing import (
+    ROW_INDEX_TYPE,
+    slice_length,
+    get_row_groups_for_slice,
+    map_slice_to_row_group,
+)
 from copy import deepcopy
 
 
 class ParquetDataset(Dataset):
     def __init__(self, source: Union[str, pq.ParquetFile]):
         super().__init__()
-        
+
         # Store the source information
         self.source = source
-        
+
         # Initialize the ParquetFile object based on the source type
         if isinstance(source, str):
             self.parquet_path = source
@@ -23,7 +28,9 @@ class ParquetDataset(Dataset):
             self.parquet_path = None  # No local path for remote files
             self.parquet_file = source
         else:
-            raise TypeError(f"Expected str path or ParquetFile object, got {type(source)}")
+            raise TypeError(
+                f"Expected str path or ParquetFile object, got {type(source)}"
+            )
 
         # Get file metadata
         self.num_row_groups = self.parquet_file.num_row_groups
@@ -78,10 +85,7 @@ class ParquetDataset(Dataset):
     def realize(self):
         # Determine which row groups contain our slice
         row_groups = get_row_groups_for_slice(
-            self.base_length, 
-            self.row_group_sizes, 
-            self.row_group_offsets, 
-            self.slice
+            self.base_length, self.row_group_sizes, self.row_group_offsets, self.slice
         )
 
         # Get column names to read
@@ -139,7 +143,7 @@ class ParquetDataset(Dataset):
                 self.row_group_sizes,
                 self.row_group_offsets,
                 self.slice,
-                group_idx
+                group_idx,
             )
 
             if local_slice is not None:
