@@ -1,15 +1,12 @@
-import numpy as np
-from dataclasses import dataclass
 import abc
-from typing import Dict
 from copy import deepcopy
-from datatune.util.indexing import (
-    apply_slice,
-    ROW_INDEX_TYPE,
-    INDEX_TYPE,
-    parse_row_and_column_indices,
-    slice_length,
-)
+from dataclasses import dataclass
+from typing import Dict
+
+import numpy as np
+
+from datatune.util.indexing import (INDEX_TYPE, ROW_INDEX_TYPE, apply_slice,
+                                    parse_row_and_column_indices, slice_length)
 
 
 @dataclass
@@ -19,7 +16,6 @@ class Column:
 
 
 class Dataset(abc.ABC):
-
     def __init__(self):
         self.columns: Dict[str, Column] = {}
         self.slice: ROW_INDEX_TYPE = slice(None)

@@ -1,7 +1,7 @@
 # A Dataset that wraps a pandas DataFrame.
 # Pretty pointless, except for testing.
 
-from datatune.data.dataset import Dataset, Column
+from datatune.data.dataset import Column, Dataset
 
 
 class PandasDataset(Dataset):
