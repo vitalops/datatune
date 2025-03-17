@@ -1,5 +1,6 @@
-from datatune.data.pd import PandasDataset
 import pandas as pd
+
+from datatune.data.pd import PandasDataset
 
 
 def test_dataset_indexing():

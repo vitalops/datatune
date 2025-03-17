@@ -1,16 +1,14 @@
+from copy import deepcopy
+from typing import Any, Dict, Iterable, List, Optional, Union
+
+import numpy as np
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import pandas as pd
-import numpy as np
-from typing import List, Dict, Union, Optional, Iterable, Any
-from datatune.data.dataset import Dataset, Column
-from datatune.util.indexing import (
-    ROW_INDEX_TYPE,
-    slice_length,
-    get_row_groups_for_slice,
-    map_slice_to_row_group,
-)
-from copy import deepcopy
+
+from datatune.data.dataset import Column, Dataset
+from datatune.util.indexing import (ROW_INDEX_TYPE, get_row_groups_for_slice,
+                                    map_slice_to_row_group, slice_length)
 
 
 class ParquetDataset(Dataset):

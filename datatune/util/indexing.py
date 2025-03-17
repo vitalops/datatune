@@ -1,7 +1,6 @@
-from typing import Iterable, Optional, Tuple, Union, List
 from functools import partial
 from math import ceil
-
+from typing import Iterable, List, Optional, Tuple, Union
 
 ROW_INDEX_TYPE = Union[int, slice, Iterable[int]]
 COLUMN_INDEX_TYPE = Union[str, Iterable[str]]

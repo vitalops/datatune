@@ -1,14 +1,16 @@
 import os
 import tempfile
-import pytest
-import pandas as pd
-import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 from datetime import datetime
 
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pytest
+
 from datatune.data.pq import ParquetDataset
-from datatune.util.indexing import get_row_groups_for_slice, map_slice_to_row_group
+from datatune.util.indexing import (get_row_groups_for_slice,
+                                    map_slice_to_row_group)
 
 
 @pytest.fixture

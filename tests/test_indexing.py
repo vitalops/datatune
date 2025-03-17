@@ -1,14 +1,8 @@
 import pytest
 
-
-from datatune.util.indexing import (
-    slice_length,
-    apply_int_on_slice,
-    apply_int_on_iterable,
-    apply_iterable_on_slice,
-    apply_slice_on_slice,
-    apply_slice,
-)
+from datatune.util.indexing import (apply_int_on_iterable, apply_int_on_slice,
+                                    apply_iterable_on_slice, apply_slice,
+                                    apply_slice_on_slice, slice_length)
 
 #######################
 # Tests for slice_length
