@@ -15,6 +15,7 @@ license = {text = "MIT"}
 requires-python = ">=3.8"
 dependencies = [
     "numpy",
+    "litellm",
 ]
 
 [project.optional-dependencies]
