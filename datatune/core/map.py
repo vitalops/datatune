@@ -6,7 +6,6 @@ class Map:
         self.prompt = prompt
         self.input_fields = input_fields
         self.output_fields = output_fields
-    
 
     def get_full_prompt(self, input: Dict) -> str:
         return f"""Given the following input, please provide a response based on the prompt:
@@ -28,7 +27,6 @@ class Map:
             input = {field: input[field] for field in self.input_fields}
         full_prompt = self.get_full_prompt(input)
         raw = llm(full_prompt)
-        print(raw)
         response = json.loads(raw)
         if self.output_fields:
             response = {field: response[field] for field in self.output_fields}
