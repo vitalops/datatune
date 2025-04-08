@@ -187,6 +187,12 @@ Enhance the product description by:
 """)
 ```
 
+### Stream data for training
+
+```python
+dataloader = ds3.pytorch()
+```
+
 ### Development Setup
 
 ```bash
