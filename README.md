@@ -94,15 +94,6 @@ filtered_ds.to_csv("processed_data.csv")
 - Apache Arrow tables
 - In-memory data structures
 
-### Processing Capabilities
-
-- Text normalization and standardization
-- Entity extraction and anonymization
-- Sentiment and intent analysis
-- Classification and categorization
-- Data enrichment and augmentation
-- Complex pattern recognition
-
 ## 📊 Examples
 
 ### Data Anonymization
