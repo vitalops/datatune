@@ -41,12 +41,14 @@ Datatune requires:
 
 ## 🏁 Quick Start
 
+
 ```python
 import datatune as dt
 import os
 
-# Load a dataset
-ds = dt.load_dataset("data.csv")
+#Import datasets from a variety of sources:
+ds1 = dt.dataset("hf://....")
+ds2 = dt.dataset("s3://...")
 
 # Map operation using natural language
 transformed_ds = ds.map("standardize dates in the 'event_date' column to YYYY-MM-DD format")
