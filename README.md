@@ -63,9 +63,6 @@ Datatune requires:
 import datatune as dt
 import os
 
-# Set your LLM API key
-os.environ["DATATUNE_API_KEY"] = "your-api-key"
-
 # Load a dataset
 ds = dt.load_dataset("data.csv")
 
