@@ -13,6 +13,8 @@ import datatune as dt
 
 # Load your dataset
 data = dt.load_dataset("customer_feedback.csv")
+# or from an s3 bucket:
+data = dt.load_dataset("s3://my_bucket/customer_feedback_parquets")
 
 # Apply an LLM-powered transformation with natural language
 data = data.map("extract sentiment and key topics from each review")
