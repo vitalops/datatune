@@ -113,25 +113,8 @@ ds = dt.load_dataset("customer_data.csv")
 anonymized = ds.map("replace all personally identifiable information with XXX")
 ```
 
-### Medical Data Processing
 
-```python
-# Patient eligibility filtering for clinical trials
-patients = dt.load_dataset("patient_records.csv")
-
-criteria = """
-Include patients who:
-- Have Type 2 diabetes
-- HbA1c between 7.5% and 9.0%
-- No history of cardiovascular events
-- Failed on or intolerant to metformin
-- Age 40-65
-"""
-
-eligible = patients.filter(f"Determine if patient meets these criteria: {criteria}")
-```
-
-### Synthetic Data Generation
+### Data Generation
 
 ```python
 # Create an empty dataset with schema
@@ -156,19 +139,24 @@ Generate realistic banking transactions with:
 """)
 ```
 
-### Content Moderation
+### Semantic Data Filtering
 
 ```python
-# Filter social media posts with policy violations
-posts = dt.load_dataset("social_posts.csv")
-clean_posts = posts.filter("""
-Remove posts that:
-- Contain hate speech, harassment, or threats
-- Promote illegal activities
-- Include adult content inappropriate for general audiences
-- Contain scams or misleading information
-""")
+# Patient eligibility filtering for clinical trials
+patients = dt.load_dataset("patient_records.csv")
+
+criteria = """
+Include patients who:
+- Have Type 2 diabetes
+- HbA1c between 7.5% and 9.0%
+- No history of cardiovascular events
+- Failed on or intolerant to metformin
+- Age 40-65
+"""
+
+eligible = patients.filter(f"Determine if patient meets these criteria: {criteria}")
 ```
+
 
 ### Data Transformation
 
@@ -183,146 +171,6 @@ Enhance the product description by:
 4. Ensuring a consistent professional tone
 """)
 ```
-
-## 📘 API Reference
-
-### Core Classes
-
-#### `Dataset`
-
-The central data structure in Datatune.
-
-```python
-# Creating datasets
-ds = dt.load_dataset(source)  # From file, DataFrame, database, etc.
-ds = dt.create_empty_dataset(schema)  # Create with predefined schema
-
-# Core operations
-ds.map(instruction)  # Transform data
-ds.filter(condition)  # Select rows
-ds.reduce(operation)  # Aggregate data
-ds.expand(n, instruction)  # Generate synthetic data
-
-# Export operations
-ds.to_csv(path)
-ds.to_pandas()
-ds.to_dict()
-ds.to_parquet(path)
-```
-
-### Configuration
-
-```python
-# Global configuration
-dt.config.set_api_key("your-api-key")
-dt.config.set_llm_provider("openai")  # or "anthropic", "local", etc.
-dt.config.set_model("gpt-4")  # or "claude-3-opus-20240229", etc.
-
-# Operation-specific configuration
-ds.map("extract entities", 
-       temperature=0.2, 
-       max_tokens=500,
-       model="gpt-4-turbo")
-```
-
-## 🌐 Distributed Processing
-
-Datatune integrates with Dask for distributed processing:
-
-```python
-import datatune as dt
-from dask.distributed import Client
-
-# Connect to Dask cluster
-client = Client("dask-scheduler-address:8786")
-
-# Load data (automatically uses Dask)
-ds = dt.load_dataset("s3://bucket/large-dataset/*.parquet")
-
-# Process the same way as local datasets
-result = ds.map("extract key information")
-
-# Computation happens in parallel across the cluster
-result.compute()
-```
-
-### Scaling Features
-
-- Automatic partitioning of large datasets
-- LLM batch processing for optimal throughput
-- Intelligent resource management
-- Progress tracking and monitoring
-- Fault tolerance and error handling
-
-## ⚙️ LLM Configuration
-
-### Supported LLM Providers
-
-- OpenAI (GPT models)
-- Anthropic (Claude models)
-- HuggingFace (hosted models)
-- Azure OpenAI Service
-- Any OpenAI-compatible API
-- Local models via llama.cpp
-
-### Provider Configuration
-
-```python
-# OpenAI
-dt.config.set_llm_provider("openai")
-dt.config.set_api_key("sk-...")
-dt.config.set_model("gpt-4")
-
-# Anthropic
-dt.config.set_llm_provider("anthropic")
-dt.config.set_api_key("sk-ant-...")
-dt.config.set_model("claude-3-opus-20240229")
-
-# Local model
-dt.config.set_llm_provider("local")
-dt.config.set_model_path("/path/to/model.gguf")
-```
-
-### Advanced Options
-
-```python
-# Operation timeout
-dt.config.set_timeout(30)  # seconds
-
-# Retry configuration
-dt.config.set_max_retries(3)
-dt.config.set_retry_delay(2)  # seconds
-
-# Caching
-dt.config.enable_cache()
-dt.config.set_cache_dir("/path/to/cache")
-```
-
-## 💾 Data Persistence
-
-```python
-# Save processed dataset
-ds.save("processed_dataset")
-
-# Resume from saved state
-ds = dt.load_dataset("processed_dataset")
-
-# Export to various formats
-ds.to_csv("output.csv")
-ds.to_parquet("output.parquet")
-ds.to_json("output.json")
-ds.to_arrow("output.arrow")
-```
-
-## 🔧 Contributing
-
-We welcome contributions to Datatune! Here's how to get started:
-
-1. Fork the repository
-2. Create a new branch: `git checkout -b feature-name`
-3. Make your changes
-4. Run tests: `pytest`
-5. Submit a pull request
 
 ### Development Setup
 
