@@ -21,6 +21,11 @@ data = data.map("extract sentiment and key topics from each review")
 
 # Filter with semantic understanding
 important_issues = data.filter("keep only reviews mentioning product defects or safety concerns")
+
+# Ask questions directly to your tables
+from datatune.apps import TableQA
+table_qa = TableQA(data)
+table_qa.cli()
 ```
 
 ## 📋 Table of Contents
@@ -29,10 +34,6 @@ important_issues = data.filter("keep only reviews mentioning product defects or 
 - [Quick Start](#-quick-start)
 - [Key Features](#-key-features)
 - [Examples](#-examples)
-- [API Reference](#-api-reference)
-- [Distributed Processing](#-distributed-processing)
-- [LLM Configuration](#-llm-configuration)
-- [Contributing](#-contributing)
 - [License](#-license)
 
 ## 🚀 Installation
@@ -74,6 +75,11 @@ filtered_ds = transformed_ds.filter("remove rows with missing critical informati
 
 # Save the result
 filtered_ds.to_csv("processed_data.csv")
+
+# Ask questions about your data using TableQA
+from datatune.apps import TableQA
+table_qa = TableQA(filtered_ds)
+table_qa.cli()  # Launches an interactive CLI for querying your data
 ```
 
 ## ✨ Key Features
@@ -84,6 +90,7 @@ filtered_ds.to_csv("processed_data.csv")
 - **Filter**: Select rows based on semantic criteria
 - **Reduce**: Aggregate and summarize data with intelligence
 - **Expand**: Generate synthetic data with specific characteristics
+- **TableQA**: Ask natural language questions directly to your tabular data
 
 ### Supported Data Sources
 
@@ -104,6 +111,24 @@ ds = dt.load_dataset("customer_data.csv")
 anonymized = ds.map("replace all personally identifiable information with XXX")
 ```
 
+### Interactive Data Analysis with TableQA
+
+```python
+from datatune.apps import TableQA
+
+# Load your dataset
+sales_data = dt.load_dataset("quarterly_sales.csv")
+
+# Create a TableQA instance
+qa = TableQA(sales_data)
+
+# Ask questions programmatically
+answer = qa.ask("What were the top 3 performing products last quarter?")
+print(answer)
+
+# Or launch an interactive CLI for ongoing analysis
+qa.cli()
+```
 
 ### Data Generation
 
@@ -148,7 +173,6 @@ Include patients who:
 eligible = patients.filter(f"Determine if patient meets these criteria: {criteria}")
 ```
 
-
 ### Data Transformation
 
 ```python
@@ -170,12 +194,6 @@ git clone https://github.com/vitalops/datatune.git
 cd datatune
 pip install -e ".[dev]"
 pre-commit install
-```
-
-### Running Tests
-
-```bash
-pytest
 ```
 
 ## 🔬 Research
