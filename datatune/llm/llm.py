@@ -15,7 +15,6 @@ class LLM:
             messages=messages,
             **self.kwargs
         )
-        print(f"Response: {response}")
         return response["choices"][0]["message"]["content"]
 
 
