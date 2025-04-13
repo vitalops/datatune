@@ -1,16 +1,16 @@
 from typing import Dict, List, Optional, Callable
 
+
 class Filter:
-    def __init__(self, prompt: str, input_fields: Optional[List]=None):
+    def __init__(self, prompt: str, input_fields: Optional[List] = None):
         self.prompt = prompt
         self.input_fields = input_fields
-    
+
     def get_full_prompt(self, input: Dict) -> str:
         return f"""SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
 {self.prompt}
 INPUT: {input}
 INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT"""
-
 
     def process_output(self, output: str) -> bool:
         output = output.strip().upper()
@@ -19,8 +19,9 @@ INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT"""
         elif output == "FALSE":
             return False
         else:
-            raise ValueError(f"Invalid response from LLM: {output}. Expected 'TRUE' or 'FALSE'.")
-
+            raise ValueError(
+                f"Invalid response from LLM: {output}. Expected 'TRUE' or 'FALSE'."
+            )
 
     def execute(self, llm: Callable, input: Dict) -> bool:
         if self.input_fields:
@@ -29,4 +30,3 @@ INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT"""
         print(f"Full Prompt: {full_prompt}")
         response = llm(full_prompt)
         return self.process_output(response)
-

@@ -305,9 +305,10 @@ def apply_iterable_on_iterable(
     return [indices2[i] for i in indices]
 
 
-def apply_slice(
-    s1: ROW_INDEX_TYPE, s2: ROW_INDEX_TYPE, length: int
-) -> Union[slice, Iterable[int],]:
+def apply_slice(s1: ROW_INDEX_TYPE, s2: ROW_INDEX_TYPE, length: int) -> Union[
+    slice,
+    Iterable[int],
+]:
     """
     Apply one index to another to create a composite index.
 

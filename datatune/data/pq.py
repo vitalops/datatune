@@ -7,8 +7,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 from datatune.data.dataset import Column, Dataset
-from datatune.util.indexing import (ROW_INDEX_TYPE, get_row_groups_for_slice,
-                                    map_slice_to_row_group, slice_length)
+from datatune.util.indexing import (
+    ROW_INDEX_TYPE,
+    get_row_groups_for_slice,
+    map_slice_to_row_group,
+    slice_length,
+)
 
 
 class ParquetDataset(Dataset):

@@ -9,8 +9,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from datatune.data.pq import ParquetDataset
-from datatune.util.indexing import (get_row_groups_for_slice,
-                                    map_slice_to_row_group)
+from datatune.util.indexing import get_row_groups_for_slice, map_slice_to_row_group
 
 
 @pytest.fixture

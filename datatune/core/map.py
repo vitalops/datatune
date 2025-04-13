@@ -1,8 +1,14 @@
 from typing import Dict, List, Optional, Callable
 import ast
 
+
 class Map:
-    def __init__(self, prompt: str, input_fields: Optional[List]=None, output_fields: Optional[List]=None):
+    def __init__(
+        self,
+        prompt: str,
+        input_fields: Optional[List] = None,
+        output_fields: Optional[List] = None,
+    ):
         self.prompt = prompt
         self.input_fields = input_fields
         self.output_fields = output_fields

@@ -5,8 +5,13 @@ from typing import Dict
 
 import numpy as np
 
-from datatune.util.indexing import (INDEX_TYPE, ROW_INDEX_TYPE, apply_slice,
-                                    parse_row_and_column_indices, slice_length)
+from datatune.util.indexing import (
+    INDEX_TYPE,
+    ROW_INDEX_TYPE,
+    apply_slice,
+    parse_row_and_column_indices,
+    slice_length,
+)
 
 
 @dataclass
