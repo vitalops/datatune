@@ -1,0 +1,41 @@
+statement_id,statement_text,instructions,actual_label,_DATATUNE_SERIALIZED_INPUT_,_DATATUNE_FILTER_PROMPT_,_DATATUNE_LLM_OUTPUT_,filter_result
+1,The Earth orbits around the Sun.,Determine if this astronomy statement is factually correct.,True,"{'statement_id': 1, 'statement_text': 'The Earth orbits around the Sun.', 'instructions': 'Determine if this astronomy statement is factually correct.', 'actual_label': True}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 1, 'statement_text': 'The Earth orbits around the Sun.', 'instructions': 'Determine if this astronomy statement is factually correct.', 'actual_label': True}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",TRUE,1
+2,Water boils at 100 degrees Celsius at standard atmospheric pressure.,Evaluate if this chemistry fact is accurate.,True,"{'statement_id': 2, 'statement_text': 'Water boils at 100 degrees Celsius at standard atmospheric pressure.', 'instructions': 'Evaluate if this chemistry fact is accurate.', 'actual_label': True}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 2, 'statement_text': 'Water boils at 100 degrees Celsius at standard atmospheric pressure.', 'instructions': 'Evaluate if this chemistry fact is accurate.', 'actual_label': True}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",TRUE,1
+3,Humans have 8 fingers and 2 thumbs in total.,Count body parts to verify this anatomical claim.,True,"{'statement_id': 3, 'statement_text': 'Humans have 8 fingers and 2 thumbs in total.', 'instructions': 'Count body parts to verify this anatomical claim.', 'actual_label': True}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 3, 'statement_text': 'Humans have 8 fingers and 2 thumbs in total.', 'instructions': 'Count body parts to verify this anatomical claim.', 'actual_label': True}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",TRUE,1
+4,The United States declared independence in 1776.,Check if this historical date is correct.,True,"{'statement_id': 4, 'statement_text': 'The United States declared independence in 1776.', 'instructions': 'Check if this historical date is correct.', 'actual_label': True}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 4, 'statement_text': 'The United States declared independence in 1776.', 'instructions': 'Check if this historical date is correct.', 'actual_label': True}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",TRUE,1
+5,Light travels faster than sound.,Assess if this physics principle is true.,True,"{'statement_id': 5, 'statement_text': 'Light travels faster than sound.', 'instructions': 'Assess if this physics principle is true.', 'actual_label': True}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 5, 'statement_text': 'Light travels faster than sound.', 'instructions': 'Assess if this physics principle is true.', 'actual_label': True}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",TRUE,1
+6,The human body contains 206 bones.,Verify this anatomical fact about the human skeletal system.,True,"{'statement_id': 6, 'statement_text': 'The human body contains 206 bones.', 'instructions': 'Verify this anatomical fact about the human skeletal system.', 'actual_label': True}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 6, 'statement_text': 'The human body contains 206 bones.', 'instructions': 'Verify this anatomical fact about the human skeletal system.', 'actual_label': True}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",TRUE,1
+7,Oxygen is the most abundant element in Earth's atmosphere.,Analyze atmospheric composition to determine accuracy.,False,"{'statement_id': 7, 'statement_text': ""Oxygen is the most abundant element in Earth's atmosphere."", 'instructions': 'Analyze atmospheric composition to determine accuracy.', 'actual_label': False}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 7, 'statement_text': ""Oxygen is the most abundant element in Earth's atmosphere."", 'instructions': 'Analyze atmospheric composition to determine accuracy.', 'actual_label': False}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",FALSE,0
+8,Dogs are unable to see any colors.,Research canine vision to evaluate this claim.,False,"{'statement_id': 8, 'statement_text': 'Dogs are unable to see any colors.', 'instructions': 'Research canine vision to evaluate this claim.', 'actual_label': False}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 8, 'statement_text': 'Dogs are unable to see any colors.', 'instructions': 'Research canine vision to evaluate this claim.', 'actual_label': False}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",TRUE,1
+9,The Great Wall of China is visible from the Moon with the naked eye.,Check if this claim about visibility from space is accurate.,False,"{'statement_id': 9, 'statement_text': 'The Great Wall of China is visible from the Moon with the naked eye.', 'instructions': 'Check if this claim about visibility from space is accurate.', 'actual_label': False}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 9, 'statement_text': 'The Great Wall of China is visible from the Moon with the naked eye.', 'instructions': 'Check if this claim about visibility from space is accurate.', 'actual_label': False}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",FALSE,0
+10,Diamonds are made from compressed coal.,Assess the geological accuracy of this statement.,False,"{'statement_id': 10, 'statement_text': 'Diamonds are made from compressed coal.', 'instructions': 'Assess the geological accuracy of this statement.', 'actual_label': False}","SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:
+check the statement is factually correct
+INPUT: {'statement_id': 10, 'statement_text': 'Diamonds are made from compressed coal.', 'instructions': 'Assess the geological accuracy of this statement.', 'actual_label': False}
+INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT",FALSE,0

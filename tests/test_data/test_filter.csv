@@ -1,0 +1,101 @@
+statement_id,statement_text,instructions,actual_label
+1,"The Earth orbits around the Sun.","Determine if this astronomy statement is factually correct.",TRUE
+2,"Water boils at 100 degrees Celsius at standard atmospheric pressure.","Evaluate if this chemistry fact is accurate.",TRUE
+3,"Humans have 8 fingers and 2 thumbs in total.","Count body parts to verify this anatomical claim.",TRUE
+4,"The United States declared independence in 1776.","Check if this historical date is correct.",TRUE
+5,"Light travels faster than sound.","Assess if this physics principle is true.",TRUE
+6,"The human body contains 206 bones.","Verify this anatomical fact about the human skeletal system.",TRUE
+7,"Oxygen is the most abundant element in Earth's atmosphere.","Analyze atmospheric composition to determine accuracy.",FALSE
+8,"Dogs are unable to see any colors.","Research canine vision to evaluate this claim.",FALSE
+9,"The Great Wall of China is visible from the Moon with the naked eye.","Check if this claim about visibility from space is accurate.",FALSE
+10,"Diamonds are made from compressed coal.","Assess the geological accuracy of this statement.",FALSE
+11,"The capital of Australia is Sydney.","Verify this geographical information.",FALSE
+12,"Bats are blind.","Determine if this biological statement about bat vision is correct.",FALSE
+13,"Mount Everest is the tallest mountain in the world.","Evaluate if this geographical fact is accurate. Consider different ways of measuring 'tallest'.",TRUE
+14,"Jupiter has 79 confirmed moons.","Research current astronomical data to verify.",TRUE
+15,"The human brain weighs approximately 1.4 kg.","Check if this biological fact is within the accurate range.",TRUE
+16,"Honeybees die after stinging.","Determine if this fact about bee biology is accurate.",TRUE
+17,"Carrots improve night vision significantly.","Research if this common health claim is supported by evidence.",FALSE
+18,"The first airplane flight by the Wright brothers occurred in 1923.","Verify this historical date.",FALSE
+19,"Blood in human veins is blue until exposed to oxygen.","Evaluate this common belief about human biology.",FALSE
+20,"An octopus has three hearts.","Check this biological fact about octopus anatomy.",TRUE
+21,"Albert Einstein failed mathematics in school.","Research this common claim about the famous physicist.",FALSE
+22,"French fries originated in France.","Investigate the culinary history of this food item.",FALSE
+23,"The adult human body is about 60% water.","Verify this physiological fact.",TRUE
+24,"The Great Barrier Reef is the largest living structure on Earth.","Determine if this ecological claim is accurate.",TRUE
+25,"The Sahara is the largest desert in the world.","Check geographical facts considering different definitions of 'desert'.",TRUE
+26,"Humans use only 10% of their brains.","Evaluate if this common belief about neuroscience is accurate.",FALSE
+27,"A group of crows is called a murder.","Verify this collective noun terminology.",TRUE
+28,"Lightning never strikes the same place twice.","Assess if this common saying about weather is factually accurate.",FALSE
+29,"Caffeine dehydrates the body.","Research if this common belief about caffeine is supported by evidence.",FALSE
+30,"Goldfish have a three-second memory.","Investigate this claim about fish cognition.",FALSE
+31,"The Atlantic Ocean is the largest ocean on Earth.","Compare ocean sizes to determine accuracy.",FALSE
+32,"Tomatoes are vegetables.","Evaluate this botanical classification.",FALSE
+33,"The color red makes bulls angry.","Research if this common belief about animal behavior is accurate.",FALSE
+34,"Mount Kilimanjaro is in Kenya.","Verify this geographical location.",FALSE
+35,"Bananas grow on trees.","Check this botanical classification of banana plants.",FALSE
+36,"A day on Venus is longer than a year on Venus.","Verify this astronomical fact.",TRUE
+37,"Antarctica is the coldest continent on Earth.","Check if this climate statement is accurate.",TRUE
+38,"Human fingerprints are unique.","Evaluate if this forensic science claim is accurate.",TRUE
+39,"The Mona Lisa was painted by Leonardo da Vinci.","Verify this art history fact.",TRUE
+40,"Penguins can fly.","Determine if this zoological statement is true.",FALSE
+41,"Humans share approximately 50% of their DNA with bananas.","Check if this genetic similarity claim is accurate.",TRUE
+42,"Vitamin C can cure the common cold.","Research if this health claim is supported by evidence.",FALSE
+43,"Sound cannot travel through a vacuum.","Evaluate this physics principle.",TRUE
+44,"The heart is on the left side of the human body.","Verify this anatomical positioning.",TRUE
+45,"The shortest war in history lasted less than an hour.","Research this historical claim.",TRUE
+46,"All plant species perform photosynthesis.","Check if this botanical generalization is accurate.",FALSE
+47,"Killer whales are actually a species of dolphin.","Verify this zoological classification.",TRUE
+48,"A parsec is a unit of time.","Check if this scientific unit is correctly described.",FALSE
+49,"The smallest bone in the human body is in the ear.","Verify this anatomical fact.",TRUE
+50,"Chameleons change color primarily to match their surroundings.","Research why chameleons change color to assess accuracy.",FALSE
+51,"The Nile is the longest river in the world.","Compare river lengths to verify this geographical claim.",TRUE
+52,"There are 118 confirmed elements in the periodic table.","Check current scientific consensus on chemical elements.",TRUE
+53,"The piano has 88 keys.","Verify this fact about a standard piano's construction.",TRUE
+54,"Honey never spoils.","Research if this food preservation claim is accurate.",TRUE
+55,"The hottest planet in our solar system is Venus.","Compare planetary temperatures to verify this astronomical fact.",TRUE
+56,"The Eiffel Tower is taller in summer than in winter.","Research how temperature affects metal structures.",TRUE
+57,"Cats always land on their feet when falling.","Evaluate if this common belief about feline reflexes is universally true.",FALSE
+58,"A dolphin is a type of fish.","Check this zoological classification.",FALSE
+59,"The skin is the largest organ in the human body.","Verify this anatomical fact.",TRUE
+60,"The tongue is the strongest muscle in the human body.","Research muscular strength comparisons to verify.",FALSE
+61,"Sharks are immune to cancer.","Investigate if this biological claim about sharks is accurate.",FALSE
+62,"Elephants are the only mammals that can't jump.","Research animal behaviors to verify this claim.",FALSE
+63,"There are more bacteria cells than human cells in the human body.","Check this microbiological fact.",TRUE
+64,"The Amazon rainforest produces 20% of Earth's oxygen.","Verify this ecological claim.",FALSE
+65,"A koala is a type of bear.","Check this zoological classification.",FALSE
+66,"The word 'laser' is an acronym.","Research the etymology of this term.",TRUE
+67,"Mozart wrote 'Twinkle Twinkle Little Star'.","Verify this music history claim.",FALSE
+68,"The sun is a planet.","Check this astronomical classification.",FALSE
+69,"Glass is a liquid that flows very slowly.","Research if this common belief about materials science is accurate.",FALSE
+70,"The Great Pyramids of Giza were built by slaves.","Verify this historical claim based on current archaeological evidence.",FALSE
+71,"People can have blood types A, B, AB, or O.","Check if this medical classification is complete.",TRUE
+72,"Peanuts are a type of nut.","Verify this botanical classification.",FALSE
+73,"The moon rotates on its axis.","Assess this astronomical fact about lunar movement.",TRUE
+74,"Chewing gum takes seven years to digest if swallowed.","Research if this common belief about digestion is accurate.",FALSE
+75,"The human appendix has no function.","Verify this anatomical claim based on current medical understanding.",FALSE
+76,"The Leaning Tower of Pisa was intentionally built to lean.","Research the architectural history of this structure.",FALSE
+77,"Leonardo da Vinci designed the first helicopter.","Check if this historical claim about aviation is accurate.",TRUE
+78,"The speed of light is approximately 300,000 kilometers per second.","Verify this physics constant.",TRUE
+79,"A blue whale's heart is the size of a small car.","Check this zoological fact about whale anatomy.",TRUE
+80,"Flamingos are naturally white.","Research what gives flamingos their color to verify this claim.",TRUE
+81,"Humans can distinguish between about 10,000 different odors.","Verify this sensory perception fact.",FALSE
+82,"The driest place on Earth is the Atacama Desert.","Compare precipitation levels to verify this geographical claim.",TRUE
+83,"Christopher Columbus was the first European to discover America.","Check this historical claim.",FALSE
+84,"The human eye can distinguish approximately 10 million different colors.","Verify this fact about visual perception.",TRUE
+85,"Napoleon Bonaparte was extremely short.","Research this historical figure's actual height relative to his time.",FALSE
+86,"Sushi means 'raw fish' in Japanese.","Check the linguistic meaning of this term.",FALSE
+87,"Starfish have a brain.","Verify this marine biology fact about starfish anatomy.",FALSE
+88,"The average human has fewer than 5 million red blood cells.","Check this medical fact about human blood composition.",FALSE
+89,"Greenland is larger than Australia.","Compare land areas to verify this geographical claim.",FALSE
+90,"Microwaves cook food from the inside out.","Research how microwave heating works to verify this claim.",FALSE
+91,"The human skeleton is completely replaced every 7-10 years.","Check if this biological regeneration claim is accurate.",FALSE
+92,"Spider silk is stronger than steel by weight.","Verify this materials science claim.",TRUE
+93,"The Netherlands and Holland are different names for the same country.","Check if these geographical terms are exactly synonymous.",FALSE
+94,"A camel stores water in its hump.","Research camel physiology to verify this claim.",FALSE
+95,"Earth is the only planet in our solar system with water.","Check current astronomical knowledge about planetary composition.",FALSE
+96,"The Japanese word for 'crisis' combines the characters for 'danger' and 'opportunity'.","Verify this linguistic claim.",FALSE
+97,"Birds evolved from dinosaurs.","Check if this evolutionary biology claim is supported by evidence.",TRUE
+98,"The most spoken language in the world is English.","Compare global language statistics to verify.",FALSE
+99,"Bees can recognize human faces.","Research this entomological claim about bee cognition.",TRUE
+100,"All snowflakes have exactly six sides.","Verify this crystallography claim about ice formations.",TRUE
