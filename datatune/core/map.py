@@ -1,34 +1,47 @@
 from typing import Dict, List, Optional, Callable
-import ast
+from functools import partial
+import numpy as np
+import pandas as pd
+import os
+
+
+_SERIALIZED_INPUT = "_DATATUNE_SERIALIZED_INPUT_"
+_MAP_PROMPT = "_DATATUNE__PROMPT_"
+__LLM_OUTPUT__ = "_DATATUNE_LLM_OUTPUT_"
+
+
+def input_as_string(df: pd.DataFrame) -> pd.DataFrame:
+    df[_SERIALIZED_INPUT] = [str(row.to_dict()) for _, row in df.iterrows()]
+    return df
+
+
+def map_prompt(prompt: str, df: pd.DataFrame) -> pd.DataFrame:
+    prefix = f'''
+    Map and transform the input according to the following prompt
+    :{os.linesep}{prompt}{os.linesep}
+    INPUT: '''
+    suffix = (
+        f"{os.linesep}INSTRUCTIONS:Map and transform the above input according to the above prompt" ""
+    )
+    df[_MAP_PROMPT] = prefix + df[_SERIALIZED_INPUT] + suffix
+    return df
+
+
+def llm_inference(llm: Callable, df: pd.DataFrame) -> pd.DataFrame:
+    df[__LLM_OUTPUT__] = llm(df[_MAP_PROMPT])
+    return df
 
 
 class Map:
-    def __init__(
-        self,
-        prompt: str,
-        input_fields: Optional[List] = None,
-        output_fields: Optional[List] = None,
-    ):
+    def __init__(self, prompt: str, input_fields: Optional[List] = None):
         self.prompt = prompt
         self.input_fields = input_fields
-        self.output_fields = output_fields
 
-    def get_full_prompt(self, input: Dict) -> str:
-        return f"""Given the following input, please provide a response based on the prompt:
-        ====INPUT====
-        {input}
-        ====PROMPT====
-        {self.prompt}
-        ====INSTRUCTIONS====
-        RESPOND THE RESULT AS A DICT, WITHOUT ANY OTHER TEXT
-       """
+    def __call__(self, llm: Callable, df: Dict):
+        df = df.map_partitions(input_as_string)
+        df = df.map_partitions(
+            partial(map_prompt, self.prompt),
+        )
+        llm_outputs = df.map_partitions(partial(llm_inference, llm))
 
-    def execute(self, llm: Callable, input: Dict) -> Dict:
-        if self.input_fields:
-            input = {field: input[field] for field in self.input_fields}
-        full_prompt = self.get_full_prompt(input)
-        response = llm(full_prompt)
-        response = ast.literal_eval(response)
-        if self.output_fields:
-            response = {field: response[field] for field in self.output_fields}
-        return response
+        return llm_outputs[__LLM_OUTPUT__]

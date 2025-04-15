@@ -1,0 +1,101 @@
+id,first_name,last_name,email,phone,address,city,state,zip_code,registration_date,last_purchase_date,total_purchases,average_order_value,loyalty_tier,preferred_payment
+1,John,Smith,johnsmith@email.com,555-123-4567,123 Main St,Austin,TX,78701,2023-01-15,2025-03-12,17,75.35,Gold,Credit Card
+2,Sarah,Johnson,sarahjohnson@email.com,555-234-5678,456 Oak Ave,Seattle,WA,98101,2023-02-22,2025-04-01,12,92.50,Silver,PayPal
+3,Michael,Williams,michaelw@email.com,555-345-6789,789 Pine Blvd,Chicago,IL,60601,2023-03-10,2025-03-28,8,45.20,Bronze,Debit Card
+4,Emily,Brown,emilybrown@email.com,555-456-7890,101 Maple Dr,Portland,OR,97201,2023-01-05,2025-03-15,22,110.75,Platinum,Credit Card
+5,David,Jones,davidjones@email.com,555-567-8901,234 Elm St,Denver,CO,80202,2023-04-18,2025-04-10,5,35.60,Bronze,PayPal
+6,Jessica,Miller,jessicam@email.com,555-678-9012,567 Birch Ave,San Francisco,CA,94105,2023-02-14,2025-04-02,19,88.90,Gold,Credit Card
+7,Robert,Davis,robertd@email.com,555-789-0123,890 Cedar Dr,Boston,MA,02108,2023-05-20,2025-04-05,7,42.30,Bronze,Debit Card
+8,Jennifer,Garcia,jenniferg@email.com,555-890-1234,111 Spruce Ln,New York,NY,10001,2023-01-30,2025-03-25,25,132.45,Platinum,Credit Card
+9,William,Rodriguez,williamr@email.com,555-901-2345,222 Willow Rd,Miami,FL,33101,2023-06-08,2025-02-15,3,28.15,Bronze,PayPal
+10,Lisa,Martinez,lisam@email.com,555-012-3456,333 Poplar St,Phoenix,AZ,85001,2023-03-25,2025-03-30,15,67.80,Silver,Credit Card
+11,James,Hernandez,jamesh@email.com,555-123-4568,444 Aspen Ave,Philadelphia,PA,19101,2023-04-12,2025-04-08,9,51.25,Bronze,Debit Card
+12,Michelle,Lopez,michellel@email.com,555-234-5679,555 Redwood Blvd,Atlanta,GA,30301,2023-02-03,2025-03-18,21,105.60,Gold,Credit Card
+13,Thomas,Gonzalez,thomasg@email.com,555-345-6780,666 Oak St,Detroit,MI,48201,2023-05-15,2025-02-10,4,31.40,Bronze,PayPal
+14,Elizabeth,Wilson,elizabethw@email.com,555-456-7891,777 Pine Ave,Minneapolis,MN,55401,2023-01-20,2025-03-22,18,79.95,Silver,Credit Card
+15,Daniel,Anderson,daniela@email.com,555-567-8902,888 Elm Dr,San Diego,CA,92101,2023-03-05,2025-04-07,11,58.70,Bronze,Debit Card
+16,Patricia,Thomas,patriciat@email.com,555-678-9013,999 Maple Blvd,Houston,TX,77001,2023-01-10,2025-03-20,27,142.30,Platinum,Credit Card
+17,Joseph,Taylor,josepht@email.com,555-789-0124,123 Birch St,Las Vegas,NV,89101,2023-06-01,2025-02-20,2,24.85,Bronze,PayPal
+18,Nancy,Moore,nancym@email.com,555-890-1235,234 Cedar Ave,Dallas,TX,75201,2023-02-28,2025-03-29,16,72.15,Silver,Credit Card
+19,Christopher,Jackson,christopherj@email.com,555-901-2346,345 Spruce Dr,Salt Lake City,UT,84101,2023-04-07,2025-04-03,10,54.95,Bronze,Debit Card
+20,Margaret,White,margaretw@email.com,555-012-3457,456 Willow St,Nashville,TN,37201,2023-01-25,2025-03-17,23,118.50,Gold,Credit Card
+21,Andrew,Harris,andrewh@email.com,555-123-4569,567 Poplar Ave,Raleigh,NC,27601,2023-05-10,2025-02-12,6,39.20,Bronze,PayPal
+22,Susan,Martin,susanm@email.com,555-234-5680,678 Aspen Blvd,Columbus,OH,43201,2023-03-15,2025-03-27,14,65.30,Silver,Credit Card
+23,Matthew,Thompson,matthewt@email.com,555-345-6781,789 Redwood St,Kansas City,MO,64101,2023-04-22,2025-04-09,8,47.60,Bronze,Debit Card
+24,Karen,Garcia,kareng@email.com,555-456-7892,890 Oak Dr,Sacramento,CA,95801,2023-01-12,2025-03-14,24,125.80,Platinum,Credit Card
+25,Anthony,Martinez,anthonym@email.com,555-567-8903,901 Pine Ave,Pittsburgh,PA,15201,2023-06-05,2025-02-18,3,26.75,Bronze,PayPal
+26,Betty,Robinson,bettyr@email.com,555-678-9014,112 Elm Blvd,Orlando,FL,32801,2023-02-17,2025-03-31,20,94.25,Gold,Credit Card
+27,Donald,Clark,donaldc@email.com,555-789-0125,223 Maple St,Cleveland,OH,44101,2023-05-25,2025-04-06,7,43.80,Bronze,Debit Card
+28,Dorothy,Rodriguez,dorothyr@email.com,555-890-1236,334 Birch Dr,St. Louis,MO,63101,2023-01-08,2025-03-23,26,135.90,Platinum,Credit Card
+29,Mark,Lewis,markl@email.com,555-901-2347,445 Cedar Ave,Indianapolis,IN,46201,2023-06-12,2025-02-14,2,23.40,Bronze,PayPal
+30,Sandra,Lee,sandral@email.com,555-012-3458,556 Spruce Blvd,Charlotte,NC,28201,2023-03-20,2025-03-26,13,61.75,Silver,Credit Card
+31,Paul,Walker,paulw@email.com,555-123-4570,667 Willow St,Louisville,KY,40201,2023-04-15,2025-04-04,9,49.35,Bronze,Debit Card
+32,Ashley,Hall,ashleyh@email.com,555-234-5681,778 Poplar Dr,Tucson,AZ,85701,2023-01-18,2025-03-19,22,112.40,Gold,Credit Card
+33,Steven,Allen,stevena@email.com,555-345-6782,889 Aspen Ave,Albuquerque,NM,87101,2023-05-30,2025-02-16,4,32.80,Bronze,PayPal
+34,Kimberly,Young,kimberly@email.com,555-456-7893,990 Redwood Blvd,Omaha,NE,68101,2023-02-25,2025-03-24,17,76.90,Silver,Credit Card
+35,Edward,King,edwardk@email.com,555-567-8904,123 Oak St Apt 4B,Milwaukee,WI,53201,2023-03-08,2025-04-11,10,56.45,Bronze,Debit Card
+36,Carol,Wright,carolw@email.com,555-678-9015,234 Pine Ave Apt 7C,Memphis,TN,38101,2023-01-22,2025-03-16,28,148.70,Platinum,Credit Card
+37,George,Scott,georges@email.com,555-789-0126,345 Elm Dr Suite 101,Oklahoma City,OK,73101,2023-06-15,2025-02-22,3,27.95,Bronze,PayPal
+38,Amanda,Torres,amandat@email.com,555-890-1237,456 Maple Blvd Unit 5,Tulsa,OK,74101,2023-02-08,2025-03-21,18,82.35,Silver,Credit Card
+39,Kenneth,Nguyen,kennethn@email.com,555-901-2348,567 Birch St Suite 200,Fresno,CA,93701,2023-04-25,2025-04-12,11,59.90,Bronze,Debit Card
+40,Melissa,Hill,melissah@email.com,555-012-3459,678 Cedar Ave Apt 12D,Oakland,CA,94601,2023-01-03,2025-03-13,25,128.60,Gold,Credit Card
+41,Joshua,Flores,joshuaf@email.com,555-123-4571,789 Spruce Dr Unit 8,El Paso,TX,79901,2023-05-18,2025-02-19,5,36.25,Bronze,PayPal
+42,Deborah,Green,deborahg@email.com,555-234-5682,890 Willow St Suite 300,Wichita,KS,67201,2023-03-12,2025-03-28,15,69.80,Silver,Credit Card
+43,Brian,Adams,briana@email.com,555-345-6783,901 Poplar Ave Unit 10,Arlington,TX,76001,2023-04-10,2025-04-01,8,46.15,Bronze,Debit Card
+44,Stephanie,Nelson,stephanien@email.com,555-456-7894,112 Aspen Blvd Apt 3E,New Orleans,LA,70112,2023-01-27,2025-03-18,24,122.30,Platinum,Credit Card
+45,Kevin,Baker,kevinb@email.com,555-567-8905,223 Redwood St Unit 15,Boise,ID,83701,2023-06-10,2025-02-25,4,30.55,Bronze,PayPal
+46,Rebecca,Hall,rebeccah@email.com,555-678-9016,334 Oak Dr Suite 400,Spokane,WA,99201,2023-02-20,2025-03-30,19,89.75,Gold,Credit Card
+47,Ronald,Rivera,ronaldr@email.com,555-789-0127,445 Pine Ave Unit 9,Anchorage,AK,99501,2023-05-05,2025-04-02,7,44.90,Bronze,Debit Card
+48,Laura,Mitchell,lauram@email.com,555-890-1238,556 Elm Blvd Apt 11F,Honolulu,HI,96801,2023-01-28,2025-03-15,26,138.25,Platinum,Credit Card
+49,Timothy,Perez,timothyp@email.com,555-901-2349,667 Maple St Unit 7,Richmond,VA,23218,2023-06-20,2025-02-13,2,22.10,Bronze,PayPal
+50,Sharon,Roberts,sharonr@email.com,555-012-3460,778 Birch Ave Suite 500,Birmingham,AL,35201,2023-03-18,2025-03-27,14,63.45,Silver,Credit Card
+51,Jeffrey,Turner,jeffreyt@email.com,555-123-4572,889 Cedar Dr Unit 12,Des Moines,IA,50301,2023-04-03,2025-04-10,9,51.80,Bronze,Debit Card
+52,Cynthia,Phillips,cynthiap@email.com,555-234-5683,990 Spruce Blvd Apt 6G,Providence,RI,02903,2023-01-14,2025-03-19,21,107.90,Gold,Credit Card
+53,Gary,Campbell,garyc@email.com,555-345-6784,123 Willow St Unit 14,Jackson,MS,39201,2023-05-22,2025-02-17,5,37.65,Bronze,PayPal
+54,Kathleen,Parker,kathleenp@email.com,555-456-7895,234 Poplar Ave Suite 600,Madison,WI,53701,2023-02-12,2025-03-22,16,74.30,Silver,Credit Card
+55,Jacob,Evans,jacobe@email.com,555-567-8906,345 Aspen Dr Unit 3,Charleston,WV,25301,2023-03-30,2025-04-08,10,55.20,Bronze,Debit Card
+56,Amy,Edwards,amye@email.com,555-678-9017,456 Redwood Ave Apt 9H,Manchester,NH,03101,2023-01-07,2025-03-11,27,144.70,Platinum,Credit Card
+57,Nicholas,Collins,nicholasc@email.com,555-789-0128,567 Oak Blvd Unit 11,Portland,ME,04101,2023-06-25,2025-02-21,3,25.35,Bronze,PayPal
+58,Shirley,Stewart,shirleys@email.com,555-890-1239,678 Pine St Suite 700,Burlington,VT,05401,2023-02-23,2025-03-23,17,78.55,Silver,Credit Card
+59,Ryan,Sanchez,ryans@email.com,555-901-2350,789 Elm Ave Unit 6,Wilmington,DE,19801,2023-04-28,2025-04-13,8,47.95,Bronze,Debit Card
+60,Helen,Morris,helenm@email.com,555-012-3461,890 Maple Dr Apt 2J,Virginia Beach,VA,23451,2023-01-16,2025-03-14,23,116.85,Gold,Credit Card
+61,Eric,Rogers,ericr@email.com,555-123-4573,901 Birch Blvd Unit 18,Aurora,CO,80011,2023-05-12,2025-02-23,4,34.10,Bronze,PayPal
+62,Diane,Reed,dianer@email.com,555-234-5684,112 Cedar St Suite 800,Santa Ana,CA,92701,2023-03-14,2025-03-25,15,68.70,Silver,Credit Card
+63,Stephen,Cook,stephenc@email.com,555-345-6785,223 Spruce Ave Unit 4,Lincoln,NE,68501,2023-04-17,2025-04-14,11,57.40,Bronze,Debit Card
+64,Virginia,Morgan,virginiam@email.com,555-456-7896,334 Willow Dr Apt 5K,Jersey City,NJ,07301,2023-01-24,2025-03-16,28,146.20,Platinum,Credit Card
+65,Larry,Bell,larryb@email.com,555-567-8907,445 Poplar Blvd Unit 22,Newark,NJ,07101,2023-06-18,2025-02-26,2,21.75,Bronze,PayPal
+66,Julie,Murphy,juliem@email.com,555-678-9018,556 Aspen St Suite 900,St. Paul,MN,55101,2023-02-15,2025-03-29,20,96.40,Gold,Credit Card
+67,Frank,Bailey,frankb@email.com,555-789-0129,667 Redwood Ave Unit 13,Fort Worth,TX,76101,2023-05-08,2025-04-15,7,45.65,Bronze,Debit Card
+68,Joyce,Rivera,joycer@email.com,555-890-1240,778 Oak Dr Apt 7L,Durham,NC,27701,2023-01-19,2025-03-20,25,131.75,Platinum,Credit Card
+69,Scott,Cooper,scottc@email.com,555-901-2351,889 Pine Blvd Unit 17,Greensboro,NC,27401,2023-06-30,2025-02-24,3,28.90,Bronze,PayPal
+70,Maria,Richardson,mariar@email.com,555-012-3462,990 Elm St Suite 1000,Lexington,KY,40501,2023-03-04,2025-03-26,14,64.85,Silver,Credit Card
+71,Dennis,Cox,dennisc@email.com,555-123-4574,123 Maple Ave Unit 21,Corpus Christi,TX,78401,2023-04-20,2025-04-16,9,50.30,Bronze,Debit Card
+72,Catherine,Howard,catherineh@email.com,555-234-5685,234 Birch Dr Apt 8M,Reno,NV,89501,2023-01-11,2025-03-12,22,113.95,Gold,Credit Card
+73,Jerry,Ward,jerryw@email.com,555-345-6786,345 Cedar Blvd Unit 2,Baton Rouge,LA,70801,2023-05-28,2025-02-27,5,38.45,Bronze,PayPal
+74,Frances,Torres,francest@email.com,555-456-7897,456 Spruce St Suite 1100,Little Rock,AR,72201,2023-02-26,2025-03-31,16,75.60,Silver,Credit Card
+75,Wayne,Peterson,waynep@email.com,555-567-8908,567 Willow Ave Unit 19,Mobile,AL,36601,2023-03-22,2025-04-17,10,53.75,Bronze,Debit Card
+76,Lori,Gray,lorig@email.com,555-678-9019,678 Poplar Dr Apt 10N,Eugene,OR,97401,2023-01-04,2025-03-13,27,141.30,Platinum,Credit Card
+77,Roy,Ramirez,royr@email.com,555-789-0130,789 Aspen Blvd Unit 23,Fort Collins,CO,80521,2023-06-28,2025-02-28,3,26.15,Bronze,PayPal
+78,Cheryl,James,cherylj@email.com,555-890-1241,890 Redwood St Suite 1200,Fargo,ND,58102,2023-02-18,2025-03-24,19,91.20,Gold,Credit Card
+79,Raymond,Watson,raymondw@email.com,555-901-2352,901 Oak Ave Unit 5,Sioux Falls,SD,57101,2023-04-30,2025-04-18,8,46.80,Bronze,Debit Card
+80,Martha,Brooks,marthab@email.com,555-012-3463,112 Pine Dr Apt 12P,Cheyenne,WY,82001,2023-01-31,2025-03-10,24,126.55,Platinum,Credit Card
+81,Gerald,Kelly,geraldk@email.com,555-123-4575,223 Elm Blvd Unit 25,Billings,MT,59101,2023-05-17,2025-03-01,4,29.70,Bronze,PayPal
+82,Alice,Sanders,alices@email.com,555-234-5686,334 Maple St Suite 1300,Juneau,AK,99801,2023-03-07,2025-03-22,15,70.15,Silver,Credit Card
+83,Peter,Price,peterp@email.com,555-345-6787,445 Birch Ave Unit 8,Santa Fe,NM,87501,2023-04-05,2025-04-19,11,58.25,Bronze,Debit Card
+84,Christine,Bennett,christineb@email.com,555-456-7898,556 Cedar Dr Apt 14Q,Dover,DE,19901,2023-01-09,2025-03-17,26,137.40,Platinum,Credit Card
+85,Harold,Wood,haroldw@email.com,555-567-8909,667 Spruce Blvd Unit 20,Helena,MT,59601,2023-06-23,2025-03-02,3,24.30,Bronze,PayPal
+86,Anne,Barnes,anneb@email.com,555-678-9020,778 Willow St Suite 1400,Pierre,SD,57501,2023-02-10,2025-03-25,17,77.45,Silver,Credit Card
+87,Roger,Ross,rogerr@email.com,555-789-0131,889 Poplar Ave Unit 16,Montpelier,VT,05602,2023-05-03,2025-04-20,8,48.60,Bronze,Debit Card
+88,Gloria,Henderson,gloriah@email.com,555-890-1242,990 Aspen Dr Apt 16R,Olympia,WA,98501,2023-01-23,2025-03-09,23,119.75,Gold,Credit Card
+89,Bruce,Coleman,brucec@email.com,555-901-2353,123 Redwood Blvd Unit 27,Springfield,IL,62701,2023-06-16,2025-03-03,5,35.05,Bronze,PayPal
+90,Teresa,Jenkins,teresaj@email.com,555-012-3464,234 Oak St Suite 1500,Jefferson City,MO,65101,2023-03-09,2025-03-28,14,66.90,Silver,Credit Card
+91,Alan,Perry,alanp@email.com,555-123-4576,345 Pine Ave Unit 9,Topeka,KS,66603,2023-04-23,2025-04-21,10,52.50,Bronze,Debit Card
+92,Ruth,Powell,ruthp@email.com,555-234-5687,456 Elm Dr Apt 18S,Augusta,ME,04330,2023-01-06,2025-03-15,28,149.85,Platinum,Credit Card
+93,Joe,Butler,joeb@email.com,555-345-6788,567 Maple Blvd Unit 24,Columbia,SC,29201,2023-05-25,2025-03-04,4,33.40,Bronze,PayPal
+94,Ann,Russell,annr@email.com,555-456-7899,678 Birch St Suite 1600,Concord,NH,03301,2023-02-24,2025-03-26,16,73.05,Silver,Credit Card
+95,Johnny,Griffin,johnnyg@email.com,555-567-8910,789 Cedar Ave Unit 10,Montgomery,AL,36101,2023-03-16,2025-04-22,9,52.15,Bronze,Debit Card
+96,Jean,Diaz,jeand@email.com,555-678-9021,890 Spruce Dr Apt 20T,Tallahassee,FL,32301,2023-01-29,2025-03-08,21,108.65,Gold,Credit Card
+97,Willie,Hayes,willieh@email.com,555-789-0132,901 Willow Blvd Unit 28,Lansing,MI,48901,2023-06-27,2025-03-05,3,27.20,Bronze,PayPal
+98,Evelyn,Ford,evelynf@email.com,555-890-1243,112 Poplar St Suite 1700,Harrisburg,PA,17101,2023-02-05,2025-03-27,18,84.40,Silver,Credit Card
+99,Louis,Ortiz,louiso@email.com,555-901-2354,223 Aspen Ave Unit 15,Carson City,NV,89701,2023-04-14,2025-04-23,11,56.85,Bronze,Debit Card
+100,Nicole,Reynolds,nicoler@email.com,555-012-3465,334 Redwood Dr Apt 22U,Salem,OR,97301,2023-01-02,2025-03-21,25,130.10,Platinum,Credit Card
