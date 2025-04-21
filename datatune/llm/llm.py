@@ -41,3 +41,26 @@ class Ollama(LLM):
         )
         self.api_base = api_base
         self._model_name = model_name
+
+
+class Azure(LLM):
+    def __init__(
+        self, 
+        model_name: str,
+        api_key: str = None,
+        api_base: str = None,
+        api_version: str = None,
+        **kwargs
+    ) -> None:
+        self.model_name = model_name
+        azure_model = f"azure/{self.model_name}"
+        azure_params = {
+            "api_key": api_key,
+            "api_base": api_base,
+            "api_version": api_version
+        }
+
+        azure_params = {k: v for k, v in azure_params.items() if v is not None}
+
+        kwargs.update(azure_params)
+        super().__init__(model_name=azure_model, **kwargs)
