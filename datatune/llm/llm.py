@@ -25,9 +25,10 @@ class LLM:
 
         return [response["choices"][0]["message"]["content"] for response in responses]
 
-    def __call__(self, prompt: Union[str, List[str]]) -> Union[str, List[str]]:
+    def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
+        """Always return a list of strings, regardless of input type"""
         if isinstance(prompt, str):
-            return self._completion(prompt)
+            return [self._completion(prompt)]
         return self._batch_completion(prompt)
 
 

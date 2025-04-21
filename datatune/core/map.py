@@ -36,12 +36,10 @@ def map_prompt(prompt: str, df: pd.DataFrame) -> pd.DataFrame:
 def llm_inference(llm: Callable, df: pd.DataFrame) -> pd.DataFrame:
     prompts = df[_MAP_PROMPT].tolist()
 
-    if len(prompts) > 1:
-        responses = llm(prompts)
-    elif len(prompts) == 1:
-        responses = [llm(prompts[0])]
-    else:
+    if not prompts:
         responses = []
+    else:
+        responses = llm(prompts)
 
     df[__LLM_OUTPUT__] = responses
     return df
