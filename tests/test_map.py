@@ -14,10 +14,10 @@ def test_map_replace():
     prompt = "Replace all personally identifiable terms with XX"
     map = Map(prompt=prompt)
     llm = Azure(
-        model_name="gpt-35-turbo",  
+        model_name="gpt-35-turbo",
         api_key=api_key,
         api_base=api_base,
-        api_version=api_version
+        api_version=api_version,
     )
     mapped = map(llm, df)
     mapped = mapped.head(10)

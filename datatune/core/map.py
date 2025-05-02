@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Callable
 from functools import partial
 import json
 import ast
-import re
+from datatune.core.op import Op
 import numpy as np
 import pandas as pd
 import os
@@ -94,13 +94,15 @@ def update_df_with_llm_output(df: pd.DataFrame, expected_fields=None) -> pd.Data
     return result_df
 
 
-class Map:
+class Map(Op):
     def __init__(
         self,
         prompt: str,
         input_fields: Optional[List] = None,
         output_fields: Optional[List] = None,
+        name: Optional[str] = None,
     ):
+        super().__init__(name=name)
         self.prompt = prompt
         self.input_fields = input_fields
         self.output_fields = output_fields
