@@ -111,3 +111,8 @@ class Filter(Op):
         return results.map_partitions(
             partial(delete_rows, self.result_column, self.on_error),
         )
+
+
+__all__ =[
+    "Filter",
+]
