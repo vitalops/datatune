@@ -7,15 +7,13 @@ import os
 
 
 def test_map_and_filter():
-    # Get environment variables
+
     api_key = os.getenv("OPENAI_API_KEY")
     api_base = os.getenv("AZURE_API_BASE")
     api_version = os.getenv("AZURE_API_VERSION")
-    
-    # Load test data
+
     df = dd.read_csv("tests/test_data/test_map.csv")
-    
-    # Create LLM instance
+
     llm = Azure(
         model_name="gpt-35-turbo",
         api_key=api_key,
@@ -33,9 +31,7 @@ def test_map_and_filter():
     filter_op = Filter(prompt=filter_prompt, debug=True)
     filtered_df = filter_op(llm, mapped_df)
     
-    # Get results
     result = filtered_df.head(10)
     print(result)
-    
-    # Save the final output
+
     result.to_csv("tests/test_data/test_map_and_filter_results.csv", index=False)
