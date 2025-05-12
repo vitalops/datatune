@@ -2,18 +2,16 @@ from typing import Dict, List, Optional, Callable, Union
 from functools import partial
 import json
 import ast
+import numpy as np
 from datatune.core.op import Op
 import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 
 
-
-
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     df[serialized_input_column] = [str(row.to_dict()) for _, row in df.iterrows()]
     return df
-
 
 
 def map_prompt(prompt: str, prompt_column: str, serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
@@ -54,8 +52,17 @@ def parse_llm_output(llm_output: str) -> Union[Dict, Exception]:
             return error
 
 
-def update_df_with_llm_output(llm_output_column: str, df:pd.DataFrame) -> pd.DataFrame:
+def update_df_with_llm_output(
+    llm_output_column: str, 
+    serialized_input_column: str, 
+    prompt_column: str, 
+    df: pd.DataFrame, 
+    expected_fields: Optional[List[str]] = None,
+    debug: bool = False,
+    meta_columns=None
+) -> pd.DataFrame:
     parsed_llm_output = df[llm_output_column].apply(parse_llm_output)
+    # TODO(fariz): vectorize this?
     errored_rows = parsed_llm_output.apply(
         lambda x: isinstance(x, Exception)
     )
@@ -64,12 +71,29 @@ def update_df_with_llm_output(llm_output_column: str, df:pd.DataFrame) -> pd.Dat
     df.loc[errored_rows, ERRORED_COLUMN] = True
     not_errored_rows = ~errored_rows
     parsed_llm_output = parsed_llm_output[not_errored_rows]
-    # TODO(fariz): vectorize this?
+
+    if expected_fields is not None:
+        for field in expected_fields:
+            if field not in df.columns:
+                df[field] = None
+    
     for i, row in parsed_llm_output.items():
         for key, value in row.items():
+
+            if expected_fields is not None and key not in expected_fields:
+                continue
+                
             if key not in df.columns:
                 df[key] = None
             df.at[i, key] = value
+
+    if not debug:
+        columns_to_drop = [serialized_input_column, prompt_column, llm_output_column]
+        df = df.drop(columns=[col for col in columns_to_drop if col in df.columns])
+    
+    if meta_columns is not None:
+        df = df[meta_columns]
+    
     return df
 
 
@@ -80,11 +104,13 @@ class Map(Op):
         input_fields: Optional[List] = None,
         output_fields: Optional[List] = None,
         name: Optional[str] = None,
+        debug: bool = False
     ):
         super().__init__(name=name)
         self.prompt = prompt
         self.input_fields = input_fields
         self.output_fields = output_fields
+        self.debug = debug
         self.serialized_input_column = f"{self.name}_SERIALIZED_INPUT__DATATUNE__"
         self.prompt_column = f"{self.name}_FILTER_PROMPT__DATATUNE__"
         self.llm_output_column = f"{self.name}_LLM_OUTPUT__DATATUNE__"
@@ -103,17 +129,36 @@ class Map(Op):
             partial(llm_inference, llm, self.llm_output_column, self.prompt_column)
         )
 
-        df = df.map_partitions(
+        input_cols = list(df._meta.columns)
+        output_cols = input_cols.copy()
+        
+        if self.output_fields:
+            for field in self.output_fields:
+                if field not in output_cols:
+                    output_cols.append(field)
+
+        if ERRORED_COLUMN not in output_cols:
+            output_cols.append(ERRORED_COLUMN)
+
+        if not self.debug:
+            debug_columns = [self.serialized_input_column, self.prompt_column, self.llm_output_column]
+            output_cols = [col for col in output_cols if col not in debug_columns]
+        
+        meta = pd.DataFrame(columns=output_cols)
+        
+        result = df.map_partitions(
             partial(
-                parse_llm_output,
+                update_df_with_llm_output,
                 self.llm_output_column,
+                self.serialized_input_column,
+                self.prompt_column,
+                expected_fields=self.output_fields,
+                debug=self.debug,
+                meta_columns=list(meta.columns)
             ),
+            meta=meta
         )
-
-        return df
-
-        # TODO(fariz): verify input and output fields?
-
+        return result
 
 
 __all__ =[
