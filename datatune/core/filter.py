@@ -57,15 +57,26 @@ def parse_filter_output_as_int(
     return df
 
 
-def delete_rows(result_column: str, on_error: str, df: pd.DataFrame) -> pd.DataFrame:
+def delete_rows(
+    result_column: str, on_error: str, df: pd.DataFrame, debug: bool = False,
+    debug_columns: List[str] = None, meta_columns: List[str] = None
+) -> pd.DataFrame:
     if DELETED_COLUMN not in df.columns:
         df[DELETED_COLUMN] = False
+    
     if on_error == "delete":
         df.loc[df[result_column] != 1, DELETED_COLUMN] = True
     elif on_error == "keep":
         df.loc[df[result_column] == 0, DELETED_COLUMN] = True
     else:
         raise ValueError("on_error must be either 'keep' or 'delete'")
+    
+    if not debug and debug_columns:
+        df = df.drop(columns=[col for col in debug_columns if col in df.columns])
+    
+    if meta_columns is not None:
+        df = df[meta_columns]
+        
     return df
 
 
@@ -76,10 +87,12 @@ class Filter(Op):
         input_fields: Optional[List] = None,
         name: Optional[str] = None,
         on_error: str = "keep",
+        debug: bool = False
     ):
         super().__init__(name=name)
         self.prompt = prompt
         self.input_fields = input_fields
+        self.debug = debug
         self.serialized_input_column = f"{self.name}_SERIALIZED_INPUT__DATATUNE__"
         self.prompt_column = f"{self.name}_FILTER_PROMPT__DATATUNE__"
         self.llm_output_column = f"{self.name}_LLM_OUTPUT__DATATUNE__"
@@ -108,8 +121,36 @@ class Filter(Op):
                 parse_filter_output_as_int, self.result_column, self.llm_output_column
             ),
         )
+        
+        input_cols = list(df._meta.columns)
+        output_cols = input_cols.copy()
+        
+        if DELETED_COLUMN not in output_cols:
+            output_cols.append(DELETED_COLUMN)
+        
+        if ERRORED_COLUMN not in output_cols:
+            output_cols.append(ERRORED_COLUMN)
+            
+        if self.result_column not in output_cols:
+            output_cols.append(self.result_column)
+            
+        debug_columns = [self.serialized_input_column, self.prompt_column, self.llm_output_column]
+        
+        if not self.debug:
+            output_cols = [col for col in output_cols if col not in debug_columns]
+            
+        meta = pd.DataFrame(columns=output_cols)
+        
         return results.map_partitions(
-            partial(delete_rows, self.result_column, self.on_error),
+            partial(
+                delete_rows, 
+                self.result_column, 
+                self.on_error,
+                debug=self.debug,
+                debug_columns=debug_columns,
+                meta_columns=list(meta.columns)
+            ),
+            meta=meta
         )
 
 
