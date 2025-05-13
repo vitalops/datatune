@@ -112,7 +112,7 @@ class Map(Op):
         self.output_fields = output_fields
         self.debug = debug
         self.serialized_input_column = f"{self.name}_SERIALIZED_INPUT__DATATUNE__"
-        self.prompt_column = f"{self.name}_FILTER_PROMPT__DATATUNE__"
+        self.prompt_column = f"{self.name}_MAP_PROMPT__DATATUNE__"
         self.llm_output_column = f"{self.name}_LLM_OUTPUT__DATATUNE__"
 
     def __call__(self, llm: Callable, df: Dict):
