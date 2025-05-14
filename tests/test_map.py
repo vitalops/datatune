@@ -21,7 +21,6 @@ def test_map_replace():
     )
     mapped = map(llm, df)
     mapped = mapped.head(10)
-    print(mapped)
     mapped.to_csv("tests/test_data/test_map_replace_results.csv", index=False)
 
 
@@ -37,5 +36,4 @@ def test_map_create():
     )
     mapped = map(llm, df)
     mapped = mapped.head(10)
-    print(mapped)
     mapped.to_csv("tests/test_data/test_map_create_results.csv", index=False)

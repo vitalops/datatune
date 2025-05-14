@@ -55,12 +55,7 @@ def test_map_replace():
     
     mapped = map_op(mock_llm, df)
     mapped = mapped.compute()
-    
-    print("Test Map Replace Results:")
-    print(mapped)
-    
-    print("\nERRORED_COLUMN values:")
-    print(mapped[ERRORED_COLUMN])
+
     
     for idx in range(len(mapped)):
         if idx in expected_error_indices:
@@ -115,15 +110,7 @@ def test_filter():
     
     filtered = filter_op(mock_llm, df)
     filtered_df = filtered.compute()
-    
-    print("Test Filter Results:")
-    print(filtered_df)
-    
-    print("\nERRORED_COLUMN values:")
-    print(filtered_df[ERRORED_COLUMN])
-    
-    print("\nDELETED_COLUMN values:")
-    print(filtered_df[DELETED_COLUMN])
+
     
     for idx in range(len(filtered_df)):
         if idx in expected_error_indices:
@@ -167,15 +154,7 @@ def test_filter_on_error_delete():
     
     filtered = filter_op(mock_llm, df)
     filtered_df = filtered.compute()
-    
-    print("Test Filter with on_error='delete' Results:")
-    print(filtered_df)
-    
-    print("\nERRORED_COLUMN values:")
-    print(filtered_df[ERRORED_COLUMN])
-    
-    print("\nDELETED_COLUMN values:")
-    print(filtered_df[DELETED_COLUMN])
+
     
     for idx in range(len(filtered_df)):
         if idx in expected_error_indices:

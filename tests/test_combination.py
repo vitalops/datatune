@@ -32,6 +32,5 @@ def test_map_and_filter():
     filtered_df = filter_op(llm, mapped_df)
     
     result = filtered_df.head(10)
-    print(result)
 
     result.to_csv("tests/test_data/test_map_and_filter_results.csv", index=False)
