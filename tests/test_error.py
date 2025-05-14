@@ -35,7 +35,7 @@ def create_test_dataframe():
 def test_map_replace():
     df = create_test_dataframe()
     prompt = "Replace all personally identifiable terms with XX"
-    map_op = Map(prompt=prompt, debug=True)
+    map_op = Map(prompt=prompt)
 
     responses = [
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}", 
@@ -94,7 +94,7 @@ def create_test_filter_dataframe():
 def test_filter():
     df = create_test_filter_dataframe()
     prompt = "Check if the statement is factually correct."
-    filter_op = Filter(prompt=prompt, debug=True)
+    filter_op = Filter(prompt=prompt)
 
     responses = [
         "TRUE",
@@ -145,7 +145,7 @@ def test_filter():
 def test_filter_on_error_delete():
     df = create_test_filter_dataframe()
     prompt = "Check if the statement is factually correct."
-    filter_op = Filter(prompt=prompt, on_error="delete", debug=True)
+    filter_op = Filter(prompt=prompt, on_error="delete")
 
     responses = [
         "TRUE",
