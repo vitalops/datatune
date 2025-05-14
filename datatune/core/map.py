@@ -53,14 +53,11 @@ def parse_llm_output(llm_output: str) -> Union[Dict, Exception]:
 
 def update_df_with_llm_output(
     llm_output_column: str, 
-    serialized_input_column: str, 
-    prompt_column: str, 
     df: pd.DataFrame, 
     expected_fields: Optional[List[str]] = None,
-    meta_columns=None
+    meta_columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
     parsed_llm_output = df[llm_output_column].apply(parse_llm_output)
-    # TODO(fariz): vectorize this?
     errored_rows = parsed_llm_output.apply(
         lambda x: isinstance(x, Exception)
     )
@@ -137,8 +134,6 @@ class Map(Op):
             partial(
                 update_df_with_llm_output,
                 self.llm_output_column,
-                self.serialized_input_column,
-                self.prompt_column,
                 expected_fields=self.output_fields,
                 meta_columns=output_cols
             ),
