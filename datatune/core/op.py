@@ -33,12 +33,9 @@ class Op:
         raise NotImplementedError("Subclasses must implement __call__ method")
 
 
-
 def finalize(
-    df: Union[pd.DataFrame, dd.DataFrame],
-    keep_errored_rows: bool = False
+    df: Union[pd.DataFrame, dd.DataFrame], keep_errored_rows: bool = False
 ) -> Union[pd.DataFrame, dd.DataFrame]:
-
     if not keep_errored_rows and DELETED_COLUMN in df.columns:
         if not isinstance(df, dd.DataFrame):
             df = df[~df[DELETED_COLUMN]]
@@ -49,5 +46,5 @@ def finalize(
     drop_columns += [ERRORED_COLUMN, DELETED_COLUMN]
     if drop_columns:
         df = df.drop(columns=drop_columns)
-    
+
     return df

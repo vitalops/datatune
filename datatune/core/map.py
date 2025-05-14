@@ -13,7 +13,9 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFr
     return df
 
 
-def map_prompt(prompt: str, prompt_column: str, serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
+def map_prompt(
+    prompt: str, prompt_column: str, serialized_input_column: str, df: pd.DataFrame
+) -> pd.DataFrame:
     prefix = f"""
     Map and transform the input according to the following prompt.
     :{os.linesep}{prompt}{os.linesep}
@@ -52,15 +54,13 @@ def parse_llm_output(llm_output: str) -> Union[Dict, Exception]:
 
 
 def update_df_with_llm_output(
-    llm_output_column: str, 
-    df: pd.DataFrame, 
+    llm_output_column: str,
+    df: pd.DataFrame,
     expected_fields: Optional[List[str]] = None,
-    meta_columns: Optional[List[str]] = None
+    meta_columns: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     parsed_llm_output = df[llm_output_column].apply(parse_llm_output)
-    errored_rows = parsed_llm_output.apply(
-        lambda x: isinstance(x, Exception)
-    )
+    errored_rows = parsed_llm_output.apply(lambda x: isinstance(x, Exception))
     if ERRORED_COLUMN not in df.columns:
         df[ERRORED_COLUMN] = False
     df.loc[errored_rows, ERRORED_COLUMN] = True
@@ -71,19 +71,19 @@ def update_df_with_llm_output(
         for field in expected_fields:
             if field not in df.columns:
                 df[field] = None
-    
+
     for i, row in parsed_llm_output.items():
         for key, value in row.items():
             if expected_fields is not None and key not in expected_fields:
                 continue
-                
+
             if key not in df.columns:
                 df[key] = None
             df.at[i, key] = value
-    
+
     if meta_columns is not None:
         df = df[meta_columns]
-    
+
     return df
 
 
@@ -93,7 +93,7 @@ class Map(Op):
         prompt: str,
         input_fields: Optional[List] = None,
         output_fields: Optional[List] = None,
-        name: Optional[str] = None
+        name: Optional[str] = None,
     ):
         super().__init__(name=name)
         self.prompt = prompt
@@ -119,7 +119,7 @@ class Map(Op):
 
         input_cols = list(df._meta.columns)
         output_cols = input_cols.copy()
-        
+
         if self.output_fields:
             for field in self.output_fields:
                 if field not in output_cols:
@@ -127,21 +127,21 @@ class Map(Op):
 
         if ERRORED_COLUMN not in output_cols:
             output_cols.append(ERRORED_COLUMN)
-        
+
         meta = pd.DataFrame(columns=output_cols)
-        
+
         result = df.map_partitions(
             partial(
                 update_df_with_llm_output,
                 self.llm_output_column,
                 expected_fields=self.output_fields,
-                meta_columns=output_cols
+                meta_columns=output_cols,
             ),
-            meta=meta
+            meta=meta,
         )
         return result
 
 
-__all__ =[
+__all__ = [
     "Map",
 ]

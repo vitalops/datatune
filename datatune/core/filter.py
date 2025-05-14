@@ -113,6 +113,6 @@ class Filter(Op):
         )
 
 
-__all__ =[
+__all__ = [
     "Filter",
 ]
