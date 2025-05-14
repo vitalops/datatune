@@ -2,10 +2,12 @@
 Defines an abstract operation over a dataframe
 """
 
-from typing import Optional, Callable
+from typing import Optional, Callable, Union
 import dask.dataframe as dd
 from collections import defaultdict
+import pandas as pd
 
+from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 
 cls_counts = defaultdict(int)
 
@@ -29,3 +31,23 @@ class Op:
         self, llm: Callable, df: dd.DataFrame, *args, **kwargs
     ) -> dd.DataFrame:
         raise NotImplementedError("Subclasses must implement __call__ method")
+
+
+
+def finalize(
+    df: Union[pd.DataFrame, dd.DataFrame],
+    keep_errored_rows: bool = False
+) -> Union[pd.DataFrame, dd.DataFrame]:
+
+    if not keep_errored_rows and DELETED_COLUMN in df.columns:
+        if not isinstance(df, dd.DataFrame):
+            df = df[~df[DELETED_COLUMN]]
+        else:
+            df = df[~df[DELETED_COLUMN]]
+
+    drop_columns = [col for col in df.columns if "__DATATUNE__" in col]
+    drop_columns += [ERRORED_COLUMN, DELETED_COLUMN]
+    if drop_columns:
+        df = df.drop(columns=drop_columns)
+    
+    return df
