@@ -29,7 +29,7 @@ from datatune.core.op import finalize
 df = dd.read_csv("products.csv")
 
 # Transform data with Map
-enriched = dt.Map(
+mapped = dt.Map(
     prompt="Create a short title and extract categories from the description",
     output_fields=["title", "category", "subcategory"]
 )(llm, df)
@@ -37,7 +37,7 @@ enriched = dt.Map(
 # Filter data based on criteria
 filtered = dt.Filter(
     prompt="Keep only products suitable for beginners"
-)(llm, enriched)
+)(llm, mapped)
 
 # Finalize and save
 result = finalize(filtered)
