@@ -20,7 +20,8 @@ pip install -e .
 ## Quick Start
 
 ```
-import datatune as dt
+from datatune.core.map import Map
+from datatune.core.filter Filter
 from your_llm import llm  # Your LLM function
 import dask.dataframe as dd
 from datatune.core.op import finalize
@@ -29,13 +30,13 @@ from datatune.core.op import finalize
 df = dd.read_csv("products.csv")
 
 # Transform data with Map
-mapped = dt.Map(
+mapped = Map(
     prompt="Create a short title and extract categories from the description",
     output_fields=["title", "category", "subcategory"]
 )(llm, df)
 
 # Filter data based on criteria
-filtered = dt.Filter(
+filtered = Filter(
     prompt="Keep only products suitable for beginners"
 )(llm, mapped)
 
@@ -69,7 +70,7 @@ Transform data with natural language:
 
 ```
 customers = dd.read_csv("customers.csv")
-mapped = dt.Map(
+mapped = Map(
     prompt="Extract country and city from the address field",
     output_fields=["country", "city"]
 )(llm, customers)
@@ -79,7 +80,7 @@ mapped = dt.Map(
 
 ```
 # Filter to marketable products only
-marketable = dt.Filter(
+marketable = Filter(
     prompt="Determine if this product has sufficient information to be listed online"
 )(llm, enhanced)
 ```
