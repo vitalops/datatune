@@ -4,7 +4,7 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/datatune.svg)](https://pypi.org/project/datatune/)
 [![License](https://img.shields.io/github/license/vitalops/datatune)](https://github.com/vitalops/datatune/blob/main/LICENSE)
 
-Datatune provides natural language operations on structured data using LLMs and Dask.
+Perform transformations on your data using Natural language using LLMs
 
 ## Installation
 
@@ -12,6 +12,11 @@ Datatune provides natural language operations on structured data using LLMs and 
 pip install datatune
 ```
 
+From source:
+
+```
+pip install -e .
+```
 ## Quick Start
 
 ```
@@ -20,7 +25,7 @@ from your_llm import llm  # Your LLM function
 import dask.dataframe as dd
 from datatune.core.op import finalize
 
-# Load data with Dask
+# Load data from your source with Dask
 df = dd.read_csv("products.csv")
 
 # Transform data with Map
