@@ -3,202 +3,83 @@
 [![PyPI version](https://img.shields.io/pypi/v/datatune.svg)](https://pypi.org/project/datatune/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/datatune.svg)](https://pypi.org/project/datatune/)
 [![License](https://img.shields.io/github/license/vitalops/datatune)](https://github.com/vitalops/datatune/blob/main/LICENSE)
-[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://vitalops.github.io/datatune/)
-[![Downloads](https://static.pepy.tech/badge/datatune)](https://pepy.tech/project/datatune)
 
-**Datatune** supercharges your data workflows with LLMs, enabling natural language operations on both structured and unstructured data.
+Datatune provides natural language operations on structured data using LLMs and Dask.
 
-
-## 📋 Table of Contents
-
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Key Features](#-key-features)
-- [Examples](#-examples)
-- [License](#-license)
-
-## 🚀 Installation
-
-### Using pip
+## Installation
 
 ```bash
 pip install datatune
 ```
 
-### From source
+## Quick Start
 
-```bash
-git clone https://github.com/vitalops/datatune.git
-cd datatune
-pip install -e .
 ```
-
-### Prerequisites
-
-Datatune requires:
-- Python 3.8+
-- An API key for your preferred LLM provider (OpenAI, Anthropic, etc.)
-
-## 🏁 Quick Start
-
-
-```python
 import datatune as dt
-import os
+from your_llm import llm  # Your LLM function
+import dask.dataframe as dd
+from datatune.core.op import finalize
 
-# Import datasets from a variety of sources:
-ds1 = dt.dataset("hf://....")
-ds2 = dt.dataset("s3://...")
+# Load data with Dask
+df = dd.read_csv("products.csv")
 
-# Map operation using natural language
-transformed_ds = ds.map("standardize dates in the 'event_date' column to YYYY-MM-DD format")
+# Transform data with Map
+enriched = dt.Map(
+    prompt="Create a short title and extract categories from the description",
+    output_fields=["title", "category", "subcategory"]
+)(llm, df)
 
-# Filter operation using natural language
-filtered_ds = transformed_ds.filter("remove rows with missing critical information")
+# Filter data based on criteria
+filtered = dt.Filter(
+    prompt="Keep only products suitable for beginners"
+)(llm, enriched)
 
-# Save the result
-filtered_ds.to_csv("processed_data.csv")
-
-# Ask questions about your data using TableQA
-from datatune.apps import TableQA
-table_qa = TableQA(filtered_ds)
-table_qa.cli()  # Launches an interactive CLI for querying your data
+# Finalize and save
+result = finalize(filtered)
+result.compute().to_csv("beginner_products.csv")
 ```
 
-## ✨ Key Features
+## Features
 
-### Natural Language Data Operations
+### Multiple LLM Support
+Datatune works with various LLM providers:
 
-- **Map**: Transform data using natural language instructions
-- **Filter**: Select rows based on semantic criteria
-- **Reduce**: Aggregate and summarize data with intelligence
-- **Expand**: Generate synthetic data with specific characteristics
-- **TableQA**: Ask natural language questions directly to your tabular data
+```
+# Using Ollama
+from datatune.llm.llm import Ollama
+llm = Ollama()
 
-### Supported Data Sources
-
-- CSV, JSON, Parquet files
-- Pandas DataFrames
-- SQL databases (via SQLAlchemy)
-- Hugging Face datasets
-- Apache Arrow tables
-- In-memory data structures
-
-## 📊 Examples
-
-### Data Anonymization
-
-```python
-# Anonymize personal information
-ds = dt.load_dataset("customer_data.csv")
-anonymized = ds.map("replace all personally identifiable information with XXX")
+# Using Azure OpenAI
+from datatune.llm.llm import Azure
+llm = Azure(
+    model_name="gpt-35-turbo",
+    api_key=api_key,
+    api_base=api_base,
+    api_version=api_version
 ```
 
-### Interactive Data Analysis with TableQA
+### Map Operation
 
-```python
-from datatune.apps import TableQA
+Transform data with natural language:
 
-# Load your dataset
-sales_data = dt.load_dataset("quarterly_sales.csv")
-
-# Create a TableQA instance
-qa = TableQA(sales_data)
-
-# Ask questions programmatically
-answer = qa.ask("What were the top 3 performing products last quarter?")
-print(answer)
-
-# Or launch an interactive CLI for ongoing analysis
-qa.cli()
+```
+customers = dd.read_csv("customers.csv")
+mapped = dt.Map(
+    prompt="Extract country and city from the address field",
+    output_fields=["country", "city"]
+)(llm, customers)
 ```
 
-### Data Generation
+### Filter operation
 
-```python
-# Create an empty dataset with schema
-schema = {
-    "transaction_id": "string",
-    "amount": "float",
-    "merchant": "string", 
-    "category": "string",
-    "description": "string",
-    "timestamp": "datetime",
-    "customer_id": "string"
-}
-
-# Generate 1000 synthetic transactions
-empty_ds = dt.create_empty_dataset(schema)
-synthetic_data = empty_ds.expand(1000, """
-Generate realistic banking transactions with:
-- Transaction amounts following typical consumer spending patterns
-- Include occasional suspicious patterns (5% of transactions)
-- Timestamps should follow realistic temporal patterns
-- Ensure category and description align logically
-""")
+```
+# Filter to marketable products only
+marketable = dt.Filter(
+    prompt="Determine if this product has sufficient information to be listed online"
+)(llm, enhanced)
 ```
 
-### Semantic Data Filtering
+More examples in the examples/ folder.
 
-```python
-# Patient eligibility filtering for clinical trials
-patients = dt.load_dataset("patient_records.csv")
-
-criteria = """
-Include patients who:
-- Have Type 2 diabetes
-- HbA1c between 7.5% and 9.0%
-- No history of cardiovascular events
-- Failed on or intolerant to metformin
-- Age 40-65
-"""
-
-eligible = patients.filter(f"Determine if patient meets these criteria: {criteria}")
-```
-
-### Data Transformation
-
-```python
-# Enrich product descriptions
-products = dt.load_dataset("product_catalog.csv")
-enriched = products.map("""
-Enhance the product description by:
-1. Adding 2-3 key feature highlights
-2. Mentioning the ideal use case
-3. Improving readability while maintaining accuracy
-4. Ensuring a consistent professional tone
-""")
-```
-
-### Stream data for training
-
-```python
-dataloader = ds3.pytorch()
-```
-
-### Development Setup
-
-```bash
-git clone https://github.com/vitalops/datatune.git
-cd datatune
-pip install -e ".[dev]"
-pre-commit install
-```
-
-## 🔬 Research
-
-If you use Datatune in your research, please cite:
-
-```bibtex
-@software{datatune2024,
-  author = {VitalOps Team},
-  title = {Datatune: LLM-Powered Data Workflows},
-  year = {2024},
-  publisher = {GitHub},
-  url = {https://github.com/vitalops/datatune}
-}
-```
-
-## 📜 License
-
-Datatune is released under the [MIT License](https://github.com/vitalops/datatune/blob/main/LICENSE).
+## License
+MIT License
