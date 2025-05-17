@@ -99,7 +99,12 @@ def finalize(
             df = df[~df[DELETED_COLUMN]]
 
     drop_columns = [col for col in df.columns if "__DATATUNE__" in col]
-    drop_columns += [ERRORED_COLUMN, DELETED_COLUMN]
+
+    if ERRORED_COLUMN in df.columns:
+        drop_columns.append(ERRORED_COLUMN)
+    if DELETED_COLUMN in df.columns:
+        drop_columns.append(DELETED_COLUMN)
+
     if drop_columns:
         df = df.drop(columns=drop_columns)
 
