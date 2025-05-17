@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Optional, Union
 
 
 class LLM:
@@ -47,9 +47,9 @@ class Azure(LLM):
     def __init__(
         self,
         model_name: str,
-        api_key: str = None,
-        api_base: str = None,
-        api_version: str = None,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        api_version: Optional[str] = None,
         **kwargs,
     ) -> None:
         self.model_name = model_name

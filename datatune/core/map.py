@@ -24,7 +24,7 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFr
 
 
 def map_prompt(
-    prompt: str, prompt_column: str, serialized_input_column: str, df: pd.DataFrame
+    prompt: str, prompt_column: str, serialized_input_column: str, expected_new_fields: List[str], df: pd.DataFrame
 ) -> pd.DataFrame:
     """
     Creates a mapping prompt by combining the base prompt with serialized input data.
@@ -45,6 +45,7 @@ def map_prompt(
     suffix = f"""{os.linesep}INSTRUCTIONS:
     Map and transform the above input according to the above prompt.
     Replace or Create new fields or values as per the prompt.
+    {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
     Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}}
     Format your entire response as a valid Python dictionary ONLY with no other text.
     """
@@ -207,6 +208,7 @@ class Map(Op):
                 self.prompt,
                 self.prompt_column,
                 self.serialized_input_column,
+                self.output_fields,
             ),
         )
         df = df.map_partitions(
