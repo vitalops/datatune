@@ -82,7 +82,7 @@ llm = Azure(
     model_name="gpt-35-turbo",
     api_key=api_key,
     api_base=api_base,
-    api_version=api_version
+    api_version=api_version)
 ```
 
 More examples in the examples/ folder.
