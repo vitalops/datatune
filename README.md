@@ -27,8 +27,7 @@ from datatune.core.filter import Filter
 from datatune.llm.llm import LLM
 from datatune.core.op import finalize
 
-api_key = os.getenv("OPENAI_API_KEY")
-
+os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
 llm = LLM(model_name="gpt-35-turbo")
 
 # Load data from your source with Dask
