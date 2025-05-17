@@ -64,8 +64,8 @@ mapped = Map(
 ```
 # Filter to marketable products only
 marketable = Filter(
-    prompt="Determine if this product has sufficient information to be listed online"
-)(llm, enhanced)
+    prompt="Keep only customers who are from Asia"
+)(llm, mapped)
 ```
 
 ### Multiple LLM Support
