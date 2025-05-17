@@ -16,12 +16,8 @@ requires-python = ">=3.8"
 dependencies = [
     "numpy",
     "litellm",
-]
-
-[project.optional-dependencies]
-dev = [
-    "black",
-    "pandas",
+    "dask",
+    "pandas"
 ]
 
 [project.urls]
