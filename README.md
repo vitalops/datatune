@@ -4,7 +4,7 @@
 [![Python Versions](https://img.shields.io/pypi/pyversions/datatune.svg)](https://pypi.org/project/datatune/)
 [![License](https://img.shields.io/github/license/vitalops/datatune)](https://github.com/vitalops/datatune/blob/main/LICENSE)
 
-Perform transformations on your data using Natural language using LLMs
+Perform transformations on your data with Natural language using LLMs
 
 ## Installation
 
@@ -40,29 +40,12 @@ filtered = Filter(
     prompt="Keep only products suitable for beginners"
 )(llm, mapped)
 
-# Finalize and save
+# Get the final dataframe after cleanup of metadata and deleted rows after operations using `finalize`.
 result = finalize(filtered)
 result.compute().to_csv("beginner_products.csv")
 ```
 
 ## Features
-
-### Multiple LLM Support
-Datatune works with various LLM providers:
-
-```
-# Using Ollama
-from datatune.llm.llm import Ollama
-llm = Ollama()
-
-# Using Azure OpenAI
-from datatune.llm.llm import Azure
-llm = Azure(
-    model_name="gpt-35-turbo",
-    api_key=api_key,
-    api_base=api_base,
-    api_version=api_version
-```
 
 ### Map Operation
 
@@ -83,6 +66,23 @@ mapped = Map(
 marketable = Filter(
     prompt="Determine if this product has sufficient information to be listed online"
 )(llm, enhanced)
+```
+
+### Multiple LLM Support
+Datatune works with various LLM providers:
+
+```
+# Using Ollama
+from datatune.llm.llm import Ollama
+llm = Ollama()
+
+# Using Azure OpenAI
+from datatune.llm.llm import Azure
+llm = Azure(
+    model_name="gpt-35-turbo",
+    api_key=api_key,
+    api_base=api_base,
+    api_version=api_version
 ```
 
 More examples in the examples/ folder.
