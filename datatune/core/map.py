@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Callable, Union
 from functools import partial
 import json
 import ast
-from datatune.core.op import Op
+from datatune.core.op import Op, DataFrameWrapper
 import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
@@ -183,6 +183,7 @@ class Map(Op):
         self.serialized_input_column = f"{self.name}_SERIALIZED_INPUT__DATATUNE__"
         self.prompt_column = f"{self.name}_MAP_PROMPT__DATATUNE__"
         self.llm_output_column = f"{self.name}_LLM_OUTPUT__DATATUNE__"
+        self.result = None
 
     def __call__(self, llm: Callable, df: Dict):
         """
@@ -199,7 +200,7 @@ class Map(Op):
             df (Dict): DataFrame-like object to transform (typically a Dask DataFrame).
 
         Returns:
-            Dict: The processed DataFrame with transformed values.
+            DataFrameWrapper: A wrapper that behaves like a DataFrame with additional methods.
         """
         df = df.map_partitions(partial(input_as_string, self.serialized_input_column))
         df = df.map_partitions(
@@ -237,8 +238,7 @@ class Map(Op):
             ),
             meta=meta,
         )
-        return self.result
-
+        return DataFrameWrapper(self.result, self)
 
 __all__ = [
     "Map",

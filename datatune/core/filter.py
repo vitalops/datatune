@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional, Callable
 from functools import partial
-from datatune.core.op import Op
+from datatune.core.op import Op, DataFrameWrapper
 import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
@@ -190,6 +190,7 @@ class Filter(Op):
             "delete",
         ), "on_error must be either 'keep' or 'delete'"
         self.on_error = on_error
+        self.result = None
 
     def __call__(self, llm: Callable, df: Dict):
         """
@@ -200,7 +201,7 @@ class Filter(Op):
             df (Dict): DataFrame-like object to filter (typically a Dask DataFrame).
 
         Returns:
-            Dict: The processed DataFrame with filter results and deletion markers.
+            DataFrameWrapper: A wrapper that behaves like a DataFrame but has the finalize method.
         """
         df = df.map_partitions(partial(input_as_string, self.serialized_input_column))
         df = df.map_partitions(
@@ -222,7 +223,8 @@ class Filter(Op):
         self.result = results.map_partitions(
             partial(delete_rows, self.result_column, self.on_error),
         )
-        return self.result
+        # Return a DataFrame wrapper that has the finalize method
+        return DataFrameWrapper(self.result, self)
 
 
 __all__ = [

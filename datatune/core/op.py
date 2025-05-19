@@ -112,3 +112,68 @@ class Op:
             df = df.drop(columns=drop_columns)
 
         return df
+
+
+class DataFrameWrapper:
+    """
+    A wrapper around a DataFrame with additional methods.
+    """
+    
+    def __init__(self, df, op):
+        """
+        Initialize the wrapper with a DataFrame and an operation.
+        
+        Args:
+            df: The DataFrame to wrap
+            op: The operation that created the DataFrame
+        """
+        self.df = df
+        self.op = op
+        
+    def __getattr__(self, name):
+        """
+        Forward attribute access to the wrapped DataFrame.
+        
+        Args:
+            name: The name of the attribute to access
+            
+        Returns:
+            The attribute from the wrapped DataFrame
+        """
+        if name == 'finalize':
+            return self._finalize
+        return getattr(self.df, name)
+        
+    def _finalize(self, keep_errored_rows=False):
+        """
+        Finalize the DataFrame by removing internal columns and filtered rows.
+        
+        Args:
+            keep_errored_rows: Whether to keep errored rows in the result
+            
+        Returns:
+            The finalized DataFrame
+        """
+        df = self.df
+        
+        if not keep_errored_rows and DELETED_COLUMN in df.columns:
+            if not isinstance(df, dd.DataFrame):
+                df = df[~df[DELETED_COLUMN]]
+            else:
+                df = df[~df[DELETED_COLUMN]]
+
+        drop_columns = [col for col in df.columns if "__DATATUNE__" in col]
+
+        if ERRORED_COLUMN in df.columns:
+            drop_columns.append(ERRORED_COLUMN)
+        if DELETED_COLUMN in df.columns:
+            drop_columns.append(DELETED_COLUMN)
+
+        if drop_columns:
+            df = df.drop(columns=drop_columns)
+
+        return df
+    
+    def __repr__(self):
+        """Return the representation of the wrapped DataFrame."""
+        return repr(self.df)
