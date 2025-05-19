@@ -112,6 +112,19 @@ llm = Azure(
     api_version=api_version)
 ```
 
+### Data Compatibility
+
+Datatune leverages Dask DataFrames to enable scalable processing across large datasets. This approach allows you to:
+
+- Process data larger than context length of LLMs
+- Execute parallel computations efficiently
+
+If you're working with pandas DataFrames, convert them with a simple:
+
+```python
+import dask.dataframe as dd
+dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
+
 More [examples/](https://github.com/vitalops/datatune/tree/main/examples)
 
 ## License
