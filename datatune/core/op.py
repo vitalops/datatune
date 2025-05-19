@@ -37,6 +37,7 @@ class Op:
 
     Attributes:
         name (str): Unique identifier for this operation instance.
+        result (Optional[dd.DataFrame]): Result DataFrame after operation is executed.
 
     Args:
         name (Optional[str], optional): Custom name for the operation.
@@ -47,6 +48,7 @@ class Op:
         if name is None:
             name = get_name_from_class(self.__class__.__name__)
         self.name = name
+        self.result = None
 
     def __call__(
         self, llm: Callable, df: dd.DataFrame, *args, **kwargs
@@ -70,42 +72,43 @@ class Op:
             NotImplementedError: This method must be implemented by subclasses.
         """
         raise NotImplementedError("Subclasses must implement __call__ method")
+        
+    def finalize(self, keep_errored_rows: bool = False):
+        """
+        Retrieve a final DataFrame by removing internal columns and filtered rows.
 
+        This method:
+        1. Removes rows marked for deletion (if keep_errored_rows is False)
+        2. Removes internal columns used by datatune (columns with "__DATATUNE__")
+        3. Removes error and deletion marker columns
 
-def finalize(
-    df: Union[pd.DataFrame, dd.DataFrame], keep_errored_rows: bool = False
-) -> Union[pd.DataFrame, dd.DataFrame]:
-    """
-    Retrieve a final DataFrame by removing internal columns and filtered rows.
+        Args:
+            keep_errored_rows (bool, optional): Whether to keep rows marked for deletion.
+                Defaults to False.
 
-    This function:
-    1. Removes rows marked for deletion (if keep_errored_rows is False, removes errored rows)
-    2. Removes internal columns used by datatune (columns with "__DATATUNE__")
-    3. Removes error and deletion marker columns
+        Returns:
+            Union[pd.DataFrame, dd.DataFrame]: The finalized DataFrame with internal
+                columns removed and filtered according to deletion flags.
+        """
+        if self.result is None:
+            raise AttributeError("No DataFrame available, retry the operation")
+            
+        df = self.result
+        
+        if not keep_errored_rows and DELETED_COLUMN in df.columns:
+            if not isinstance(df, dd.DataFrame):
+                df = df[~df[DELETED_COLUMN]]
+            else:
+                df = df[~df[DELETED_COLUMN]]
 
-    Args:
-        df (Union[pd.DataFrame, dd.DataFrame]): DataFrame to finalize.
-        keep_errored_rows (bool, optional): Whether to keep rows marked for deletion.
-            Defaults to False.
+        drop_columns = [col for col in df.columns if "__DATATUNE__" in col]
 
-    Returns:
-        Union[pd.DataFrame, dd.DataFrame]: The finalized DataFrame with internal
-            columns removed and filtered according to deletion flags.
-    """
-    if not keep_errored_rows and DELETED_COLUMN in df.columns:
-        if not isinstance(df, dd.DataFrame):
-            df = df[~df[DELETED_COLUMN]]
-        else:
-            df = df[~df[DELETED_COLUMN]]
+        if ERRORED_COLUMN in df.columns:
+            drop_columns.append(ERRORED_COLUMN)
+        if DELETED_COLUMN in df.columns:
+            drop_columns.append(DELETED_COLUMN)
 
-    drop_columns = [col for col in df.columns if "__DATATUNE__" in col]
+        if drop_columns:
+            df = df.drop(columns=drop_columns)
 
-    if ERRORED_COLUMN in df.columns:
-        drop_columns.append(ERRORED_COLUMN)
-    if DELETED_COLUMN in df.columns:
-        drop_columns.append(DELETED_COLUMN)
-
-    if drop_columns:
-        df = df.drop(columns=drop_columns)
-
-    return df
+        return df

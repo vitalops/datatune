@@ -219,9 +219,10 @@ class Filter(Op):
                 parse_filter_output_as_int, self.result_column, self.llm_output_column
             ),
         )
-        return results.map_partitions(
+        self.result = results.map_partitions(
             partial(delete_rows, self.result_column, self.on_error),
         )
+        return self.result
 
 
 __all__ = [

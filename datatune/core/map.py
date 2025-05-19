@@ -228,7 +228,7 @@ class Map(Op):
 
         meta = pd.DataFrame(columns=output_cols)
 
-        result = df.map_partitions(
+        self.result = df.map_partitions(
             partial(
                 update_df_with_llm_output,
                 self.llm_output_column,
@@ -237,7 +237,7 @@ class Map(Op):
             ),
             meta=meta,
         )
-        return result
+        return self.result
 
 
 __all__ = [
