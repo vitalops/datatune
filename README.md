@@ -126,7 +126,8 @@ import dask.dataframe as dd
 dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
 ```
 
-More [examples/](https://github.com/vitalops/datatune/tree/main/examples)
+### Examples
+Check out [examples/](https://github.com/vitalops/datatune/tree/main/examples)
 
 ## License
 MIT License
