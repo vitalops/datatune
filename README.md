@@ -1,7 +1,6 @@
 # 🎵 Datatune
 
 [![PyPI version](https://img.shields.io/pypi/v/datatune.svg)](https://pypi.org/project/datatune/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/datatune.svg)](https://pypi.org/project/datatune/)
 [![License](https://img.shields.io/github/license/vitalops/datatune)](https://github.com/vitalops/datatune/blob/main/LICENSE)
 [![PyPI downloads](https://img.shields.io/pypi/dm/datatune.svg)](https://pypi.org/project/datatune/)
 
