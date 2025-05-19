@@ -112,7 +112,7 @@ llm = Azure(
     api_version=api_version)
 ```
 
-More examples in the [examples/](https://github.com/vitalops/datatune/tree/main/examples)folder.
+More [examples/](https://github.com/vitalops/datatune/tree/main/examples)
 
 ## License
 MIT License
