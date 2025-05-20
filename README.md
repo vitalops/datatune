@@ -127,7 +127,7 @@ dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on
 ```
 
 ### Examples
-Check out [examples/](https://github.com/vitalops/datatune/tree/main/examples)
+Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 
 ### Issues 
 
