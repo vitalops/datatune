@@ -24,12 +24,11 @@ def test_map_and_filter():
     map_op = Map(
         prompt=map_prompt,
         output_fields=["first_name_length", "last_name_length"],
-        debug=True,
     )
     mapped_df = map_op(llm, df)
 
     filter_prompt = "Keep only rows where the first name length is greater than 5"
-    filter_op = Filter(prompt=filter_prompt, debug=True)
+    filter_op = Filter(prompt=filter_prompt)
     filtered_df = filter_op(llm, mapped_df)
 
     result = filtered_df.head(10)
