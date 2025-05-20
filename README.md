@@ -89,8 +89,8 @@ mapped = Map(
 ### Filter operation
 
 ```
-# Filter to marketable products only
-marketable = Filter(
+# Filter to remove rows
+filtered = Filter(
     prompt="Keep only customers who are from Asia"
 )(llm, mapped)
 ```
