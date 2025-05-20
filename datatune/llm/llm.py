@@ -8,14 +8,17 @@ class LLM:
         if "temperature" not in kwargs:
             self.kwargs["temperature"] = 0.0
 
-    def _completion(self, prompt: str) -> str:
+    def _completion(self, prompt: str) -> str | Exception:
         messages = [{"role": "user", "content": prompt}]
         from litellm import completion
 
         response = completion(model=self.model_name, messages=messages, **self.kwargs)
+
+        if isinstance(response, Exception):
+            return response
         return response["choices"][0]["message"]["content"]
 
-    def _batch_completion(self, prompts: List[str]) -> List[str]:
+    def _batch_completion(self, prompts: List[str]) -> List[str | Exception]:
         messages = [[{"role": "user", "content": prompt}] for prompt in prompts]
         from litellm import batch_completion
 
@@ -23,7 +26,14 @@ class LLM:
             model=self.model_name, messages=messages, **self.kwargs
         )
 
-        return [response["choices"][0]["message"]["content"] for response in responses]
+        ret = []
+        for response in responses:
+            if isinstance(response, Exception):
+                ret.append(response)
+            else:
+                ret.append(response["choices"][0]["message"]["content"])
+
+        return ret
 
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
         """Always return a list of strings, regardless of input type"""
@@ -41,6 +51,12 @@ class Ollama(LLM):
         )
         self.api_base = api_base
         self._model_name = model_name
+
+
+class OpenAI(LLM):
+    def __init__(self, model_name: str, api_key: Optional[str] = None, **kwargs):
+        kwargs.update({"api_key": api_key})
+        super().__init__(model_name=f"openai/{model_name}", **kwargs)
 
 
 class Azure(LLM):

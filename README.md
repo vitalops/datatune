@@ -24,11 +24,11 @@ import dask.dataframe as dd
 
 from datatune.core.map import Map
 from datatune.core.filter import Filter
-from datatune.llm.llm import LLM
+from datatune.llm.llm import OpenAI
 from datatune.core.op import finalize
 
 os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
-llm = LLM(model_name="gpt-35-turbo")
+llm = OpenAI(model_name="gpt-3.5-turbo")
 
 # Load data from your source with Dask
 df = dd.read_csv("tests/test_data/products.csv")
