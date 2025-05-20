@@ -132,7 +132,7 @@ Check out [examples/](https://github.com/vitalops/datatune/tree/main/examples)
 ### Issues 
 
 Want to raise an issue or want us to build a new feature?
-Head over to [issues](https://github.com/vitalops/datatune/issues) and raise a Ticket!   
+Head over to [issues](https://github.com/vitalops/datatune/issues) and raise a ticket!   
 
 You can also mail us at hello@vitalops.ai
 
