@@ -1,9 +1,10 @@
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Union
 from functools import partial
 from datatune.core.op import Op
 import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+import logging
 
 
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
@@ -63,12 +64,12 @@ def llm_inference(
     return df
 
 
-def parse_filter_output(output: str, err: bool = False) -> Optional[bool]:
+def parse_filter_output(output: Union[str, Exception], err: bool = False) -> Optional[bool]:
     """
     Parses the LLM output to determine TRUE/FALSE results.
 
     Args:
-        output (str): The raw LLM output to parse.
+        output (Union[str, Exception]): The raw LLM output to parse.
         err (bool, optional): If True, raise an error for invalid responses.
                               If False, return None for invalid responses. Defaults to False.
 
@@ -78,6 +79,9 @@ def parse_filter_output(output: str, err: bool = False) -> Optional[bool]:
     Raises:
         ValueError: If err=True and the output is neither 'TRUE' nor 'FALSE'.
     """
+    if isinstance(output, Exception):
+        logging.error(f"LLM error: {output}")
+        return None
     output = output.strip().upper()
     if output == "TRUE":
         return True
@@ -105,10 +109,10 @@ def parse_filter_output_as_int(
     Returns:
         pd.DataFrame: DataFrame with added result column and updated error flags.
     """
-    llm_output = df[llm_output_column] = df[llm_output_column].str.strip().str.upper()
+    llm_output = df[llm_output_column].apply(parse_filter_output)
     df[result_column] = -1
-    df.loc[llm_output == "TRUE", result_column] = 1
-    df.loc[llm_output == "FALSE", result_column] = 0
+    df.loc[llm_output == True, result_column] = 1
+    df.loc[llm_output == False, result_column] = 0
     error_rows = df[result_column] == -1
     if ERRORED_COLUMN not in df.columns:
         df[ERRORED_COLUMN] = False

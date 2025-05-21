@@ -6,6 +6,7 @@ from datatune.core.op import Op
 import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+import logging
 
 
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
@@ -72,16 +73,19 @@ def llm_inference(
     return df
 
 
-def parse_llm_output(llm_output: str) -> Union[Dict, Exception]:
+def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception]:
     """
     Parses the LLM output string into a Python dictionary.
 
     Args:
-        llm_output (str): The raw LLM output string to parse.
+        llm_output (Union[str, Exception]): The raw LLM output string to parse or exception received from LLM.
 
     Returns:
         Union[Dict, Exception]: A dictionary if parsing succeeds, or the exception if parsing fails.
     """
+    if isinstance(llm_output, Exception):
+        logging.error(f"LLM Error: {llm_output}")
+        return llm_output
     try:
         ret = ast.literal_eval(llm_output)
         if not isinstance(ret, dict):

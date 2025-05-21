@@ -1,0 +1,38 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+          
+      - name: Install dependencies
+        run: |
+          pip install sphinx myst-parser sphinx-book-theme sphinx-design
+          
+      - name: Build documentation
+        run: |
+          cd docs
+          make docs
+          touch build/html/.nojekyll
+          echo "docs.datatune.ai" > build/html/CNAME
+          
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GH_DEPLOY_TOKEN }}
+          publish_dir: ./docs/build/html
+          force_orphan: true
+          cname: docs.datatune.ai
