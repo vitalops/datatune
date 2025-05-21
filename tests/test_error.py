@@ -186,7 +186,7 @@ def test_filter_on_error_delete():
         "50% accurate",
         "TRUE",
         "TRUE",
-        "Partially correct",
+        Exception("Rate limit exceeded"),
     ]
 
     expected_error_indices = [2, 4, 6, 9]
