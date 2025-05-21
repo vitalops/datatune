@@ -73,12 +73,12 @@ def llm_inference(
     return df
 
 
-def parse_llm_output(llm_output: str | Exception) -> Union[Dict, Exception]:
+def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception]:
     """
     Parses the LLM output string into a Python dictionary.
 
     Args:
-        llm_output (str | Exception): The raw LLM output string to parse or exception received from LLM.
+        llm_output (Union[str, Exception]): The raw LLM output string to parse or exception received from LLM.
 
     Returns:
         Union[Dict, Exception]: A dictionary if parsing succeeds, or the exception if parsing fails.

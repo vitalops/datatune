@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Callable
+from typing import Dict, List, Optional, Callable, Union
 from functools import partial
 from datatune.core.op import Op
 import pandas as pd
@@ -64,12 +64,12 @@ def llm_inference(
     return df
 
 
-def parse_filter_output(output: str | Exception, err: bool = False) -> Optional[bool]:
+def parse_filter_output(output: Union[str, Exception], err: bool = False) -> Optional[bool]:
     """
     Parses the LLM output to determine TRUE/FALSE results.
 
     Args:
-        output (str | Exception): The raw LLM output to parse.
+        output (Union[str, Exception]): The raw LLM output to parse.
         err (bool, optional): If True, raise an error for invalid responses.
                               If False, return None for invalid responses. Defaults to False.
 

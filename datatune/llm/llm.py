@@ -8,7 +8,7 @@ class LLM:
         if "temperature" not in kwargs:
             self.kwargs["temperature"] = 0.0
 
-    def _completion(self, prompt: str) -> str | Exception:
+    def _completion(self, prompt: str) -> Union[str, Exception]:
         messages = [{"role": "user", "content": prompt}]
         from litellm import completion
 
@@ -18,7 +18,7 @@ class LLM:
             return response
         return response["choices"][0]["message"]["content"]
 
-    def _batch_completion(self, prompts: List[str]) -> List[str | Exception]:
+    def _batch_completion(self, prompts: List[str]) -> List[Union[str, Exception]]:
         messages = [[{"role": "user", "content": prompt}] for prompt in prompts]
         from litellm import batch_completion
 
