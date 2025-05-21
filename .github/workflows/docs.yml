@@ -20,7 +20,7 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pip install sphinx myst-parser sphinx-book-theme sphinx-design
+          pip install sphinx myst-parser sphinx-book-theme sphinx-design linkify-it-py
           
       - name: Build documentation
         run: |
