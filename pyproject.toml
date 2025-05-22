@@ -16,7 +16,8 @@ requires-python = ">=3.8"
 dependencies = [
     "numpy",
     "litellm",
-    "dask[dataframe]"
+    "dask[dataframe]",
+    "pandas"
     
 ]
 
