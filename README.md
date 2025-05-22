@@ -104,7 +104,7 @@ Datatune works with various LLM providers:
 from datatune.llm.llm import Ollama
 llm = Ollama()
 
-# Using Azure OpenAI
+# Using Azure
 from datatune.llm.llm import Azure
 llm = Azure(
     model_name="gpt-35-turbo",
