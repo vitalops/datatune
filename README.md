@@ -133,7 +133,7 @@ Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 
 ### Documentation
 
-Check out our [documentation](https://docs.datatune.ai/) to know more.
+Check out our [documentation](https://docs.datatune.ai/) to learn how to use datatune.
 
 ### Issues 
 
