@@ -97,7 +97,7 @@ filtered = Filter(
 ```
 
 ### Multiple LLM Support
-Datatune works with various LLM providers:
+Datatune works with various LLM providers with the help of LiteLLM under the hood.:
 
 ```
 # Using Ollama
@@ -111,6 +111,10 @@ llm = Azure(
     api_key=api_key,
     api_base=api_base,
     api_version=api_version)
+
+# OpenAI
+from datatune.llm.llm import OpenAI
+llm = OpenAI(model_name="gpt-3.5-turbo")
 ```
 
 
