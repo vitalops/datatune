@@ -104,7 +104,7 @@ Datatune works with various LLM providers:
 from datatune.llm.llm import Ollama
 llm = Ollama()
 
-# Using Azure OpenAI
+# Using Azure
 from datatune.llm.llm import Azure
 llm = Azure(
     model_name="gpt-35-turbo",
@@ -112,6 +112,7 @@ llm = Azure(
     api_base=api_base,
     api_version=api_version)
 ```
+
 
 ### Data Compatibility
 
@@ -130,6 +131,9 @@ dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on
 ### Examples
 Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 
+### Documentation
+
+Check out our [documentation](https://docs.datatune.ai/) to learn how to use datatune.
 
 ### Issues 
 
