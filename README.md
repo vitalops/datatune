@@ -113,6 +113,7 @@ llm = Azure(
     api_version=api_version)
 ```
 
+
 ### Data Compatibility
 
 Datatune leverages Dask DataFrames to enable scalable processing across large datasets. This approach allows you to:
@@ -130,6 +131,9 @@ dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on
 ### Examples
 Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 
+### Documentation
+
+Check out our [documentation](https://docs.datatune.ai/) to know more.
 
 ### Issues 
 
