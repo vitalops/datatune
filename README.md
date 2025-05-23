@@ -15,11 +15,11 @@ pip install datatune
 
 From source:
 
-```
+```bash
 pip install -e .
 ```
 ## Quick Start
-```
+```python
 import os
 import dask.dataframe as dd
 
@@ -79,7 +79,7 @@ print(new_df.head())
 
 Transform data with natural language:
 
-```
+```python
 customers = dd.read_csv("customers.csv")
 mapped = Map(
     prompt="Extract country and city from the address field",
@@ -89,7 +89,7 @@ mapped = Map(
 
 ### Filter operation
 
-```
+```python
 # Filter to remove rows
 filtered = Filter(
     prompt="Keep only customers who are from Asia"
@@ -99,7 +99,7 @@ filtered = Filter(
 ### Multiple LLM Support
 Datatune works with various LLM providers with the help of LiteLLM under the hood.:
 
-```
+```python
 # Using Ollama
 from datatune.llm.llm import Ollama
 llm = Ollama()
@@ -127,7 +127,7 @@ Datatune leverages Dask DataFrames to enable scalable processing across large da
 
 If you're working with pandas DataFrames, convert them with a simple:
 
-```
+```python
 import dask.dataframe as dd
 dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
 ```
