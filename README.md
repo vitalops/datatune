@@ -23,10 +23,8 @@ pip install -e .
 import os
 import dask.dataframe as dd
 
-from datatune.core.map import Map
-from datatune.core.filter import Filter
+import datatune as dt
 from datatune.llm.llm import OpenAI
-from datatune.core.op import finalize
 
 os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
 llm = OpenAI(model_name="gpt-3.5-turbo")
@@ -36,18 +34,18 @@ df = dd.read_csv("tests/test_data/products.csv")
 print(df.head())
 
 # Transform data with Map
-mapped = Map(
+mapped = dt.Map(
     prompt="Extract categories from the description.",
     output_fields=["Category", "Subcategory"]
 )(llm, df)
 
 # Filter data based on criteria
-filtered = Filter(
+filtered = dt.Filter(
     prompt="Keep only electronics products"
 )(llm, mapped)
 
 # Get the final dataframe after cleanup of metadata and deleted rows after operations using `finalize`.
-result = finalize(filtered)
+result = dt.finalize(filtered)
 result.compute().to_csv("electronics_products.csv")
 
 new_df = dd.read_csv("electronics_products.csv")
@@ -81,7 +79,7 @@ Transform data with natural language:
 
 ```python
 customers = dd.read_csv("customers.csv")
-mapped = Map(
+mapped = dt.Map(
     prompt="Extract country and city from the address field",
     output_fields=["country", "city"]
 )(llm, customers)
@@ -91,7 +89,7 @@ mapped = Map(
 
 ```python
 # Filter to remove rows
-filtered = Filter(
+filtered = dt.Filter(
     prompt="Keep only customers who are from Asia"
 )(llm, mapped)
 ```
