@@ -215,8 +215,10 @@ class Map(Op):
                 self.output_fields,
             ),
         )
+        meta_dict = df._meta.dtypes.to_dict()
+        meta_dict[self.llm_output_column] = "object"
         df = df.map_partitions(
-            partial(llm_inference, llm, self.llm_output_column, self.prompt_column)
+            partial(llm_inference, llm, self.llm_output_column, self.prompt_column),meta=meta_dict
         )
 
         input_cols = list(df._meta.columns)
