@@ -149,3 +149,47 @@ mapped_df = Map(
     output_fields=["company_name"]
 )(llm, df)
 ```
+
+### Mistral
+The `Mistral` class provides an interface to Mistral AI's models.
+
+```python
+from datatune.llm.llm import Mistral
+import os
+
+# Initialize with Mistral configuration
+llm = Mistral(
+    model_name="mistral-tiny",
+    api_key=os.getenv("MISTRAL_API_KEY")
+)
+```
+
+#### Parameters
+- **model_name** (str, optional): The name of the Mistral model to use. Defaults to "mistral-tiny". Available models include:
+  - "mistral-tiny"
+  - "mistral-small"
+  - "mistral-medium"
+  - "mistral-large"
+- **api_key** (str, optional): The API key for Mistral AI. If None, will try to use environment variables.
+- **kwargs**: Additional parameters to pass to the Mistral API.
+
+## Usage in Datatune Operations
+LLM instances are passed to Datatune operations like `Map` and `Filter`:
+
+```python
+from datatune.core.map import Map
+from datatune.llm.llm import Mistral
+import dask.dataframe as dd
+
+# Initialize LLM
+llm = Mistral(model_name="mistral-tiny")
+
+# Load data
+df = dd.read_csv("data.csv")
+
+# Use LLM with a Map operation
+mapped_df = Map(
+    prompt="Extract company name from the text",
+    output_fields=["company_name"]
+)(llm, df)
+```

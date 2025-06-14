@@ -100,3 +100,21 @@ class Gemini(LLM):
 
         super().__init__(model_name=self.model_name, **kwargs)
 
+
+class Mistral(LLM):
+    def __init__(
+        self,
+        model_name: str = "mistral/mistral-tiny",
+        api_key: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        self.model_name = model_name if model_name.startswith("mistral/") else f"mistral/{model_name}"
+
+        mistral_params = {
+            "api_key": api_key,
+        }
+
+        mistral_params = {k: v for k, v in mistral_params.items() if v is not None}
+        kwargs.update(mistral_params)
+
+        super().__init__(model_name=self.model_name, **kwargs)
