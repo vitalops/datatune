@@ -80,3 +80,43 @@ class Azure(LLM):
 
         kwargs.update(azure_params)
         super().__init__(model_name=azure_model, **kwargs)
+
+class HuggingFace(LLM):
+        def __init__(
+            self,
+            model_name: str,
+            api_base: Optional[str] = None,
+            api_key: Optional[str] = None,
+            **kwargs,
+        ) -> None:
+
+
+            hf_model = f"huggingface/{model_name}"
+            hf_params = {
+                "api_base": api_base,
+                "api_key": api_key,
+            }
+            hf_params = {k: v for k, v in hf_params.items() if v is not None}
+
+            kwargs.update(hf_params)
+            super().__init__(model_name=hf_model, **kwargs)
+
+class Gemini(LLM):
+    def __init__(
+        self,
+        model_name: str = "gemini/gemini-1.5-pro",
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        gemini_model = model_name if model_name.startswith("gemini/") else f"gemini/{model_name}"
+
+        gemini_params = {
+            "api_key": api_key,
+            "api_base": api_base,
+        }
+
+        gemini_params = {k: v for k, v in gemini_params.items() if v is not None}
+        kwargs.update(gemini_params)
+
+        super().__init__(model_name=gemini_model, **kwargs)
