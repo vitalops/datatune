@@ -193,3 +193,48 @@ mapped_df = Map(
     output_fields=["company_name"]
 )(llm, df)
 ```
+
+### Huggingface
+The `Huggingface` class provides an interface to Hugging Face's models.
+
+```python
+from datatune.llm.llm import Huggingface
+import os
+
+# Initialize with Huggingface configuration
+llm = Huggingface(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    api_key=os.getenv("HF_TOKEN")
+)
+```
+
+#### Parameters
+- **model_name** (str, required): The name of the Hugging Face model to use. The "huggingface/" prefix is automatically added if not present.
+- **api_key** (str, optional): The API key for Hugging Face. If None, will try to use environment variables.
+- **kwargs**: Additional parameters to pass to the Hugging Face API.
+
+#### Model Name Handling
+The Huggingface class automatically prefixes model names with "huggingface/" if not already present. This means you can specify either:
+- `model_name="meta-llama/Llama-2-7b-chat-hf"` (prefix added automatically)
+- `model_name="huggingface/meta-llama/Llama-2-7b-chat-hf"` (prefix already present)
+
+## Usage in Datatune Operations
+LLM instances are passed to Datatune operations like `Map` and `Filter`:
+
+```python
+from datatune.core.map import Map
+from datatune.llm.llm import Huggingface
+import dask.dataframe as dd
+
+# Initialize LLM
+llm = Huggingface(model_name="meta-llama/Llama-2-7b-chat-hf")
+
+# Load data
+df = dd.read_csv("data.csv")
+
+# Use LLM with a Map operation
+mapped_df = Map(
+    prompt="Extract company name from the text",
+    output_fields=["company_name"]
+)(llm, df)
+```

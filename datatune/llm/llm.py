@@ -118,3 +118,22 @@ class Mistral(LLM):
         kwargs.update(mistral_params)
 
         super().__init__(model_name=self.model_name, **kwargs)
+
+
+class Huggingface(LLM):
+    def __init__(
+        self,
+        model_name: str,
+        api_key: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        self.model_name = model_name if model_name.startswith("huggingface/") else f"huggingface/{model_name}"
+
+        huggingface_params = {
+            "api_key": api_key,
+        }
+
+        huggingface_params = {k: v for k, v in huggingface_params.items() if v is not None}
+        kwargs.update(huggingface_params)
+
+        super().__init__(model_name=self.model_name, **kwargs)        
