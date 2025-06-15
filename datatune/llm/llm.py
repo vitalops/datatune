@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 import asyncio
 import litellm
-from datatune.llm.openai_batch_utils import multiple_jsonl_extract,multiple_jsonl_export
+from datatune.llm.openai_batch_utils import generate_jsonl_batches,parse_jsonl_files,token_count_jsonl
 
 
 class LLM:
@@ -141,6 +141,13 @@ class Huggingface(LLM):
         super().__init__(model_name=self.model_name, **kwargs)        
 
 class OpenAIBatchAPI(LLM):
+
+    TOKEN_LIMIT = 2000000
+    enqued_tokens = 0
+    lock = asyncio.Lock()
+
+
+
     def __init__(
             self,
             model_name:str = "gpt-3.5-turbo",
@@ -150,81 +157,105 @@ class OpenAIBatchAPI(LLM):
         kwargs.update({"api_key": api_key})
         super().__init__(model_name=model_name, **kwargs)
 
+        self.batch_size = 6000
+        
+
+
     async def process_batch(self,file_path: str, batch_id: int):
-        with open (file_path,"rb") as f:
-            file_bytes = f.read()
-        file_obj = await litellm.acreate_file(
-            file=file_bytes,
-            purpose="batch",
-            custom_llm_provider="openai",
-        )
-        print(f"[{file_path}] Uploaded as File ID: {file_obj.id}")
-
-        create_batch_response = await litellm.acreate_batch(
-            completion_window="24h",
-            endpoint="/v1/chat/completions",
-            input_file_id=file_obj.id,
-            custom_llm_provider="openai",
-            metadata={"batch": f"batch-{batch_id}"},
-        )
-        print(f"[{file_path}] Batch Created: {create_batch_response.id}")
-
-        # Polling loop
-        MAX_WAIT_TIME = 300
-        POLL_INTERVAL = 5
-        MAX_FAILURE_RETRIES = 100
-
-        waited = 0
-        failure_count = 0
-
+        """
+        Uploads a single JSONL file, creates a batch request, waits for completion,
+        downloads and saves the output JSONL.
+        """
+        tokens = token_count_jsonl(file_path,self.model_name)
         while True:
-            retrieved_batch = await litellm.aretrieve_batch(
-                batch_id=create_batch_response.id,
+            async with self.lock:
+                if self.enqued_tokens + tokens < self.TOKEN_LIMIT:
+                    self.enqued_tokens += tokens
+                    break
+            print(f"[{file_path}] Waiting for token capacity...")
+            await asyncio.sleep(5)
+        try:
+            # Upload file to OpenAI
+            with open (file_path,"rb") as f:
+                file_bytes = f.read()
+            file_obj = await litellm.acreate_file(
+                file=file_bytes,
+                purpose="batch",
+                custom_llm_provider="openai",
+            )
+            print(f"[{file_path}] Uploaded as File ID: {file_obj.id}")
+
+            # Submit batch job
+            create_batch_response = await litellm.acreate_batch(
+                completion_window="24h",
+                endpoint="/v1/chat/completions",
+                input_file_id=file_obj.id,
+                custom_llm_provider="openai",
+                metadata={"batch": f"batch-{batch_id}"},
+            )
+            print(f"[{file_path}] Batch Created: {create_batch_response.id}")
+
+            # Polling loop
+            MAX_WAIT_TIME = 300000000
+            POLL_INTERVAL = 30
+            MAX_FAILURE_RETRIES = 100
+
+            waited = 0
+            failure_count = 0
+
+            while True:
+                retrieved_batch = await litellm.aretrieve_batch(
+                    batch_id=create_batch_response.id,
+                    custom_llm_provider="openai"
+                )
+                status = retrieved_batch.status
+                print(f"[{file_path}]  Batch status: {status}")
+
+                if status == "completed" and retrieved_batch.output_file_id:
+                    print(f"[{file_path}] ✅ Completed. Output File ID: {retrieved_batch.output_file_id}")
+                    break
+
+                elif status in ["failed", "cancelled", "expired"]:
+                    failure_count += 1
+                    print(f"[{file_path}] ⚠️ Batch in failed state ({status}), retrying {failure_count}/{MAX_FAILURE_RETRIES}")
+                    if failure_count >= MAX_FAILURE_RETRIES:
+                        raise RuntimeError(f"[{file_path}] ❌ Batch failed with status: {status} after {MAX_FAILURE_RETRIES} retries")
+
+                await asyncio.sleep(POLL_INTERVAL)
+                waited += POLL_INTERVAL
+                if waited > MAX_WAIT_TIME:
+                    raise TimeoutError(f"[{file_path}] ❌ Timed out waiting for batch to complete.")
+
+
+            # Download and save the output file
+            file_content = await litellm.afile_content(
+                file_id=retrieved_batch.output_file_id,
                 custom_llm_provider="openai"
             )
-            status = retrieved_batch.status
-            print(f"[{file_path}]  Batch status: {status}")
+            output_bytes = await file_content.aread()
+            output_str = output_bytes.decode("utf-8")
 
-            if status == "completed" and retrieved_batch.output_file_id:
-                print(f"[{file_path}] ✅ Completed. Output File ID: {retrieved_batch.output_file_id}")
-                break
-
-            elif status in ["failed", "cancelled", "expired"]:
-                failure_count += 1
-                print(f"[{file_path}] ⚠️ Batch in failed state ({status}), retrying {failure_count}/{MAX_FAILURE_RETRIES}")
-                if failure_count >= MAX_FAILURE_RETRIES:
-                    raise RuntimeError(f"[{file_path}] ❌ Batch failed with status: {status} after {MAX_FAILURE_RETRIES} retries")
-
-            await asyncio.sleep(POLL_INTERVAL)
-            waited += POLL_INTERVAL
-            if waited > MAX_WAIT_TIME:
-                raise TimeoutError(f"[{file_path}] ❌ Timed out waiting for batch to complete.")
-
-
-        # Download and save the output file
-        file_content = await litellm.afile_content(
-            file_id=retrieved_batch.output_file_id,
-            custom_llm_provider="openai"
-        )
-        output_bytes = await file_content.aread()
-        output_str = output_bytes.decode("utf-8")
-
-        with open(f"response_{batch_id}.jsonl", "w", encoding='utf-8') as f:
-            f.write(output_str)
-        print(f"[{file_path}]  Output saved to response_{batch_id}.jsonl")
+            with open(f"response_{batch_id}.jsonl", "w", encoding='utf-8') as f:
+                f.write(output_str)
+            print(f"[{file_path}]  Output saved to response_{batch_id}.jsonl")
+        finally:
+            async with self.lock:
+                self.enqued_tokens -= tokens
 
     async def main(self):
+        """
+        Launches parallel batch processing and gathers all results.
+        """
+
         tasks = [self.process_batch(file_path, i) for i, file_path in enumerate(self.input_files)]
         await asyncio.gather(*tasks)
-        ret = multiple_jsonl_extract([f"response_{i}.jsonl" for i in range (0,self.no_of_rows,self.batch_size)])
+        ret = parse_jsonl_files([f"response_{i}.jsonl" for i,_ in enumerate(range (0, self.no_of_rows, self.batch_size))])
         return ret
 
 
     def __call__(self, prompt:List[str]) -> List[str]:
-        """Always return a list of strings, regardless of input type"""
-        self.no_of_rows =len(prompt)
-        self.batch_size = 50000
-        self.input_files = multiple_jsonl_export(prompt,self.model_name,self.no_of_rows,self.batch_size)
+        self.no_of_rows = len(prompt)
+        self.input_files = generate_jsonl_batches(prompt, self.model_name, self.no_of_rows, self.batch_size)
         print("Input JSON files created.")
         
         return asyncio.run(self.main())
