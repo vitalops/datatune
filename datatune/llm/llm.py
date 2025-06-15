@@ -83,6 +83,62 @@ class Azure(LLM):
 
         kwargs.update(azure_params)
         super().__init__(model_name=azure_model, **kwargs)
+        
+class Gemini(LLM):
+    def __init__(
+        self,
+        model_name: str = "gemini/gemma-3-1b-it",
+        api_key: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        self.model_name = model_name if model_name.startswith("gemini/") else f"gemini/{model_name}"
+
+        gemini_params = {
+            "api_key": api_key,
+        }
+
+        gemini_params = {k: v for k, v in gemini_params.items() if v is not None}
+        kwargs.update(gemini_params)
+
+        super().__init__(model_name=self.model_name, **kwargs)
+
+
+class Mistral(LLM):
+    def __init__(
+        self,
+        model_name: str = "mistral/mistral-tiny",
+        api_key: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        self.model_name = model_name if model_name.startswith("mistral/") else f"mistral/{model_name}"
+
+        mistral_params = {
+            "api_key": api_key,
+        }
+
+        mistral_params = {k: v for k, v in mistral_params.items() if v is not None}
+        kwargs.update(mistral_params)
+
+        super().__init__(model_name=self.model_name, **kwargs)
+
+
+class Huggingface(LLM):
+    def __init__(
+        self,
+        model_name: str,
+        api_key: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        self.model_name = model_name if model_name.startswith("huggingface/") else f"huggingface/{model_name}"
+
+        huggingface_params = {
+            "api_key": api_key,
+        }
+
+        huggingface_params = {k: v for k, v in huggingface_params.items() if v is not None}
+        kwargs.update(huggingface_params)
+
+        super().__init__(model_name=self.model_name, **kwargs)        
 
 class OpenAIBatchAPI(LLM):
     def __init__(
