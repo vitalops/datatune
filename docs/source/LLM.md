@@ -129,8 +129,8 @@ The Gemini class automatically prefixes model names with "gemini/" if not alread
 - `model_name="gemma-3-1b-it"` (prefix added automatically)
 - `model_name="gemini/gemma-3-1b-it"` (prefix already present)
 
-## Usage in Datatune Operations
-LLM instances are passed to Datatune operations like `Map` and `Filter`:
+## Example
+
 
 ```python
 from datatune.core.map import Map
@@ -173,8 +173,7 @@ llm = Mistral(
 - **api_key** (str, optional): The API key for Mistral AI. If None, will try to use environment variables.
 - **kwargs**: Additional parameters to pass to the Mistral API.
 
-## Usage in Datatune Operations
-LLM instances are passed to Datatune operations like `Map` and `Filter`:
+## Example
 
 ```python
 from datatune.core.map import Map
@@ -218,8 +217,7 @@ The Huggingface class automatically prefixes model names with "huggingface/" if 
 - `model_name="meta-llama/Llama-2-7b-chat-hf"` (prefix added automatically)
 - `model_name="huggingface/meta-llama/Llama-2-7b-chat-hf"` (prefix already present)
 
-## Usage in Datatune Operations
-LLM instances are passed to Datatune operations like `Map` and `Filter`:
+## Example
 
 ```python
 from datatune.core.map import Map
