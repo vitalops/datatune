@@ -104,3 +104,137 @@ mapped_df = Map(
     output_fields=["company_name"]
 )(llm, df)
 ```
+
+### Gemini
+The `Gemini` class provides an interface to Google's Gemini models.
+
+```python
+from datatune.llm.llm import Gemini
+import os
+
+# Initialize with Gemini configuration
+llm = Gemini(
+    model_name="gemma-3-1b-it",
+    api_key=os.getenv("GEMINI_API_KEY")
+)
+```
+
+#### Parameters
+- **model_name** (str, optional): The name of the Gemini model to use. Defaults to "gemini/gemma-3-1b-it". The "gemini/" prefix is automatically added if not present.
+- **api_key** (str, optional): The API key for Google's Gemini API. If None, will try to use environment variables.
+- **kwargs**: Additional parameters to pass to the Gemini API.
+
+#### Model Name Handling
+The Gemini class automatically prefixes model names with "gemini/" if not already present. This means you can specify either:
+- `model_name="gemma-3-1b-it"` (prefix added automatically)
+- `model_name="gemini/gemma-3-1b-it"` (prefix already present)
+
+## Usage in Datatune Operations
+LLM instances are passed to Datatune operations like `Map` and `Filter`:
+
+```python
+from datatune.core.map import Map
+from datatune.llm.llm import Gemini
+import dask.dataframe as dd
+
+# Initialize LLM
+llm = Gemini(model_name="gemma-3-1b-it")
+
+# Load data
+df = dd.read_csv("data.csv")
+
+# Use LLM with a Map operation
+mapped_df = Map(
+    prompt="Extract company name from the text",
+    output_fields=["company_name"]
+)(llm, df)
+```
+
+### Mistral
+The `Mistral` class provides an interface to Mistral AI's models.
+
+```python
+from datatune.llm.llm import Mistral
+import os
+
+# Initialize with Mistral configuration
+llm = Mistral(
+    model_name="mistral-tiny",
+    api_key=os.getenv("MISTRAL_API_KEY")
+)
+```
+
+#### Parameters
+- **model_name** (str, optional): The name of the Mistral model to use. Defaults to "mistral-tiny". Available models include:
+  - "mistral-tiny"
+  - "mistral-small"
+  - "mistral-medium"
+  - "mistral-large"
+- **api_key** (str, optional): The API key for Mistral AI. If None, will try to use environment variables.
+- **kwargs**: Additional parameters to pass to the Mistral API.
+
+## Usage in Datatune Operations
+LLM instances are passed to Datatune operations like `Map` and `Filter`:
+
+```python
+from datatune.core.map import Map
+from datatune.llm.llm import Mistral
+import dask.dataframe as dd
+
+# Initialize LLM
+llm = Mistral(model_name="mistral-tiny")
+
+# Load data
+df = dd.read_csv("data.csv")
+
+# Use LLM with a Map operation
+mapped_df = Map(
+    prompt="Extract company name from the text",
+    output_fields=["company_name"]
+)(llm, df)
+```
+
+### Huggingface
+The `Huggingface` class provides an interface to Hugging Face's models.
+
+```python
+from datatune.llm.llm import Huggingface
+import os
+
+# Initialize with Huggingface configuration
+llm = Huggingface(
+    model_name="meta-llama/Llama-2-7b-chat-hf",
+    api_key=os.getenv("HF_TOKEN")
+)
+```
+
+#### Parameters
+- **model_name** (str, required): The name of the Hugging Face model to use. The "huggingface/" prefix is automatically added if not present.
+- **api_key** (str, optional): The API key for Hugging Face. If None, will try to use environment variables.
+- **kwargs**: Additional parameters to pass to the Hugging Face API.
+
+#### Model Name Handling
+The Huggingface class automatically prefixes model names with "huggingface/" if not already present. This means you can specify either:
+- `model_name="meta-llama/Llama-2-7b-chat-hf"` (prefix added automatically)
+- `model_name="huggingface/meta-llama/Llama-2-7b-chat-hf"` (prefix already present)
+
+## Usage in Datatune Operations
+LLM instances are passed to Datatune operations like `Map` and `Filter`:
+
+```python
+from datatune.core.map import Map
+from datatune.llm.llm import Huggingface
+import dask.dataframe as dd
+
+# Initialize LLM
+llm = Huggingface(model_name="meta-llama/Llama-2-7b-chat-hf")
+
+# Load data
+df = dd.read_csv("data.csv")
+
+# Use LLM with a Map operation
+mapped_df = Map(
+    prompt="Extract company name from the text",
+    output_fields=["company_name"]
+)(llm, df)
+```
