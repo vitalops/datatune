@@ -60,7 +60,7 @@ def parse_jsonl(jsonl_path: str) -> List[str]:
                 continue
     return contents
 
-def generate_jsonl_batches(prompts:List[str], model_name:str, no_of_rows:int, batch_size:int)->List[str]: 
+def generate_jsonl_batches(prompts:List[str], model_name:str, no_of_rows:int, batch_size:int , TOKEN_LIMIT:int)->List[str]: 
     """
     Splits a list of prompts into batches and creates a JSONL file for each batch using generate_json_file and Dask.
 
@@ -76,11 +76,18 @@ def generate_jsonl_batches(prompts:List[str], model_name:str, no_of_rows:int, ba
 
     delayed_export = delayed(generate_jsonl_file)
     results = []
-
-    for i,start in enumerate(range(0, no_of_rows, batch_size)):
-        batch_prompts = prompts[start:start+batch_size]
+    rev = prompts.tolist()[::-1]
+    batch_prompts = []
+    i = 0
+    while rev:
+        while True:
+            if token_count_prompt(batch_prompts,model_name)>=TOKEN_LIMIT or len(batch_prompts)>=batch_size or not rev:
+                break
+            batch_prompts.append(rev.pop())
         task = delayed_export(batch_prompts, model_name, input_file=f"batch_{i}.jsonl")
         results.append(task)
+        batch_prompts= []
+        i+=1
     result = dask.compute(*results)
     return list(result)
 
@@ -124,6 +131,26 @@ def token_count_jsonl(jsonl_path:str,model_name:str)->int:
                 continue
     return token_count    
                 
+def token_count_prompt(prompts:List[str], model_name:str, system_prompt: str = "You are a helpful assistant.")->int:
+    """
+    Counts the total number of tokens for a list of prompts
+
+    Args:
+        prompts (List[str]): A list of user input strings to be evaluated.
+        model_name (str): The name of the language model used for token counting (e.g., "gpt-3.5-turbo").
+        system_prompt (str, optional): The system message prepended to each prompt. Defaults to "You are a helpful assistant."
+    
+    Returns:
+        int: The total number of tokens consumed by all prompts.
+    """
+
+    token_count = 0
+    for prompt in prompts:
+        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": prompt}]
+        count = token_counter(model=model_name, messages=messages)
+        token_count+=count
+    return token_count              
+                    
 
                 
 

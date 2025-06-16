@@ -157,8 +157,7 @@ class OpenAIBatchAPI(LLM):
         kwargs.update({"api_key": api_key})
         super().__init__(model_name=model_name, **kwargs)
 
-        self.batch_size = 20
-        
+        self.batch_size = 50000
 
 
     async def process_batch(self,file_path: str, batch_id: int):
@@ -197,8 +196,8 @@ class OpenAIBatchAPI(LLM):
 
             # Polling loop
             MAX_WAIT_TIME = 300000000
-            POLL_INTERVAL = 30
-            MAX_FAILURE_RETRIES = 100
+            POLL_INTERVAL = 10
+            MAX_FAILURE_RETRIES = 1
 
             waited = 0
             failure_count = 0
@@ -215,7 +214,7 @@ class OpenAIBatchAPI(LLM):
                     print(f"[{file_path}] ✅ Completed. Output File ID: {retrieved_batch.output_file_id}")
                     break
 
-                elif status in ["failed", "cancelled", "expired"]:
+                elif status in ["failed", "cancelled", "expired","cancelling"]:
                     failure_count += 1
                     print(f"[{file_path}] ⚠️ Batch in failed state ({status}), retrying {failure_count}/{MAX_FAILURE_RETRIES}")
                     if failure_count >= MAX_FAILURE_RETRIES:
@@ -241,6 +240,7 @@ class OpenAIBatchAPI(LLM):
         finally:
             async with self.lock:
                 self.enqued_tokens -= tokens
+                self.response_count +=1
 
     async def main(self):
         """
@@ -249,13 +249,14 @@ class OpenAIBatchAPI(LLM):
 
         tasks = [self.process_batch(file_path, i) for i, file_path in enumerate(self.input_files)]
         await asyncio.gather(*tasks)
-        ret = parse_jsonl_files([f"response_{i}.jsonl" for i,_ in enumerate(range (0, self.no_of_rows, self.batch_size))])
+        ret = parse_jsonl_files([f"response_{i}.jsonl" for i in range(self.response_count)])
         return ret
 
 
     def __call__(self, prompt:List[str]) -> List[str]:
         self.no_of_rows = len(prompt)
-        self.input_files = generate_jsonl_batches(prompt, self.model_name, self.no_of_rows, self.batch_size)
+        self.input_files = generate_jsonl_batches(prompt, self.model_name, self.no_of_rows, self.batch_size,self.TOKEN_LIMIT)
+        self.response_count = 0
         print("Input JSON files created.")
         
         return asyncio.run(self.main())
