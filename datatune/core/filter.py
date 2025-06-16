@@ -37,11 +37,18 @@ def filter_prompt(
     Returns:
         pd.DataFrame: DataFrame with the added prompt column.
     """
-    prefix = f"SAY TRUE OR FALSE TO THE FOLLOWING PROMPT:{os.linesep}{prompt}{os.linesep}INPUT: "
-    suffix = (
-        f"{os.linesep}INSTRUCTIONS: OUTPUT JUST TRUE OR FALSE WITHOUT ANY OTHER TEXT" ""
+    filtering_context = (
+        f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
+        f"Return TRUE to KEEP the record, FALSE to REMOVE it.{os.linesep}{os.linesep}"
+        f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
+        f"DATA RECORD TO EVALUATE:{os.linesep}"
     )
-    df[prompt_column] = prefix + df[serialized_input_column] + suffix
+    instructions = (
+        f"{os.linesep}{os.linesep}"
+        f"DECISION: Respond with only 'TRUE' (to keep this record) or 'FALSE' (to remove this record). "
+        f"No explanations or additional text."
+    )
+    df[prompt_column] = filtering_context + df[serialized_input_column] + instructions
     return df
 
 
@@ -82,10 +89,12 @@ def parse_filter_output(output: Union[str, Exception], err: bool = False) -> Opt
     if isinstance(output, Exception):
         logging.error(f"LLM error: {output}")
         return None
+    
     output = output.strip().upper()
-    if output == "TRUE":
+    
+    if output.lower() == "true":
         return True
-    elif output == "FALSE":
+    elif output.lower() == 'false':
         return False
     elif err:
         raise ValueError(
