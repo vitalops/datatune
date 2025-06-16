@@ -157,7 +157,7 @@ class OpenAIBatchAPI(LLM):
         kwargs.update({"api_key": api_key})
         super().__init__(model_name=model_name, **kwargs)
 
-        self.batch_size = 6000
+        self.batch_size = 20
         
 
 

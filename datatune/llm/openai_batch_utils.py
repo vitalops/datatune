@@ -104,6 +104,16 @@ def parse_jsonl_files(jsonl_files: List[str]) ->List[str]:
     return all_contents
 
 def token_count_jsonl(jsonl_path:str,model_name:str)->int:
+    """
+    Counts the number of tokens in an input jsonl file.
+
+    Args:
+        jsonl_path (str): Path to input jsonl file.
+
+    Returns:
+        int: Number of tokens.
+    """
+
     with open(jsonl_path,"r",encoding="utf-8") as f:
         token_count = 0
         for line in f:
