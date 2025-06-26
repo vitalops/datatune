@@ -5,7 +5,7 @@ import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
-
+import ast
 
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -39,7 +39,7 @@ def filter_prompt(
     """
     filtering_context = (
         f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
-        f"Return TRUE to KEEP the record, FALSE to REMOVE it.{os.linesep}{os.linesep}"
+        f"Return the entire data record with an added key called filter whose value is either TRUE to KEEP the record or FALSE to REMOVE it.{os.linesep}{os.linesep}"
         f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
         f"DATA RECORD TO EVALUATE:{os.linesep}"
     )
@@ -90,7 +90,10 @@ def parse_filter_output(output: Union[str, Exception], err: bool = False) -> Opt
         logging.error(f"LLM error: {output}")
         return None
     
-    output = output.strip().upper()
+    output = ast.literal_eval(output)
+    value = next(reversed(output.values()))
+    output = str(value)
+    
     
     if output.lower() == "true":
         return True

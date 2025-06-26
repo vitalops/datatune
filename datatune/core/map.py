@@ -47,7 +47,7 @@ def map_prompt(
     Map and transform the above input according to the above prompt.
     Replace or Create new fields or values as per the prompt.
     {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
-    Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}}
+    Your response MUST be the entire input data record with the added keys of expected new fields with the right values.
     Format your entire response as a valid Python dictionary ONLY with no other text.
     """
     df[prompt_column] = prefix + df[serialized_input_column] + suffix
@@ -73,7 +73,7 @@ def llm_inference(
     return df
 
 
-def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception]:
+def parse_llm_output(llm_output: Union[str, Exception],no_cols:int) -> Union[Dict, Exception]:
     """
     Parses the LLM output string into a Python dictionary.
 
@@ -87,7 +87,8 @@ def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception
         logging.error(f"LLM Error: {llm_output}")
         return llm_output
     try:
-        ret = ast.literal_eval(llm_output)
+        d = ast.literal_eval(llm_output)
+        ret = dict(list(d.items())[no_cols:])
         if not isinstance(ret, dict):
             raise ValueError(f"Expected a dictionary, got {type(ret)}")
         return ret
@@ -102,6 +103,7 @@ def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception
 
 
 def update_df_with_llm_output(
+    no_cols:int,
     llm_output_column: str,
     df: pd.DataFrame,
     expected_fields: Optional[List[str]] = None,
@@ -121,7 +123,7 @@ def update_df_with_llm_output(
     Returns:
         pd.DataFrame: Updated DataFrame with LLM output values and error flags.
     """
-    parsed_llm_output = df[llm_output_column].apply(parse_llm_output)
+    parsed_llm_output = df[llm_output_column].apply(partial(parse_llm_output,no_cols=no_cols))
     errored_rows = parsed_llm_output.apply(lambda x: isinstance(x, Exception))
     if ERRORED_COLUMN not in df.columns:
         df[ERRORED_COLUMN] = False
@@ -205,6 +207,7 @@ class Map(Op):
         Returns:
             Dict: The processed DataFrame with transformed values.
         """
+        no_cols = len(df.columns)
         df = df.map_partitions(partial(input_as_string, self.serialized_input_column))
         df = df.map_partitions(
             partial(
@@ -237,6 +240,7 @@ class Map(Op):
         result = df.map_partitions(
             partial(
                 update_df_with_llm_output,
+                no_cols,
                 self.llm_output_column,
                 expected_fields=self.output_fields,
                 meta_columns=output_cols,
