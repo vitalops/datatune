@@ -70,14 +70,22 @@ class LLM:
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
         """Always return a list of strings, regardless of input type"""
 
-        self.prefix =("You will be given multiple questions starting with the question number and ending with <endofquestion>.\n"
-                      "Separate each answer with <endofresponse>.\n"
-                      "Do not leave any answers blank\n\n"
-                       f"Questions:\n")
+        self.prefix =(
+            "You will be given multiple questions. Each question will:\n"
+            "- Start with 'Q-[number]:'\n"
+            "- End with '<endofquestion>'\n\n"
+            "You MUST respond to each question in order. For each answer:\n"
+            "- End with '<endofresponse>'\n"
+            "- Do NOT skip or omit any question\n"
+            "- Do NOT leave any answer blank\n\n"
+            "- Always respond with the entire input data record with the added key value pairs as per the questions"
+            "Your entire response MUST include one answer per question. Respond strictly in the format described.\n\n"
+            "Questions:\n"
+        )
         
         if isinstance(prompt, str):
             return [self._completion(prompt)]
-        return self._batch_completion(create_batch_list(prompt, self.model_name, self.prefix))
+        return self._true_batch_completion(create_batch_list(prompt, self.model_name, self.prefix))
 
 
 class Ollama(LLM):

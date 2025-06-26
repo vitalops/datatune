@@ -37,16 +37,16 @@ def create_batch_list(prompts: List[str], model_name: str, prefix:str):
     api_calls = []
     count = 0
     for i in prompts:
-        if token_count_string(prefix+batch_str + f"{i} <endofquestion>\n",model_name) < max_tokens:
+        if token_count_string(prefix+batch_str + f"Q-{count}: {i} <endofquestion>\n",model_name) < max_tokens:
             count +=1
-            batch_str += f"{i} <endofquestion>\n"
+            batch_str += f"Q-{count}: {i} <endofquestion>\n"
         else:
             batch_list.append(batch_str)
             api_calls.append(count)
             
              
             count = 1
-            batch_str =f"{i} <endofquestion>\n"
+            batch_str =f"Q-{count}: {i} <endofquestion>\n"
     
     if batch_str:
         batch_list.append(batch_str)

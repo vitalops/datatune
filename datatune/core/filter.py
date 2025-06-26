@@ -39,13 +39,13 @@ def filter_prompt(
     """
     filtering_context = (
         f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
-        f"Return the entire data record with an added key called filter whose value is either TRUE to KEEP the record or FALSE to REMOVE it.{os.linesep}{os.linesep}"
+        f"Return the entire input data record with an added key called filter whose value is either TRUE to KEEP the record or FALSE to REMOVE it.{os.linesep}{os.linesep}"
         f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
         f"DATA RECORD TO EVALUATE:{os.linesep}"
     )
     instructions = (
         f"{os.linesep}{os.linesep}"
-        f"DECISION: Respond with only 'TRUE' (to keep this record) or 'FALSE' (to remove this record). "
+        f"DECISION: Respond with the entire input data record with added key called filter with value either 'TRUE' (to keep this record) or 'FALSE' (to remove this record). "
         f"No explanations or additional text."
     )
     df[prompt_column] = filtering_context + df[serialized_input_column] + instructions
