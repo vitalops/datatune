@@ -232,10 +232,13 @@ class Filter(Op):
         llm_outputs = df.map_partitions(
             partial(llm_inference, llm, self.llm_output_column, self.prompt_column),meta=meta_dict
         )
+        meta = llm_outputs._meta.copy()
+        meta[self.result_column] = -1       
+        meta[ERRORED_COLUMN] = False      
         results = llm_outputs.map_partitions(
             partial(
                 parse_filter_output_as_int, self.result_column, self.llm_output_column
-            ),
+            ),meta=meta
         )
         return results.map_partitions(
             partial(delete_rows, self.result_column, self.on_error),
