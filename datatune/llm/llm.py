@@ -1,4 +1,5 @@
 from typing import List, Optional, Union
+from datatune.llm.batch_utils import create_batch_list
 
 
 class LLM:
@@ -34,12 +35,49 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
+    def _true_batch_completion(self, prompts: List[str]) -> List[Union[str,Exception]]:
+        
+        messages = [
+        [{
+            "role": "user",
+            "content": f"{self.prefix}{prompt}"
+        }]
+        for prompt in prompts
+    ]
+        from litellm import batch_completion
+
+        responses = batch_completion(
+            model=self.model_name, messages=messages, **self.kwargs
+        )
+
+        ret = []
+
+        #print(responses)
+        for response in responses:
+            if isinstance(response, Exception):
+                ret.append(response)
+            else:
+                k= response["choices"][0]["message"]["content"].split("<endofresponse>")
+                print(k)
+                print(len(k))
+
+                for i in k:
+                    if i.strip():
+                        ret.append(i.strip()) 
+
+        return ret
 
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
         """Always return a list of strings, regardless of input type"""
+
+        self.prefix =("You will be given multiple questions starting with the question number and ending with <endofquestion>.\n"
+                      "Separate each answer with <endofresponse>.\n"
+                      "Do not leave any answers blank\n\n"
+                       f"Questions:\n")
+        
         if isinstance(prompt, str):
             return [self._completion(prompt)]
-        return self._batch_completion(prompt)
+        return self._true_batch_completion(create_batch_list(prompt, self.model_name, self.prefix))
 
 
 class Ollama(LLM):

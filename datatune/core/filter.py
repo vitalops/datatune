@@ -224,8 +224,10 @@ class Filter(Op):
                 self.serialized_input_column,
             ),
         )
+        meta_dict = df._meta.dtypes.to_dict()
+        meta_dict[self.llm_output_column] = "object"
         llm_outputs = df.map_partitions(
-            partial(llm_inference, llm, self.llm_output_column, self.prompt_column)
+            partial(llm_inference, llm, self.llm_output_column, self.prompt_column),meta=meta_dict
         )
         results = llm_outputs.map_partitions(
             partial(
