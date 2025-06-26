@@ -77,7 +77,7 @@ class LLM:
         
         if isinstance(prompt, str):
             return [self._completion(prompt)]
-        return self._true_batch_completion(create_batch_list(prompt, self.model_name, self.prefix))
+        return self._batch_completion(create_batch_list(prompt, self.model_name, self.prefix))
 
 
 class Ollama(LLM):
