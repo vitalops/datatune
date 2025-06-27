@@ -75,11 +75,8 @@ class LLM:
             "- Start with 'Q-[number]:'\n"
             "- End with '<endofquestion>'\n\n"
             "You MUST respond to each question in order. For each answer:\n"
-            "- Start with answer number(e.g - A1,A2...)"
             "- End with '<endofresponse>'\n"
             "- Do NOT skip or omit any question\n"
-            "- Do NOT leave any answer blank\n\n"
-            "- Always respond with the entire input data record with the added key value pairs as per the questions"
             "Your entire response MUST include one answer per question. Respond strictly in the format described.\n\n"
             "Questions:\n"
         )

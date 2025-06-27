@@ -47,7 +47,7 @@ def map_prompt(
     Map and transform the above input according to the above prompt.
     Replace or Create new fields or values as per the prompt.
     {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
-    Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added keys of expected new fields if any.
+    Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}}
     Format your entire response as a valid Python dictionary ONLY with no other text.
     """
     df[prompt_column] = prefix + df[serialized_input_column] + suffix
@@ -90,8 +90,8 @@ def parse_llm_output(llm_output: Union[str, Exception], no_cols:int) -> Union[Di
     try:
         match = re.search(r"{.*}",llm_output,re.DOTALL)
         dict_str = match.group()
-        dict_output = ast.literal_eval(dict_str)
-        ret = dict(list(dict_output.items())[no_cols:])
+        ret = ast.literal_eval(dict_str)
+       # ret = dict(list(dict_output.items()))
         if not isinstance(ret, dict):
             raise ValueError(f"Expected a dictionary, got {type(ret)}")
         return ret
