@@ -6,6 +6,7 @@ import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
 import ast
+import re
 
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -39,13 +40,13 @@ def filter_prompt(
     """
     filtering_context = (
         f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
-        f"Return the entire input data record with an added key called filter whose value is either TRUE to KEEP the record or FALSE to REMOVE it.{os.linesep}{os.linesep}"
+        f"Return the entire input data record with an added key called filter with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"
         f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
         f"DATA RECORD TO EVALUATE:{os.linesep}"
     )
     instructions = (
         f"{os.linesep}{os.linesep}"
-        f"DECISION: Respond with the entire input data record with added key called filter with value either 'TRUE' (to keep this record) or 'FALSE' (to remove this record). "
+        f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called filter with value either True to KEEP the record or False to REMOVE it."
         f"No explanations or additional text."
     )
     df[prompt_column] = filtering_context + df[serialized_input_column] + instructions
@@ -90,9 +91,11 @@ def parse_filter_output(output: Union[str, Exception], err: bool = False) -> Opt
         logging.error(f"LLM error: {output}")
         return None
     
-    output = ast.literal_eval(output)
-    value = next(reversed(output.values()))
-    output = str(value)
+    match = re.search(r"{.*}",output,re.DOTALL)
+    dict_str = match.group()
+    output_dict = ast.literal_eval(dict_str)
+    output = str(next(reversed(output_dict.values())))
+    
     
     
     if output.lower() == "true":
@@ -218,6 +221,15 @@ class Filter(Op):
         Returns:
             Dict: The processed DataFrame with filter results and deletion markers.
         """
+        drop_columns = [col for col in df.columns if "__DATATUNE__" in col]
+        if ERRORED_COLUMN in df.columns:
+            drop_columns.append(ERRORED_COLUMN)
+        if DELETED_COLUMN in df.columns:
+            drop_columns.append(DELETED_COLUMN)
+
+        if drop_columns:
+            df = df.drop(columns=drop_columns)
+
         df = df.map_partitions(partial(input_as_string, self.serialized_input_column))
         df = df.map_partitions(
             partial(

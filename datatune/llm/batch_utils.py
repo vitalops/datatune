@@ -53,7 +53,6 @@ def create_batch_list(prompts: List[str], model_name: str, prefix:str):
         api_calls.append(count)
 
     print(api_calls)
-    print("sum: ",sum(api_calls))
+    print("No of rows: ",sum(api_calls))
+    print("No of api calls: ",len(api_calls))
     return batch_list
-
-

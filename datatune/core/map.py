@@ -7,7 +7,7 @@ import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
-
+import re
 
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -47,7 +47,7 @@ def map_prompt(
     Map and transform the above input according to the above prompt.
     Replace or Create new fields or values as per the prompt.
     {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
-    Your response MUST be the entire input data record with the added keys of expected new fields with the right values.
+    Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added keys of expected new fields if any.
     Format your entire response as a valid Python dictionary ONLY with no other text.
     """
     df[prompt_column] = prefix + df[serialized_input_column] + suffix
@@ -73,12 +73,13 @@ def llm_inference(
     return df
 
 
-def parse_llm_output(llm_output: Union[str, Exception],no_cols:int) -> Union[Dict, Exception]:
+def parse_llm_output(llm_output: Union[str, Exception], no_cols:int) -> Union[Dict, Exception]:
     """
     Parses the LLM output string into a Python dictionary.
 
     Args:
         llm_output (Union[str, Exception]): The raw LLM output string to parse or exception received from LLM.
+        no_cols (int): Number of columns in the Dask dataframe.
 
     Returns:
         Union[Dict, Exception]: A dictionary if parsing succeeds, or the exception if parsing fails.
@@ -87,8 +88,10 @@ def parse_llm_output(llm_output: Union[str, Exception],no_cols:int) -> Union[Dic
         logging.error(f"LLM Error: {llm_output}")
         return llm_output
     try:
-        d = ast.literal_eval(llm_output)
-        ret = dict(list(d.items())[no_cols:])
+        match = re.search(r"{.*}",llm_output,re.DOTALL)
+        dict_str = match.group()
+        dict_output = ast.literal_eval(dict_str)
+        ret = dict(list(dict_output.items())[no_cols:])
         if not isinstance(ret, dict):
             raise ValueError(f"Expected a dictionary, got {type(ret)}")
         return ret
