@@ -91,7 +91,7 @@ def parse_llm_output(llm_output: Union[str, Exception], no_cols:int) -> Union[Di
         match = re.search(r"{.*}",llm_output,re.DOTALL)
         dict_str = match.group()
         ret = ast.literal_eval(dict_str)
-       # ret = dict(list(dict_output.items()))
+        
         if not isinstance(ret, dict):
             raise ValueError(f"Expected a dictionary, got {type(ret)}")
         return ret
