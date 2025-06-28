@@ -1,6 +1,6 @@
 from litellm import token_counter, get_max_tokens
 from typing import List
-def token_count_string(messages:str, model_name:str):
+'''def token_count_string(messages:str, model_name:str):
     """
     Counts the number of tokens in a given string prompt when formatted as chat completion message.
 
@@ -12,9 +12,9 @@ def token_count_string(messages:str, model_name:str):
         int: The total number of tokens used by the formatted chat message.
     """
     messages=[{"role": "user", "content": messages}]
-    return token_counter(model_name, messages=messages)
+    return token_counter(model_name, messages=messages)'''
 
-def create_batch_list(prompts: List[str], model_name: str, prefix:str):
+def create_batched_prompts(prompts: List[str], model_name: str, prefix:str):
     """
     Groups a list of prompts into batches for LLM.
 
@@ -36,17 +36,19 @@ def create_batch_list(prompts: List[str], model_name: str, prefix:str):
     batch_list = []
     api_calls = []
     count = 0
-    for i in prompts:
-        if token_count_string(prefix+batch_str + f"Q-{count}: {i} <endofquestion>\n",model_name) < max_tokens:
+    for prompt in prompts:
+        message =[{"role": "user", "content": f"{prefix}{batch_str}Q-{count}: {prompt} <endofquestion>\n"}]                 
+        total_tokens = token_counter(model_name, messages=message)
+        if total_tokens < max_tokens:
             count +=1
-            batch_str += f"Q-{count}: {i} <endofquestion>\n"
+            batch_str += f"Q-{count}: {prompt} <endofquestion>\n"
         else:
             batch_list.append(batch_str)
             api_calls.append(count)
             
              
             count = 1
-            batch_str =f"Q-{count}: {i} <endofquestion>\n"
+            batch_str =f"Q-{count}: {prompt} <endofquestion>\n"
     
     if batch_str:
         batch_list.append(batch_str)

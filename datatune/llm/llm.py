@@ -1,6 +1,9 @@
 from typing import List, Optional, Union
-from datatune.llm.batch_utils import create_batch_list
-
+from datatune.datatune.llm.batch_utils import create_batched_prompts
+import asyncio
+import time
+from collections import deque
+from litellm import token_counter
 
 class LLM:
     def __init__(self, model_name: str, **kwargs) -> None:
@@ -35,55 +38,77 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
+    
+    MAX_RPM = 60
+    MAX_TPM = 200000
+
     def _true_batch_completion(self, prompts: List[str]) -> List[Union[str,Exception]]:
+        def _send(prompt_list: List[str]):
+            messages = [
+            [{
+                "role": "user",
+                "content": f"{self.prefix}{prompt}"
+            }]
+            for prompt in prompt_list
+            ]
+
+            from litellm import batch_completion
+
+            responses = batch_completion(
+                model=self.model_name, messages=messages, **self.kwargs
+            )
+
+            for response in responses:
+                if isinstance(response, Exception):
+                    ret.append(response)
+                else:
+                    k= response["choices"][0]["message"]["content"].split("<endofresponse>")
+                    print(k)
+                    print(len(k))
+
+                    for i in k:
+                        if i.strip():
+                            ret.append(i.strip()) 
         
-        messages = [
-        [{
-            "role": "user",
-            "content": f"{self.prefix}{prompt}"
-        }]
-        for prompt in prompts
-    ]
-        from litellm import batch_completion
-
-        responses = batch_completion(
-            model=self.model_name, messages=messages, **self.kwargs
-        )
-
         ret = []
-
-        #print(responses)
-        for response in responses:
-            if isinstance(response, Exception):
-                ret.append(response)
+        tokens = 0 
+        prompt_list = []
+        prompts = create_batched_prompts(prompts,self.model_name,self.prefix)
+        for prompt in prompts:
+            message =[{"role": "user", "content": prompt}]                 
+            new_tokens = token_counter(self.model_name, messages=message)
+            total_tokens = new_tokens + tokens
+            if (total_tokens < self.MAX_TPM) and (len(prompt_list)+1 < self.MAX_RPM):
+                prompt_list.append(prompt)
+                tokens = total_tokens
             else:
-                k= response["choices"][0]["message"]["content"].split("<endofresponse>")
-                print(k)
-                print(len(k))
-
-                for i in k:
-                    if i.strip():
-                        ret.append(i.strip()) 
-
+                _send(prompt_list)
+                time.sleep(61)
+                prompt_list = [prompt]
+                tokens = new_tokens
+        
+        if prompt_list:
+            _send(prompt_list)
+                
         return ret
-
+ 
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
         """Always return a list of strings, regardless of input type"""
 
         self.prefix =(
-            "You will be given multiple questions. Each question will:\n"
+            "You will be given multiple requests. Each request will:\n"
             "- Start with 'Q-[number]:'\n"
             "- End with '<endofquestion>'\n\n"
-            "You MUST respond to each question in order. For each answer:\n"
+            "You MUST respond to each request in order. For each answer:\n"
             "- End with '<endofresponse>'\n"
-            "- Do NOT skip or omit any question\n"
-            "Your entire response MUST include one answer per question. Respond strictly in the format described.\n\n"
+            "- Do NOT skip or omit any requests\n"
+            "Your entire response MUST include one answer per request. Respond strictly in the format described.\n\n"
             "Questions:\n"
         )
         
         if isinstance(prompt, str):
             return [self._completion(prompt)]
-        return self._true_batch_completion(create_batch_list(prompt, self.model_name, self.prefix))
+        return self._true_batch_completion(prompt)
 
 
 class Ollama(LLM):
