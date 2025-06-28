@@ -1,18 +1,5 @@
 from litellm import token_counter, get_max_tokens
 from typing import List
-'''def token_count_string(messages:str, model_name:str):
-    """
-    Counts the number of tokens in a given string prompt when formatted as chat completion message.
-
-    Args:
-        messages (str): The input prompt string.
-        model_name (str): Name of the model used.
-
-    Returns:
-        int: The total number of tokens used by the formatted chat message.
-    """
-    messages=[{"role": "user", "content": messages}]
-    return token_counter(model_name, messages=messages)'''
 
 def create_batched_prompts(prompts: List[str], model_name: str, prefix:str):
     """
