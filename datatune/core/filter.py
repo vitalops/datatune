@@ -52,6 +52,20 @@ def filter_prompt(
     df[prompt_column] = filtering_context + df[serialized_input_column] + instructions
     return df
 
+def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
+    prefix = (
+        f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
+        f"Return the entire input data record with an added key called 'filter' with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"
+    )
+    prompt = f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
+    suffix = (
+        f"{os.linesep}{os.linesep}"
+        f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called 'filter' with value either True to KEEP the record or False to REMOVE it."
+        f"No explanations or additional text."
+    )
+    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
+    return df
+
 
 def llm_inference(
     llm: Callable, llm_output_column: str, prompt_column: str, df: pd.DataFrame
@@ -72,7 +86,7 @@ def llm_inference(
     return df
 
 
-def parse_filter_output(output: Union[str, Exception], err: bool = False) -> Optional[bool]:
+def parse_filter_output(output: Union[str, Exception], err: bool = True) -> Optional[bool]:
     """
     Parses the LLM output to determine TRUE/FALSE results.
 
@@ -235,6 +249,47 @@ class Filter(Op):
         meta_dict[self.llm_output_column] = str
         llm_outputs = df.map_partitions(
             partial(llm_inference, llm, self.llm_output_column, self.prompt_column),meta=meta_dict
+        )
+        meta = llm_outputs._meta.copy()
+        meta[self.result_column] = int       
+        meta[ERRORED_COLUMN] = bool  
+        results = llm_outputs.map_partitions(
+            partial(
+                parse_filter_output_as_int, self.result_column, self.llm_output_column
+            ),meta=meta
+        )
+        return results.map_partitions(
+            partial(delete_rows, self.result_column, self.on_error),
+        )
+
+class BatchedFilter(Filter):
+    def __call__(self, llm: Callable, df: Dict):
+        """
+        Applies the filter operation to the provided DataFrame using the specified LLM.
+
+        Args:
+            llm (Callable): Language model inference function to use for filtering.
+            df (Dict): DataFrame-like object to filter (typically a Dask DataFrame).
+
+        Returns:
+            Dict: The processed DataFrame with filter results and deletion markers.
+        """
+        drop_columns = [col for col in df.columns if "__DATATUNE__" in col]
+
+        if drop_columns:
+            df = df.drop(columns=drop_columns)
+
+        df = df.map_partitions(partial(input_as_string, self.serialized_input_column))
+        meta_dict = df._meta.dtypes.to_dict()
+        meta_dict[self.llm_output_column] = str
+        llm_outputs = df.map_partitions(
+            partial(
+                llm_batch_inference,
+                llm.true_batch_completion,
+                self.llm_output_column,
+                self.prompt,
+                self.serialized_input_column
+            ), meta=meta_dict
         )
         meta = llm_outputs._meta.copy()
         meta[self.result_column] = int       

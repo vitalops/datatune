@@ -1,7 +1,7 @@
 from litellm import token_counter, get_max_tokens
 from typing import List
 
-def create_batched_prompts(prompts: List[str], model_name: str) -> List[str]:
+def create_batched_prompts(input_rows: List[str], batch_prefix: str, prompt_per_row: str, batch_suffix: str, model_name: str) -> List[str]:
     """
     Groups a list of prompts into batches for LLM.
 
@@ -16,39 +16,40 @@ def create_batched_prompts(prompts: List[str], model_name: str) -> List[str]:
         List[str]: A list of prompt batches, each within the token limit of the model.
 
     """
-    prefix = (
-        "You will be given multiple requests. Each request will:\n"
-        "- End with '<endofquestion>'\n\n"
-        "You MUST respond to each request in order. For each answer:\n"
-        "- End with '<endofresponse>'\n"
-        "- Do NOT skip or omit any requests\n"
-        "Your entire response MUST include one answer per request. Respond strictly in the format described.\n\n"
-        "Questions:\n"
+    batch_prefix = (
+        "You will be given multiple data rows to process. Each request will:\n"
+        "- End with '<endofrow>'\n\n"
+        "You MUST respond to each row in order. For each answer:\n"
+        "- End with '<endofrow>'\n"
+        "- Do NOT skip or omit any rows\n"
+        "Your entire response MUST include one answer per row. Respond strictly in the format described.\n\n"
+        f"Instructions:\n{batch_prefix}"
     )
 
     model_name = model_name[model_name.index("/")+1:] 
     max_tokens = get_max_tokens(model_name)
 
-    message = [{"role": "user", "content": prefix}]
+    batch = ""
     batched_prompts = []
     nrows_per_api_call = []
     count = 0
-    for prompt in prompts:
-        q = f"{prompt} <endofquestion>\n"
-        message[0]["content"] += q
-        ntokens = token_counter(model_name, messages=message)
+    message = lambda x: [{"role": "user", "content": f"{batch_prefix}{x}{batch_suffix}"}]
+    for prompt in input_rows:
+        q = f"{prompt_per_row}\n {prompt} <endofrow>\n"
+        batch += q
+        ntokens = token_counter(model_name, messages=message(batch))
         if ntokens < max_tokens:
             count += 1
         else:
-            message[0]["content"] = message[0]["content"][:-len(q)]
-            batched_prompts.append(message[0]["content"])
+            batch = batch[:-len(q)]
+            batched_prompts.append(message(batch)[0]["content"])
             nrows_per_api_call.append(count)
 
             count = 1
-            message[0]["content"] = f"{prefix}{prompt} <endofquestion>\n"
+            batch = q
     
     if count > 0:
-        batched_prompts.append(message[0]["content"])
+        batched_prompts.append(message(batch)[0]["content"])
         nrows_per_api_call.append(count)
 
     print(nrows_per_api_call)
