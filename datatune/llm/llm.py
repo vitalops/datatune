@@ -1,5 +1,5 @@
-from typing import List, Optional, Union
-from datatune.datatune.llm.batch_utils import create_batched_prompts
+from typing import Dict, List, Optional, Union
+from datatune.llm.batch_utils import create_batched_prompts
 import asyncio
 import time
 from collections import deque
@@ -43,15 +43,7 @@ class LLM:
     MAX_TPM = 200000
 
     def _true_batch_completion(self, prompts: List[str]) -> List[Union[str,Exception]]:
-        def _send(prompt_list: List[str]):
-            messages = [
-            [{
-                "role": "user",
-                "content": f"{self.prefix}{prompt}"
-            }]
-            for prompt in prompt_list
-            ]
-
+        def _send(messages: List[Dict[str, str]]):
             from litellm import batch_completion
 
             responses = batch_completion(
@@ -62,50 +54,41 @@ class LLM:
                 if isinstance(response, Exception):
                     ret.append(response)
                 else:
-                    k= response["choices"][0]["message"]["content"].split("<endofresponse>")
-                    print(k)
-                    print(len(k))
-
-                    for i in k:
-                        if i.strip():
-                            ret.append(i.strip()) 
+                    n = 0
+                    for result in response["choices"][0]["message"]["content"].split("<endofresponse>"):
+                        if result.strip():
+                            ret.append(result.strip())
+                            print(result.strip())
+                            n += 1
+                    print(n)
+                    print()
         
         ret = []
-        tokens = 0 
-        prompt_list = []
-        prompts = create_batched_prompts(prompts,self.model_name,self.prefix)
+        ntokens = 0 
+        messages = []
+        prompts = create_batched_prompts(prompts, self.model_name)
         for prompt in prompts:
-            message =[{"role": "user", "content": prompt}]                 
-            new_tokens = token_counter(self.model_name, messages=message)
-            total_tokens = new_tokens + tokens
-            if (total_tokens < self.MAX_TPM) and (len(prompt_list)+1 < self.MAX_RPM):
-                prompt_list.append(prompt)
-                tokens = total_tokens
+            message = [{"role": "user", "content": prompt}]
+            curr_ntokens = token_counter(self.model_name, messages=message)
+            total = curr_ntokens + ntokens
+            if (total < self.MAX_TPM) and (len(messages) + 1 < self.MAX_RPM):
+                messages.append(message)
+                ntokens = total
             else:
-                _send(prompt_list)
-                time.sleep(61)
-                prompt_list = [prompt]
-                tokens = new_tokens
+                t1 = time.time()
+                _send(messages)
+                t2 = time.time()
+                time.sleep(max(0, 61 - (t2 - t1)))
+                messages = [message]
+                ntokens = curr_ntokens
         
-        if prompt_list:
-            _send(prompt_list)
+        if messages:
+            _send(messages)
                 
         return ret
  
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
         """Always return a list of strings, regardless of input type"""
-
-        self.prefix =(
-            "You will be given multiple requests. Each request will:\n"
-            "- Start with 'Q-[number]:'\n"
-            "- End with '<endofquestion>'\n\n"
-            "You MUST respond to each request in order. For each answer:\n"
-            "- End with '<endofresponse>'\n"
-            "- Do NOT skip or omit any requests\n"
-            "Your entire response MUST include one answer per request. Respond strictly in the format described.\n\n"
-            "Questions:\n"
-        )
-        
         if isinstance(prompt, str):
             return [self._completion(prompt)]
         return self._true_batch_completion(prompt)

@@ -94,17 +94,13 @@ def parse_filter_output(output: Union[str, Exception], err: bool = False) -> Opt
     match = re.search(r"{.*}",output,re.DOTALL)
     dict_str = match.group()
     output_dict = ast.literal_eval(dict_str)
-    output = str(next(reversed(output_dict.values())))
+    output = output_dict.get("filter", None)
     
-    
-    
-    if output.lower() == "true":
-        return True
-    elif output.lower() == 'false':
-        return False
+    if isinstance(output, bool):
+        return output
     elif err:
         raise ValueError(
-            f"Invalid response from LLM: {output}. Expected 'TRUE' or 'FALSE'."
+            f"Invalid response from LLM: {output}. Expected boolean True or False."
         )
     else:
         return None
