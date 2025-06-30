@@ -54,6 +54,21 @@ def map_prompt(
     return df
 
 def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, serialized_input_column: str, expected_new_fields:List[str], df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Creates the mapping prompt, prefix and suffix to be prepended and appended to a batched prompt respectively.
+    The LLM is called with each row's serialized input and its response is stored in a new column.
+
+    Args:
+        llm (Callable): A callable LLM function that accepts (input_rows, prefix, prompt, suffix).
+        llm_output_column (str): Name of the column to store the LLM responses.
+        prompt (str): Base Map prompt
+        serialized_input_column (str): Name of the column containing serialized input data per row.
+        df (pd.DataFrame): Input DataFrame.
+    
+    Returns:
+        pd.DataFrame: The input DataFrame with an additional column (`llm_output_column`)
+        containing the LLM's responses.
+    """
     prefix = (
         f"Map and transform the input according to the mapping criteria below.{os.linesep}"
         f""" Replace or Create new fields or values as per the prompt.

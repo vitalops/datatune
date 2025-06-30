@@ -53,6 +53,21 @@ def filter_prompt(
     return df
 
 def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Creates the filtering prompt, prefix and suffix to be prepended and appended to a batched prompt respectively.
+    The LLM is called with each row's serialized input and its response is stored in a new column.
+
+    Args:
+        llm (Callable): A callable LLM function that accepts (input_rows, prefix, prompt, suffix).
+        llm_output_column (str): Name of the column to store the LLM responses.
+        prompt (str): Base Filter prompt
+        serialized_input_column (str): Name of the column containing serialized input data per row.
+        df (pd.DataFrame): Input DataFrame.
+    
+    Returns:
+        pd.DataFrame: The input DataFrame with an additional column (`llm_output_column`)
+        containing the LLM's responses.
+    """
     prefix = (
         f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
         f"Return the entire input data record with an added key called 'filter' with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"

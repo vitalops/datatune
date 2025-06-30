@@ -45,7 +45,25 @@ class LLM:
 
     def true_batch_completion(self, input_rows: List[str], batch_prefix: str, prompt_per_row: str, batch_suffix: str) -> List[Union[str,Exception]]:
         input_rows = list(input_rows)
-      
+        """
+    Executes completions on batched input prompts without trigerring RateLimitErrors and retries failed requests
+    by associating responses with original inputs via indexing.
+
+    Adds an "index" key to each row to enable correct mapping of outputs.
+    Responses are split using `<endofrow>` delimiters and parsed as Python dictionaries. Outputs are
+    returned in the order of the original input rows.
+
+
+    Args:
+        input_rows (List[str]): List of input rows
+        batch_prefix (str): A shared prefix prepended to each batch.
+        prompt_per_row (str): Prompt to transform the input row.
+        batch_suffix (str): A shared suffix appended to each batch.
+
+    Returns:
+        List[Union[str, Exception]]: A list containing the parsed LLM responses.
+    """
+        
         idx = 0
         for i in range(len(input_rows)):
             input_rows[i] = input_rows[i].strip()
@@ -57,6 +75,15 @@ class LLM:
         ret = [None] * len(input_rows)
 
         def _send(messages: List[Dict[str, str]]):
+            """
+            Sends a batch of prompts and processes the returned content.
+
+            The function extracts the index from each result to associate it with the corresponding input.
+            Valid results are stored in their original positions. Malformed or duplicate entries are skipped.
+
+            Args: messages (List[Dict[str, str]]): A chat-message dictionary with a batched prompt as content.
+
+            """
             from litellm import batch_completion
 
             responses = batch_completion(

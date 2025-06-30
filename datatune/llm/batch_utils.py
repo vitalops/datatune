@@ -9,7 +9,8 @@ def create_batched_prompts(input_rows: List[str], batch_prefix: str, prompt_per_
     token count for each batch does not exceed the maximum token limit for the given model.
 
     Args:
-        prompts (List[str]): List of prompts.
+        input_rows (List[str]): List of input prompts.
+        
         model_name (str): Name of model being used.
 
     Returns:
