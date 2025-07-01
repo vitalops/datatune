@@ -120,9 +120,9 @@ def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception
         logging.error(f"LLM Error: {llm_output}")
         return llm_output
     try:
-        match = re.search(r"{.*}",llm_output,re.DOTALL)
-        dict_str = match.group()
-        ret = ast.literal_eval(dict_str)
+      #  match = re.search(r"{.*}",llm_output,re.DOTALL)
+      #  dict_str = match.group()
+        ret = ast.literal_eval(llm_output[llm_output.index("{"):llm_output.index("}")+1])
         
         if not isinstance(ret, dict):
             raise ValueError(f"Expected a dictionary, got {type(ret)}")
@@ -289,7 +289,7 @@ class BatchedMap(Map):
         The mapping process involves:
         1. Serializing each row to string format
         2. Creating prompts for the LLM
-        3. Running LLM inference on the prompts
+        3. Running LLM inference on the serialized input rows
         4. Parsing the results and updating the DataFrame with transformed values
 
         Args:
