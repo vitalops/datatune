@@ -54,9 +54,6 @@ class LLM:
 
         return ret
     
-    MAX_RPM = 60
-    MAX_TPM = 200000
-
     def true_batch_completion(self, input_rows: List[str], batch_prefix: str, prompt_per_row: str, batch_suffix: str) -> List[Union[str,Exception]]:
         input_rows = list(input_rows)
         """
@@ -82,7 +79,7 @@ class LLM:
         for i in range(len(input_rows)):
             input_rows[i] = input_rows[i].strip()
             assert input_rows[i][-1] == '}', input_rows[i]
-            input_rows[i] = input_rows[i][:-1] + f", \"index\": {idx}}}"
+            input_rows[i] = input_rows[i][:-1] + f", \"__index__\": {idx}}}"
             idx += 1
         
         remaining = set(range(len(input_rows)))
@@ -114,7 +111,7 @@ class LLM:
                         if result:
                             try:
                                 result = ast.literal_eval(result[result.index('{'):result.index('}') + 1])
-                                idx = result.pop("index")
+                                idx = result.pop("__index__")
                             except:
                                 continue
                             if idx not in remaining:
