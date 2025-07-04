@@ -6,7 +6,6 @@ import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
 import ast
-import re
 
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -40,13 +39,13 @@ def filter_prompt(
     """
     filtering_context = (
         f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
-        f"Return the entire input data record with an added key called 'filter' with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"
+        f"Return the entire input data record with an added key called '__filter__' with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"
         f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
         f"DATA RECORD TO EVALUATE:{os.linesep}"
     )
     instructions = (
         f"{os.linesep}{os.linesep}"
-        f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called 'filter' with value either True to KEEP the record or False to REMOVE it."
+        f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
         f"No explanations or additional text."
     )
     df[prompt_column] = filtering_context + df[serialized_input_column] + instructions
@@ -70,12 +69,12 @@ def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, seri
     """
     prefix = (
         f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
-        f"Return the entire input data record with an added key called 'filter' with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"
+        f"Return the entire input data record with an added key called '__filter__' with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"
     )
     prompt = f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
     suffix = (
         f"{os.linesep}{os.linesep}"
-        f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called 'filter' with value either True to KEEP the record or False to REMOVE it."
+        f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
         f"No explanations or additional text."
     )
     df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
@@ -120,10 +119,8 @@ def parse_filter_output(output: Union[str, Exception], err: bool = True) -> Opti
         logging.error(f"LLM error: {output}")
         return None
     
-    match = re.search(r"{.*}",output,re.DOTALL)
-    dict_str = match.group()
-    output_dict = ast.literal_eval(dict_str)
-    output = output_dict.get("filter", None)
+    output_dict = ast.literal_eval(output[output.index('{'):output.index('}')+1])
+    output = output_dict.get("__filter__", None)
     
     if isinstance(output, bool):
         return output

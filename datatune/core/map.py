@@ -7,7 +7,6 @@ import pandas as pd
 import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
-import re
 
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -120,9 +119,7 @@ def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception
         logging.error(f"LLM Error: {llm_output}")
         return llm_output
     try:
-        match = re.search(r"{.*}",llm_output,re.DOTALL)
-        dict_str = match.group()
-        ret = ast.literal_eval(dict_str)
+        ret = ast.literal_eval(llm_output[llm_output.index('{'):llm_output.index('}')+1])
         
         if not isinstance(ret, dict):
             raise ValueError(f"Expected a dictionary, got {type(ret)}")
