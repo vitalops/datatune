@@ -86,24 +86,26 @@ class LLM:
         List[Union[str, Exception]]: A list containing the parsed LLM responses.
     """
 
-        idx = 0
+        
         for i in range(len(input_rows)):
             input_rows[i] = input_rows[i].strip()
             assert input_rows[i][-1] == "}", input_rows[i]
-            input_rows[i] = input_rows[i][:-1] + f', "__index__": {idx}}}'
-            idx += 1
+            input_rows[i] = input_rows[i][:-1] + f', "__index__": {i}}}'
+            
 
         remaining = set(range(len(input_rows)))
         ret = [None] * len(input_rows)
 
-        def _send(messages: List[Dict[str, str]]):
+        def _send(messages: List[Dict[str, str]], batch_ranges:List[int]):
             """
             Sends a batch of prompts and processes the returned content.
 
             The function extracts the index from each result to associate it with the corresponding input.
             Valid results are stored in their original positions. Malformed or duplicate entries are skipped.
 
-            Args: messages (List[Dict[str, str]]): A chat-message dictionary with a batched prompt as content.
+            Args: 
+                messages (List[Dict[str, str]]): A chat-message dictionary with a batched prompt as content.
+                batch_ranges (List[int]): Each element of the list is the number of rows in each batch.
 
             """
             from litellm import batch_completion
@@ -112,14 +114,15 @@ class LLM:
                 model=self.model_name, messages=messages, **self.kwargs
             )
 
-            for response in responses:
+            for i,response in enumerate(responses):
                 if isinstance(response, Exception):
-                    raise response
+                    start, end = 0 if i == 0 else batch_ranges[i - 1], batch_ranges[i]
+                    for idx in range(start, end):
+                        ret[idx] = response
+                        remaining.remove(idx)
                 else:
                     n = 0
-                    for result in response["choices"][0]["message"]["content"].split(
-                        "<endofrow>"
-                    ):
+                    for result in response["choices"][0]["message"]["content"].split("<endofrow>"):
                         result = result.strip()
                         if result:
                             try:
@@ -141,15 +144,16 @@ class LLM:
         while remaining:
             remaining_prompts = [input_rows[i] for i in remaining]
             ntokens = 0
+            start=0
             messages = []
-            batched_prompts = create_batched_prompts(
+            batched_prompts,batch_ranges = create_batched_prompts(
                 remaining_prompts,
                 batch_prefix,
                 prompt_per_row,
                 batch_suffix,
                 self.model_name,
             )
-            for batched_prompt in batched_prompts:
+            for i, batched_prompt in enumerate(batched_prompts):
                 message = [{"role": "user", "content": batched_prompt}]
                 curr_ntokens = token_counter(self.model_name, messages=message)
                 total = curr_ntokens + ntokens
@@ -158,14 +162,14 @@ class LLM:
                     ntokens = total
                 else:
                     t1 = time.time()
-                    _send(messages)
+                    _send(messages, batch_ranges[start:i])
                     t2 = time.time()
                     time.sleep(max(0, 61 - (t2 - t1)))
                     messages = [message]
                     ntokens = curr_ntokens
 
             if messages:
-                _send(messages)
+                _send(messages, batch_ranges[start:])
 
         print(len(ret), "rows returned")
         return ret
