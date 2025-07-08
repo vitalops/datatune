@@ -5,11 +5,25 @@ import asyncio
 import time
 from collections import deque
 from litellm import token_counter
+from datatune.llm.model_rate_limits import model_rate_limits
 
 class LLM:
     def __init__(self, model_name: str, **kwargs) -> None:
         self.model_name = model_name
         self.kwargs = kwargs
+        DEFAULT_MODEL = "gpt-3.5-turbo"
+        if model_name[model_name.index('/')+1:] in model_rate_limits:
+            model_limits = model_rate_limits[model_name[model_name.index('/')+1:]]
+        else:
+            model_limits = model_rate_limits[DEFAULT_MODEL]
+            if "rpm" not in kwargs:
+                print(f"REQUESTS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['rpm']} RPM. Set limits by passing tpm,rpm arguments to your llm ")
+            if "tpm" not in kwargs:
+                print(f"TOKENS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['tpm']} TPM. Set limits by passing tpm,rpm arguments to your llm ")
+
+        self.MAX_RPM = kwargs.get("rpm",model_limits['rpm'])
+        self.MAX_TPM = kwargs.get("tpm",model_limits['tpm'])
+
         if "temperature" not in kwargs:
             self.kwargs["temperature"] = 0.0
 
@@ -40,9 +54,6 @@ class LLM:
 
         return ret
     
-    MAX_RPM = 60
-    MAX_TPM = 200000
-
     def true_batch_completion(self, input_rows: List[str], batch_prefix: str, prompt_per_row: str, batch_suffix: str) -> List[Union[str,Exception]]:
         input_rows = list(input_rows)
         """
@@ -68,7 +79,7 @@ class LLM:
         for i in range(len(input_rows)):
             input_rows[i] = input_rows[i].strip()
             assert input_rows[i][-1] == '}', input_rows[i]
-            input_rows[i] = input_rows[i][:-1] + f", \"index\": {idx}}}"
+            input_rows[i] = input_rows[i][:-1] + f", \"__index__\": {idx}}}"
             idx += 1
         
         remaining = set(range(len(input_rows)))
@@ -100,7 +111,7 @@ class LLM:
                         if result:
                             try:
                                 result = ast.literal_eval(result[result.index('{'):result.index('}') + 1])
-                                idx = result.pop("index")
+                                idx = result.pop("__index__")
                             except:
                                 continue
                             if idx not in remaining:
@@ -137,7 +148,7 @@ class LLM:
         
         print(len(ret), "rows returned")
         return ret
- 
+
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
         """Always return a list of strings, regardless of input type"""
         if isinstance(prompt, str):
@@ -188,7 +199,7 @@ class Azure(LLM):
 class Gemini(LLM):
     def __init__(
         self,
-        model_name: str = "gemini/gemma-3-1b-it",
+        model_name: str = "gemini/gemma-3-1b-it",   
         api_key: Optional[str] = None,
         **kwargs,
     ) -> None:
