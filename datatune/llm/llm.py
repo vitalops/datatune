@@ -7,22 +7,27 @@ from collections import deque
 from litellm import token_counter
 from datatune.llm.model_rate_limits import model_rate_limits
 
+
 class LLM:
     def __init__(self, model_name: str, **kwargs) -> None:
         self.model_name = model_name
         self.kwargs = kwargs
         DEFAULT_MODEL = "gpt-3.5-turbo"
-        if model_name[model_name.index('/')+1:] in model_rate_limits:
-            model_limits = model_rate_limits[model_name[model_name.index('/')+1:]]
+        if model_name[model_name.index("/") + 1 :] in model_rate_limits:
+            model_limits = model_rate_limits[model_name[model_name.index("/") + 1 :]]
         else:
             model_limits = model_rate_limits[DEFAULT_MODEL]
             if "rpm" not in kwargs:
-                print(f"REQUESTS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['rpm']} RPM. Set limits by passing tpm,rpm arguments to your llm ")
+                print(
+                    f"REQUESTS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['rpm']} RPM. Set limits by passing tpm,rpm arguments to your llm "
+                )
             if "tpm" not in kwargs:
-                print(f"TOKENS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['tpm']} TPM. Set limits by passing tpm,rpm arguments to your llm ")
+                print(
+                    f"TOKENS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['tpm']} TPM. Set limits by passing tpm,rpm arguments to your llm "
+                )
 
-        self.MAX_RPM = kwargs.get("rpm",model_limits['rpm'])
-        self.MAX_TPM = kwargs.get("tpm",model_limits['tpm'])
+        self.MAX_RPM = kwargs.get("rpm", model_limits["rpm"])
+        self.MAX_TPM = kwargs.get("tpm", model_limits["tpm"])
 
         if "temperature" not in kwargs:
             self.kwargs["temperature"] = 0.0
@@ -53,8 +58,14 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
-    
-    def true_batch_completion(self, input_rows: List[str], batch_prefix: str, prompt_per_row: str, batch_suffix: str) -> List[Union[str,Exception]]:
+
+    def true_batch_completion(
+        self,
+        input_rows: List[str],
+        batch_prefix: str,
+        prompt_per_row: str,
+        batch_suffix: str,
+    ) -> List[Union[str, Exception]]:
         input_rows = list(input_rows)
         """
     Executes completions on batched input prompts without trigerring RateLimitErrors and retries failed requests
@@ -74,14 +85,14 @@ class LLM:
     Returns:
         List[Union[str, Exception]]: A list containing the parsed LLM responses.
     """
-        
+
         idx = 0
         for i in range(len(input_rows)):
             input_rows[i] = input_rows[i].strip()
-            assert input_rows[i][-1] == '}', input_rows[i]
-            input_rows[i] = input_rows[i][:-1] + f", \"__index__\": {idx}}}"
+            assert input_rows[i][-1] == "}", input_rows[i]
+            input_rows[i] = input_rows[i][:-1] + f', "__index__": {idx}}}'
             idx += 1
-        
+
         remaining = set(range(len(input_rows)))
         ret = [None] * len(input_rows)
 
@@ -106,11 +117,15 @@ class LLM:
                     raise response
                 else:
                     n = 0
-                    for result in response["choices"][0]["message"]["content"].split("<endofrow>"):
+                    for result in response["choices"][0]["message"]["content"].split(
+                        "<endofrow>"
+                    ):
                         result = result.strip()
                         if result:
                             try:
-                                result = ast.literal_eval(result[result.index('{'):result.index('}') + 1])
+                                result = ast.literal_eval(
+                                    result[result.index("{") : result.index("}") + 1]
+                                )
                                 idx = result.pop("__index__")
                             except:
                                 continue
@@ -127,7 +142,13 @@ class LLM:
             remaining_prompts = [input_rows[i] for i in remaining]
             ntokens = 0
             messages = []
-            batched_prompts = create_batched_prompts(remaining_prompts, batch_prefix, prompt_per_row, batch_suffix, self.model_name)
+            batched_prompts = create_batched_prompts(
+                remaining_prompts,
+                batch_prefix,
+                prompt_per_row,
+                batch_suffix,
+                self.model_name,
+            )
             for batched_prompt in batched_prompts:
                 message = [{"role": "user", "content": batched_prompt}]
                 curr_ntokens = token_counter(self.model_name, messages=message)
@@ -142,10 +163,10 @@ class LLM:
                     time.sleep(max(0, 61 - (t2 - t1)))
                     messages = [message]
                     ntokens = curr_ntokens
-            
+
             if messages:
                 _send(messages)
-        
+
         print(len(ret), "rows returned")
         return ret
 
@@ -199,11 +220,13 @@ class Azure(LLM):
 class Gemini(LLM):
     def __init__(
         self,
-        model_name: str = "gemini/gemma-3-1b-it",   
+        model_name: str = "gemini/gemma-3-1b-it",
         api_key: Optional[str] = None,
         **kwargs,
     ) -> None:
-        self.model_name = model_name if model_name.startswith("gemini/") else f"gemini/{model_name}"
+        self.model_name = (
+            model_name if model_name.startswith("gemini/") else f"gemini/{model_name}"
+        )
 
         gemini_params = {
             "api_key": api_key,
@@ -222,7 +245,9 @@ class Mistral(LLM):
         api_key: Optional[str] = None,
         **kwargs,
     ) -> None:
-        self.model_name = model_name if model_name.startswith("mistral/") else f"mistral/{model_name}"
+        self.model_name = (
+            model_name if model_name.startswith("mistral/") else f"mistral/{model_name}"
+        )
 
         mistral_params = {
             "api_key": api_key,
@@ -241,13 +266,19 @@ class Huggingface(LLM):
         api_key: Optional[str] = None,
         **kwargs,
     ) -> None:
-        self.model_name = model_name if model_name.startswith("huggingface/") else f"huggingface/{model_name}"
+        self.model_name = (
+            model_name
+            if model_name.startswith("huggingface/")
+            else f"huggingface/{model_name}"
+        )
 
         huggingface_params = {
             "api_key": api_key,
         }
 
-        huggingface_params = {k: v for k, v in huggingface_params.items() if v is not None}
+        huggingface_params = {
+            k: v for k, v in huggingface_params.items() if v is not None
+        }
         kwargs.update(huggingface_params)
 
-        super().__init__(model_name=self.model_name, **kwargs)        
+        super().__init__(model_name=self.model_name, **kwargs)

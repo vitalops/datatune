@@ -7,6 +7,7 @@ from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
 import ast
 
+
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts each row in the DataFrame to a string representation and stores it in a new column.
@@ -51,7 +52,14 @@ def filter_prompt(
     df[prompt_column] = filtering_context + df[serialized_input_column] + instructions
     return df
 
-def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
+
+def llm_batch_inference(
+    llm: Callable,
+    llm_output_column: str,
+    prompt: str,
+    serialized_input_column: str,
+    df: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Creates the filtering prompt, prefix and suffix to be prepended and appended to a batched prompt respectively.
     The LLM is called with each row's serialized input and its response is stored in a new column.
@@ -62,7 +70,7 @@ def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, seri
         prompt (str): Base Filter prompt
         serialized_input_column (str): Name of the column containing serialized input data per row.
         df (pd.DataFrame): Input DataFrame.
-    
+
     Returns:
         pd.DataFrame: The input DataFrame with an additional column (`llm_output_column`)
         containing the LLM's responses.
@@ -100,7 +108,9 @@ def llm_inference(
     return df
 
 
-def parse_filter_output(output: Union[str, Exception], err: bool = True) -> Optional[bool]:
+def parse_filter_output(
+    output: Union[str, Exception], err: bool = True
+) -> Optional[bool]:
     """
     Parses the LLM output to determine TRUE/FALSE results.
 
@@ -118,10 +128,10 @@ def parse_filter_output(output: Union[str, Exception], err: bool = True) -> Opti
     if isinstance(output, Exception):
         logging.error(f"LLM error: {output}")
         return None
-    
-    output_dict = ast.literal_eval(output[output.index('{'):output.index('}')+1])
+
+    output_dict = ast.literal_eval(output[output.index("{") : output.index("}") + 1])
     output = output_dict.get("__filter__", None)
-    
+
     if isinstance(output, bool):
         return output
     elif err:
@@ -260,19 +270,22 @@ class Filter(Op):
         meta_dict = df._meta.dtypes.to_dict()
         meta_dict[self.llm_output_column] = str
         llm_outputs = df.map_partitions(
-            partial(llm_inference, llm, self.llm_output_column, self.prompt_column),meta=meta_dict
+            partial(llm_inference, llm, self.llm_output_column, self.prompt_column),
+            meta=meta_dict,
         )
         meta = llm_outputs._meta.copy()
-        meta[self.result_column] = int       
-        meta[ERRORED_COLUMN] = bool  
+        meta[self.result_column] = int
+        meta[ERRORED_COLUMN] = bool
         results = llm_outputs.map_partitions(
             partial(
                 parse_filter_output_as_int, self.result_column, self.llm_output_column
-            ),meta=meta
+            ),
+            meta=meta,
         )
         return results.map_partitions(
             partial(delete_rows, self.result_column, self.on_error),
         )
+
 
 class BatchedFilter(Filter):
     def __call__(self, llm: Callable, df: Dict):
@@ -300,16 +313,18 @@ class BatchedFilter(Filter):
                 llm.true_batch_completion,
                 self.llm_output_column,
                 self.prompt,
-                self.serialized_input_column
-            ), meta=meta_dict
+                self.serialized_input_column,
+            ),
+            meta=meta_dict,
         )
         meta = llm_outputs._meta.copy()
-        meta[self.result_column] = int       
-        meta[ERRORED_COLUMN] = bool  
+        meta[self.result_column] = int
+        meta[ERRORED_COLUMN] = bool
         results = llm_outputs.map_partitions(
             partial(
                 parse_filter_output_as_int, self.result_column, self.llm_output_column
-            ),meta=meta
+            ),
+            meta=meta,
         )
         return results.map_partitions(
             partial(delete_rows, self.result_column, self.on_error),

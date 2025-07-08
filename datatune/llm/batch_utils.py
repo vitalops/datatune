@@ -1,7 +1,14 @@
 from litellm import token_counter, get_max_tokens
 from typing import List
 
-def create_batched_prompts(input_rows: List[str], batch_prefix: str, prompt_per_row: str, batch_suffix: str, model_name: str) -> List[str]:
+
+def create_batched_prompts(
+    input_rows: List[str],
+    batch_prefix: str,
+    prompt_per_row: str,
+    batch_suffix: str,
+    model_name: str,
+) -> List[str]:
     """
     Groups a list of prompts into batches for LLM.
 
@@ -10,7 +17,7 @@ def create_batched_prompts(input_rows: List[str], batch_prefix: str, prompt_per_
 
     Args:
         input_rows (List[str]): List of input prompts.
-        
+
         model_name (str): Name of model being used.
 
     Returns:
@@ -27,14 +34,16 @@ def create_batched_prompts(input_rows: List[str], batch_prefix: str, prompt_per_
         f"Instructions:\n{batch_prefix}"
     )
 
-    model_name = model_name[model_name.index("/")+1:] 
+    model_name = model_name[model_name.index("/") + 1 :]
     max_tokens = get_max_tokens(model_name)
 
     batch = ""
     batched_prompts = []
     nrows_per_api_call = []
     count = 0
-    message = lambda x: [{"role": "user", "content": f"{batch_prefix}{x}{batch_suffix}"}]
+    message = lambda x: [
+        {"role": "user", "content": f"{batch_prefix}{x}{batch_suffix}"}
+    ]
     for prompt in input_rows:
         q = f"{prompt_per_row}\n {prompt} <endofrow>\n"
         batch += q
@@ -42,13 +51,13 @@ def create_batched_prompts(input_rows: List[str], batch_prefix: str, prompt_per_
         if ntokens < max_tokens:
             count += 1
         else:
-            batch = batch[:-len(q)]
+            batch = batch[: -len(q)]
             batched_prompts.append(message(batch)[0]["content"])
             nrows_per_api_call.append(count)
 
             count = 1
             batch = q
-    
+
     if count > 0:
         batched_prompts.append(message(batch)[0]["content"])
         nrows_per_api_call.append(count)

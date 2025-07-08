@@ -8,6 +8,7 @@ import os
 from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
 
+
 def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFrame:
     """
     Converts each row in the DataFrame to a string representation and stores it in a new column.
@@ -24,7 +25,11 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFr
 
 
 def map_prompt(
-    prompt: str, prompt_column: str, serialized_input_column: str, expected_new_fields: List[str], df: pd.DataFrame
+    prompt: str,
+    prompt_column: str,
+    serialized_input_column: str,
+    expected_new_fields: List[str],
+    df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
     Creates a mapping prompt by combining the base prompt with serialized input data.
@@ -52,7 +57,15 @@ def map_prompt(
     df[prompt_column] = prefix + df[serialized_input_column] + suffix
     return df
 
-def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, serialized_input_column: str, expected_new_fields:List[str], df: pd.DataFrame) -> pd.DataFrame:
+
+def llm_batch_inference(
+    llm: Callable,
+    llm_output_column: str,
+    prompt: str,
+    serialized_input_column: str,
+    expected_new_fields: List[str],
+    df: pd.DataFrame,
+) -> pd.DataFrame:
     """
     Creates the mapping prompt, prefix and suffix to be prepended and appended to a batched prompt respectively.
     The LLM is called with each row's serialized input and its response is stored in a new column.
@@ -63,7 +76,7 @@ def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, seri
         prompt (str): Base Map prompt
         serialized_input_column (str): Name of the column containing serialized input data per row.
         df (pd.DataFrame): Input DataFrame.
-    
+
     Returns:
         pd.DataFrame: The input DataFrame with an additional column (`llm_output_column`)
         containing the LLM's responses.
@@ -73,7 +86,7 @@ def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, seri
         f""" Replace or Create new fields or values as per the prompt.
         {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
         """
-      )
+    )
     prompt = f"MAPPING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
 
     suffix = (
@@ -85,6 +98,7 @@ def llm_batch_inference(llm: Callable, llm_output_column: str, prompt: str, seri
 
     df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
     return df
+
 
 def llm_inference(
     llm: Callable, llm_output_column: str, prompt_column: str, df: pd.DataFrame
@@ -119,8 +133,10 @@ def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception
         logging.error(f"LLM Error: {llm_output}")
         return llm_output
     try:
-        ret = ast.literal_eval(llm_output[llm_output.index('{'):llm_output.index('}')+1])
-        
+        ret = ast.literal_eval(
+            llm_output[llm_output.index("{") : llm_output.index("}") + 1]
+        )
+
         if not isinstance(ret, dict):
             raise ValueError(f"Expected a dictionary, got {type(ret)}")
         return ret
@@ -251,7 +267,8 @@ class Map(Op):
         meta_dict = df._meta.dtypes.to_dict()
         meta_dict[self.llm_output_column] = str
         df = df.map_partitions(
-            partial(llm_inference, llm, self.llm_output_column, self.prompt_column),meta=meta_dict
+            partial(llm_inference, llm, self.llm_output_column, self.prompt_column),
+            meta=meta_dict,
         )
 
         input_cols = list(df._meta.columns)
@@ -277,9 +294,10 @@ class Map(Op):
             meta=meta,
         )
         return result
-    
+
+
 class BatchedMap(Map):
-     def __call__(self, llm: Callable, df: Dict):
+    def __call__(self, llm: Callable, df: Dict):
         """
         Applies the mapping operation to the provided DataFrame using the specified LLM.
 
@@ -307,8 +325,9 @@ class BatchedMap(Map):
                 self.llm_output_column,
                 self.prompt,
                 self.serialized_input_column,
-                self.output_fields
-            ),meta=meta_dict
+                self.output_fields,
+            ),
+            meta=meta_dict,
         )
 
         input_cols = list(df._meta.columns)
