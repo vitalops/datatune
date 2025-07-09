@@ -23,41 +23,6 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame) -> pd.DataFr
     df[serialized_input_column] = [str(row.to_dict()) for _, row in df.iterrows()]
     return df
 
-
-def map_prompt(
-    prompt: str,
-    prompt_column: str,
-    serialized_input_column: str,
-    expected_new_fields: List[str],
-    df: pd.DataFrame,
-) -> pd.DataFrame:
-    """
-    Creates a mapping prompt by combining the base prompt with serialized input data.
-
-    Args:
-        prompt (str): The base prompt text describing the mapping/transformation to perform.
-        prompt_column (str): Name of the column to store the complete prompts.
-        serialized_input_column (str): Name of the column containing serialized row data.
-        df (pd.DataFrame): Input DataFrame to process.
-
-    Returns:
-        pd.DataFrame: DataFrame with the added prompt column.
-    """
-    prefix = f"""
-    Map and transform the input according to the following prompt.
-    :{os.linesep}{prompt}{os.linesep}
-    INPUT: """
-    suffix = f"""{os.linesep}INSTRUCTIONS:
-    Map and transform the above input according to the above prompt.
-    Replace or Create new fields or values as per the prompt.
-    {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
-    Your response MUST be the entire input record as a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added keys of expected new fields if any.
-    Format your entire response as a valid Python dictionary ONLY with no other text.
-    """
-    df[prompt_column] = prefix + df[serialized_input_column] + suffix
-    return df
-
-
 def llm_batch_inference(
     llm: Callable,
     llm_output_column: str,
@@ -98,26 +63,6 @@ def llm_batch_inference(
 
     df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
     return df
-
-
-def llm_inference(
-    llm: Callable, llm_output_column: str, prompt_column: str, df: pd.DataFrame
-) -> pd.DataFrame:
-    """
-    Performs language model inference on the prompts in the DataFrame.
-
-    Args:
-        llm (Callable): Language model inference function that accepts prompts.
-        llm_output_column (str): Name of the column to store LLM responses.
-        prompt_column (str): Name of the column containing prompts to process.
-        df (pd.DataFrame): Input DataFrame to process.
-
-    Returns:
-        pd.DataFrame: DataFrame with the added LLM output column.
-    """
-    df[llm_output_column] = llm(df[prompt_column])
-    return df
-
 
 def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception]:
     """
@@ -255,66 +200,6 @@ class Map(Op):
             Dict: The processed DataFrame with transformed values.
         """
         df = df.map_partitions(partial(input_as_string, self.serialized_input_column))
-        df = df.map_partitions(
-            partial(
-                map_prompt,
-                self.prompt,
-                self.prompt_column,
-                self.serialized_input_column,
-                self.output_fields,
-            ),
-        )
-        meta_dict = df._meta.dtypes.to_dict()
-        meta_dict[self.llm_output_column] = str
-        df = df.map_partitions(
-            partial(llm_inference, llm, self.llm_output_column, self.prompt_column),
-            meta=meta_dict,
-        )
-
-        input_cols = list(df._meta.columns)
-        output_cols = input_cols.copy()
-
-        if self.output_fields:
-            for field in self.output_fields:
-                if field not in output_cols:
-                    output_cols.append(field)
-
-        if ERRORED_COLUMN not in output_cols:
-            output_cols.append(ERRORED_COLUMN)
-
-        meta = pd.DataFrame(columns=output_cols)
-
-        result = df.map_partitions(
-            partial(
-                update_df_with_llm_output,
-                self.llm_output_column,
-                expected_fields=self.output_fields,
-                meta_columns=output_cols,
-            ),
-            meta=meta,
-        )
-        return result
-
-
-class BatchedMap(Map):
-    def __call__(self, llm: Callable, df: Dict):
-        """
-        Applies the mapping operation to the provided DataFrame using the specified LLM.
-
-        The mapping process involves:
-        1. Serializing each row to string format
-        2. Creating prompts for the LLM
-        3. Running LLM inference on the prompts
-        4. Parsing the results and updating the DataFrame with transformed values
-
-        Args:
-            llm (Callable): Language model inference function to use for mapping.
-            df (Dict): DataFrame-like object to transform (typically a Dask DataFrame).
-
-        Returns:
-            Dict: The processed DataFrame with transformed values.
-        """
-        df = df.map_partitions(partial(input_as_string, self.serialized_input_column))
 
         meta_dict = df._meta.dtypes.to_dict()
         meta_dict[self.llm_output_column] = str
@@ -354,7 +239,7 @@ class BatchedMap(Map):
         )
         return result
 
-
 __all__ = [
     "Map",
 ]
+
