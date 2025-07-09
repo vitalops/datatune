@@ -1,34 +1,60 @@
-name: Deploy Documentation
+name: Build & Deploy Docs + Run Tests
 
 on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
-  build-docs:
+  run-tests:
+    name: Run Unit Tests
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-          
+
       - name: Install dependencies
         run: |
+          pip install pytest
+          pip install .
+
+      - name: Run tests
+        run: |
+          pytest tests/
+
+  build-docs:
+    name: Build and Deploy Docs
+    needs: run-tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install doc dependencies
+        run: |
           pip install sphinx myst-parser sphinx-book-theme sphinx-design linkify-it-py
-          
+          pip install .
+
       - name: Build documentation
         run: |
           cd docs
           make docs
           touch build/html/.nojekyll
           echo "docs.datatune.ai" > build/html/CNAME
-          
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
