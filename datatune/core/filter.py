@@ -333,4 +333,5 @@ class BatchedFilter(Filter):
 
 __all__ = [
     "Filter",
+    "BatchedFilter",
 ]

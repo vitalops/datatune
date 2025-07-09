@@ -357,4 +357,5 @@ class BatchedMap(Map):
 
 __all__ = [
     "Map",
+    "BatchedMap",
 ]
