@@ -110,6 +110,7 @@ class LLM:
             """
             from litellm import batch_completion
 
+            print("Number of batches sent: ",len(messages))
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )
