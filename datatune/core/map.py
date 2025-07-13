@@ -21,7 +21,7 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame, input_fields
     Returns:
         pd.DataFrame: DataFrame with the added serialized input column.
     """
-    df_inputs = df[input_fields]
+    df_inputs = df[input_fields] if input_fields else df
     df[serialized_input_column] = [str(row.to_dict()) for _, row in df_inputs.iterrows()]
     return df
 
