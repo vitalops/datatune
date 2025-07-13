@@ -21,6 +21,7 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame, input_fields
     Returns:
         pd.DataFrame: DataFrame with the added serialized input column.
     """
+    #print(input_fields)
     df_inputs = df[input_fields] if input_fields else df
     df[serialized_input_column] = [str(row.to_dict()) for _, row in df_inputs.iterrows()]
     return df
@@ -202,6 +203,10 @@ class Map(Op):
         Returns:
             Dict: The processed DataFrame with transformed values.
         """
+        if not self.input_fields:
+            first_row = df.head(1).iloc[0].to_dict()
+            self.input_fields = llm.get_input_fields(first_row, self.prompt)
+
         df = df.map_partitions(partial(input_as_string, self.serialized_input_column, input_fields=self.input_fields))
 
         meta_dict = df._meta.dtypes.to_dict()

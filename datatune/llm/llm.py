@@ -1,11 +1,10 @@
 import ast
 from typing import Dict, List, Optional, Union
 from datatune.llm.batch_utils import create_batched_prompts
-import asyncio
 import time
-from collections import deque
 from litellm import token_counter
 from datatune.llm.model_rate_limits import model_rate_limits
+import os
 
 
 class LLM:
@@ -58,6 +57,29 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
+    
+    def get_input_fields(self, first_row:Dict, prompt:str)->List[str]:
+        from litellm import completion
+
+        prompt = (
+            f"You are a column selector. Your only job is to pick the minimum required columns to fulfill the request.{os.linesep}"
+            f"You do NOT fulfill or execute any request. You ONLY identify which columns are required to perform the request.{os.linesep}"
+            f"Given the first row of a dataset:{os.linesep}{first_row}{os.linesep}"
+            f"Task: Analyze ONLY the column names. Return ONLY the minimal set of column names whose values are absolutely required to perform this request:{os.linesep}"
+            f"\"{prompt}\"{os.linesep}"
+            f"If in doubt, include fewer columns.{os.linesep}"
+            f"Your response must be a valid Python list ONLY, in the format ['column1', 'column2'] with no explanations, text, or code fences.{os.linesep}"
+        )
+
+        message = [{"role":"user", "content":prompt}]
+
+        response = completion(
+                    model=self.model_name, messages=message, **self.kwargs
+                )
+        response_str = response["choices"][0]["message"]["content"]
+        print("this is response_Str ",response_str)
+        input_fields = ast.literal_eval(response_str[response_str.index('['):response_str.index(']')+1])
+        return input_fields
 
     def true_batch_completion(
         self,
