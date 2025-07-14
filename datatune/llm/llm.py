@@ -77,7 +77,6 @@ class LLM:
                     model=self.model_name, messages=message, **self.kwargs
                 )
         response_str = response["choices"][0]["message"]["content"]
-        print("this is response_Str ",response_str)
         input_fields = ast.literal_eval(response_str[response_str.index('['):response_str.index(']')+1])
         return input_fields
 
