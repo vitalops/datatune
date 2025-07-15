@@ -28,7 +28,7 @@ from datatune.llm.llm import OpenAI
 
 os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
 
-# Set tokens-per-minute and requests-per-minute limits
+# Set tokens-per-minute and requests-per-minute limits 
 llm = OpenAI(model_name="gpt-3.5-turbo",tpm = 200000, rpm = 50)
 
 # Load data from your source with Dask
@@ -55,6 +55,7 @@ result.compute().to_csv("electronics_products.csv")
 new_df = dd.read_csv("electronics_products.csv")
 print(new_df.head())
 ```
+If you don’t set `rpm` or `tpm`, Datatune will automatically look up default limits for your model from our [model_rate_limits](datatune/llm/model_rate_limits.py). If model is not available in the lookup dictionary rpm and tpm will default to **gpt-3.5-turbo** limits.
 
 **products.csv**
 ```
