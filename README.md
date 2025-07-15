@@ -37,15 +37,15 @@ print(df.head())
 
 # Transform data with Map
 mapped = dt.Map(
-    prompt="Extract categories from the description.",
+    prompt="Extract categories from the description and name of product.",
     output_fields=["Category", "Subcategory"],
-    input_fields = ["Description"] # Relevant input fields
+    input_fields = ["Description","Name"] # Relevant input fields (optional)
 )(llm, df)
 
 # Filter data based on criteria
 filtered = dt.Filter(
     prompt="Keep only electronics products",
-    input_fields = ["Name"] # Relevant input fields
+    input_fields = ["Name"] # Relevant input fields (optional)
 )(llm, mapped)
 
 # Get the final dataframe after cleanup of metadata and deleted rows after operations using `finalize`.
@@ -56,6 +56,8 @@ new_df = dd.read_csv("electronics_products.csv")
 print(new_df.head())
 ```
 If you don’t set `rpm` or `tpm`, Datatune will automatically look up default limits for your model from our [model_rate_limits](datatune/llm/model_rate_limits.py). If model is not available in the lookup dictionary rpm and tpm will default to **gpt-3.5-turbo** limits.
+
+Passing `input_fields` reduces the number of tokens sent by sending only relevant columns as input to the given LLM API, hence reducing the cost.
 
 **products.csv**
 ```
