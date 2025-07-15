@@ -27,7 +27,9 @@ import datatune as dt
 from datatune.llm.llm import OpenAI
 
 os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
-llm = OpenAI(model_name="gpt-3.5-turbo")
+
+# Set tokens-per-minute and requests-per-minute limits
+llm = OpenAI(model_name="gpt-3.5-turbo",tpm = 200000, rpm = 50)
 
 # Load data from your source with Dask
 df = dd.read_csv("tests/test_data/products.csv")
@@ -36,12 +38,14 @@ print(df.head())
 # Transform data with Map
 mapped = dt.Map(
     prompt="Extract categories from the description.",
-    output_fields=["Category", "Subcategory"]
+    output_fields=["Category", "Subcategory"],
+    input_fields = ["Description"] # Relevant input fields
 )(llm, df)
 
 # Filter data based on criteria
 filtered = dt.Filter(
-    prompt="Keep only electronics products"
+    prompt="Keep only electronics products",
+    input_fields = ["Name"] # Relevant input fields
 )(llm, mapped)
 
 # Get the final dataframe after cleanup of metadata and deleted rows after operations using `finalize`.
