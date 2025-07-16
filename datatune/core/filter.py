@@ -7,7 +7,6 @@ from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
 import ast
 
-
 def input_as_string(serialized_input_column: str, df: pd.DataFrame, input_fields:Optional[List[str]] = None) -> pd.DataFrame:
     """
     Converts each row in the DataFrame to a string representation and stores it in a new column.
@@ -209,6 +208,10 @@ class Filter(Op):
 
         if drop_columns:
             df = df.drop(columns=drop_columns)
+        
+        if not self.input_fields:
+            first_row_dict = df.head(1).iloc[0].to_dict()
+            self.input_fields = llm.get_input_fields(first_row_dict, self.prompt)
 
         df = df.map_partitions(partial(input_as_string, self.serialized_input_column, input_fields=self.input_fields))
         meta_dict = df._meta.dtypes.to_dict()
