@@ -27,7 +27,9 @@ import datatune as dt
 from datatune.llm.llm import OpenAI
 
 os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
-llm = OpenAI(model_name="gpt-3.5-turbo")
+
+# Set tokens-per-minute and requests-per-minute limits 
+llm = OpenAI(model_name="gpt-3.5-turbo", tpm = 200000, rpm = 50)
 
 # Load data from your source with Dask
 df = dd.read_csv("tests/test_data/products.csv")
@@ -35,13 +37,15 @@ print(df.head())
 
 # Transform data with Map
 mapped = dt.Map(
-    prompt="Extract categories from the description.",
-    output_fields=["Category", "Subcategory"]
+    prompt="Extract categories from the description and name of product.",
+    output_fields=["Category", "Subcategory"],
+    input_fields = ["Description","Name"] # Relevant input fields (optional)
 )(llm, df)
 
 # Filter data based on criteria
 filtered = dt.Filter(
-    prompt="Keep only electronics products"
+    prompt="Keep only electronics products",
+    input_fields = ["Name"] # Relevant input fields (optional)
 )(llm, mapped)
 
 # Get the final dataframe after cleanup of metadata and deleted rows after operations using `finalize`.
@@ -70,6 +74,9 @@ print(new_df.head())
 2           6       1007     USB-C Cable 1m  ...  UC-7007  Electronics                Cables
 3           8       1009  Bluetooth Speaker  ...  BS-9009  Electronics                 Audio
 ```
+If you don’t set `rpm` or `tpm`, Datatune will automatically look up default limits for your model from our [model_rate_limits](datatune/llm/model_rate_limits.py). If model is not available in the lookup dictionary rpm and tpm will default to **gpt-3.5-turbo** limits.
+
+Passing `input_fields` reduces the number of tokens sent by sending only relevant columns as input to the given LLM API, hence reducing the cost.
 
 ## Features
 
