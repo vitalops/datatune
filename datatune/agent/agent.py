@@ -110,7 +110,7 @@ class Agent(ABC):
 
     def _set_df(self, df: dd.DataFrame):
         self.df = df
-        runtime = self.runtime = Runtime(df)
+        runtime = self.runtime = Runtime()
         runtime["df"] = df
         runtime["DONE"] = False
         runtime["QUERY"] = False
