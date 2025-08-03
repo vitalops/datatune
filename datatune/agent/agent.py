@@ -4,6 +4,7 @@ from typing import Optional
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 
+
 class Agent(ABC):
 
     def get_persona_prompt(self) -> str:
@@ -48,19 +49,19 @@ class Agent(ABC):
         Make sure to not ask for too many rows at once, as the output will be limited to a few rows. If you need to see more data, you can ask for it in subsequent steps.
         """
         return persona_prompt
-    
+
     def get_schema_prompt(df: dd.DataFrame) -> str:
         schema_prompt: str = f"""The current schema of the dataframe df is as follows:
         {df.dtypes.to_string()}
         """
         return schema_prompt
-    
+
     def get_goal_prompt(self, goal) -> str:
         goal_prompt: str = f"""Your overall goal is as follows:
         {goal}.
         """
         return goal_prompt
-    
+
     def get_context_prompt(self, query: str, output_df: dd.DataFrame) -> str:
         context_prompt: str = f"""you previously asked for the output of the following query:
         {query}
@@ -71,7 +72,13 @@ class Agent(ABC):
         # TODO: Hard limit on number of rows
         return context_prompt
 
-    def get_full_prompt(self, df: dd.DataFrame, goal: str, prev_agent_query: Optional[str]=None, output_df: Optional[dd.DataFrame]=None) -> str:
+    def get_full_prompt(
+        self,
+        df: dd.DataFrame,
+        goal: str,
+        prev_agent_query: Optional[str] = None,
+        output_df: Optional[dd.DataFrame] = None,
+    ) -> str:
         prompt = self.get_persona_prompt()
         prompt += self.get_schema_prompt(df)
         prompt += self.get_goal_prompt(goal)
@@ -101,14 +108,15 @@ class Agent(ABC):
     def __init__(self, llm: LLM):
         self.llm = llm
 
-
     def _set_df(self, df: dd.DataFrame):
         self.df = df
         runtime = self.runtime = Runtime(df)
         runtime["df"] = df
         runtime["DONE"] = False
         runtime["QUERY"] = False
-        runtime.execute("import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt")
+        runtime.execute(
+            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt"
+        )
         self.prev_query = None
         self.output_df = None
 
@@ -123,4 +131,3 @@ class Agent(ABC):
                 raise ValueError("LLM output is empty or invalid.")
             done = self._execute_llm_output(code)
         return self.runtime["df"]
-

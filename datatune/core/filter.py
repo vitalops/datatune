@@ -8,7 +8,11 @@ import logging
 import ast
 
 
-def input_as_string(serialized_input_column: str, df: pd.DataFrame, input_fields:Optional[List[str]] = None) -> pd.DataFrame:
+def input_as_string(
+    serialized_input_column: str,
+    df: pd.DataFrame,
+    input_fields: Optional[List[str]] = None,
+) -> pd.DataFrame:
     """
     Converts each row in the DataFrame to a string representation and stores it in a new column.
 
@@ -20,10 +24,13 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame, input_fields
     Returns:
         pd.DataFrame: DataFrame with the added serialized input column.
     """
-    
+
     df_inputs = df[input_fields] if input_fields else df
-    df[serialized_input_column] = [str(row.to_dict()) for _, row in df_inputs.iterrows()]
+    df[serialized_input_column] = [
+        str(row.to_dict()) for _, row in df_inputs.iterrows()
+    ]
     return df
+
 
 def llm_batch_inference(
     llm: Callable,
@@ -59,6 +66,7 @@ def llm_batch_inference(
     )
     df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
     return df
+
 
 def parse_filter_output(
     output: Union[str, Exception], err: bool = True
@@ -210,7 +218,13 @@ class Filter(Op):
         if drop_columns:
             df = df.drop(columns=drop_columns)
 
-        df = df.map_partitions(partial(input_as_string, self.serialized_input_column, input_fields=self.input_fields))
+        df = df.map_partitions(
+            partial(
+                input_as_string,
+                self.serialized_input_column,
+                input_fields=self.input_fields,
+            )
+        )
         meta_dict = df._meta.dtypes.to_dict()
         meta_dict[self.llm_output_column] = str
         llm_outputs = df.map_partitions(
