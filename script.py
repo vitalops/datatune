@@ -3,22 +3,30 @@ import dask.dataframe as dd
 
 import datatune.datatune as dt
 from datatune.datatune.llm.llm import OpenAI
+#from datatune.datatune.llm.llm import Ollama
+#from datatune.datatune.llm.llm import HuggingFace
+#from datatune.datatune.llm.llm import Gemini
+#from datatune.datatune.llm.llm import OpenAIBatchAPI
 import time
+#import dask.config
 from datatune.datatune.agent.agent import Agent
 
-os.environ["OPENAI_API_KEY"] = "api_key"
+os.environ["OPENAI_API_KEY"] = "yourapikey"
 #dask.config.set(scheduler='single-threaded')
-
+#litellm._turn_on_debug()
 
 llm = OpenAI(model_name="gpt-4o-mini-2024-07-18",tpm=1000000,rpm=5000)
+#llm = OpenAI(model_name="gpt-3.5-turbo",tpm=200000,rpm=50)
+# Load data from your source with Dask
 df = dd.read_csv("products/sample.csv")
 print(df.head())
+#df = df.repartition(npartitions=40)
 prompt = (
     "You are a tabular data validation assistant.\n"
     "Given a 'contract' and few rows of data (including the header), generate python code to validate each row of data against the contract.\n"
-    #"Some rules of the contract may depend on the previous rows of data to validate the current row. In such cases add required columns in a preprocessing step so that the validation can be done in a per row manner.\n"
+  #  "Some rules of the contract may depend on the previous rows of data to validate the current row. In such cases add required columns in a preprocessing step so that the validation can be done in a per row manner.\n"
     "Input data will be in the form of a python dataframe.\n"
-    "Create new coloumn called valid and fill with yes if valid and no if invalid"
+    "Create new coloumn called valid and fill with yes if contract is valid for the row and no if invalid"
     "Here is the contract:\n"
  
     "Discounts\n"
@@ -38,8 +46,7 @@ prompt = (
     "Example:\n"
     "Q2 Purchases = $90,000\n"
     f"Q3 Purchases = $99,000 → 10% growth\n"
-    f"Since Q3 grew by exactly 10% over Q2, a 1% extra discount applies to Q4 purchases.)\n"
-    )
+    f"Since Q3 grew by exactly 10% over Q2, a 1% extra discount applies to Q4 purchases.)\n")
 
 agent = Agent(llm)
 df = agent.do(prompt,df)

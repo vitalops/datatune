@@ -37,8 +37,8 @@ class Agent(ABC):
         ```
 
         ### Dask Rules:
-        - To add or modify a column conditionally, use `df['col'] = df['existing_col'].map(lambda x: ..., meta='object')`
-        - You can also use `df.apply(...)` with `axis=1` and a proper `meta='object'`
+        - Only use `.map(...)` on a Dask **Series**, not the full DataFrame. For example: `df['new_col'] = df['existing_col'].map(lambda x: ..., meta='object')`
+        - For row-wise operations across multiple columns, use `.apply(..., axis=1)` on the DataFrame. Always include the `meta` argument. Example: `df['new_col'] = df.apply(lambda row: ..., axis=1, meta='object')`
         - Always specify `meta='object'` when using `.map` or `.apply` with Dask
 
         To solve certain tasks, you might need to create new columns as a preprocessing step. These comlumns can be created using regular dask operations or using the Map operation from datatune, depending on whether you need to use an LLM or not.
@@ -50,7 +50,8 @@ class Agent(ABC):
         DONE = True
         ```
         ALWAYS RETURN VALID PYTHON CODE THAT CAN BE EXECUTED TO PERFORM THE DESIRED OPERATION ON df IN THE RUNTIME ENVIRONMENT DESCRIBED ABOVE. KEEP IT SIMPLE. NO NEW FUNCTIONS, CLASSES OR IMPORTS UNLESS ABSOLUTELY NECESSARY.
-        You are either at step 0 (you are seeing all this for the first time and df is untouched) or at an intermediate step where you have already performed some operations on df. Make sure to not repeat operations that have already been performed on df.
+        You must return only executable Python code. Do not include any comments, explanations, or Markdown. Your response must be a clean Python code snippet that can be directly passed to exec() without modification.
+        Only use functions and attributes of dask on df
         If the next operation requires you to look at the actual data in df, you can set global variable `QUERY` to True and use the `df.head(..)` method or any valid dask operation that returns a dataframe and set it to the global variable `OUTPUT_DF`. E.g:
         ```python
         QUERY = True
@@ -141,4 +142,5 @@ class Agent(ABC):
             if not code:
                 raise ValueError("LLM output is empty or invalid.")
             done = self._execute_llm_output(code)
+            done = True
         return self.runtime["df"]
