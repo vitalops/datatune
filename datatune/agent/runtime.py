@@ -1,4 +1,3 @@
-
 class Runtime:
     def __init__(self):
         self.namespace = {}
@@ -10,7 +9,9 @@ class Runtime:
         try:
             return self.namespace[key]
         except KeyError as e:
-            raise NameError(f"Variable '{key}' is not defined in the runtime environment.") from e
+            raise NameError(
+                f"Variable '{key}' is not defined in the runtime environment."
+            ) from e
 
     def __setitem__(self, key: str, value):
         self.namespace[key] = value
