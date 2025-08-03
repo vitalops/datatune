@@ -1,6 +1,6 @@
 from abc import ABC
 import dask.dataframe as dd
-from typing import Optional
+from typing import Optional, List
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 
@@ -36,11 +36,21 @@ class Agent(ABC):
         filtered_df = dt.finalize(filtered_df)
         ```
 
+        ### Dask Rules:
+        - To add or modify a column conditionally, use `df['col'] = df['existing_col'].map(lambda x: ..., meta='object')`
+        - You can also use `df.apply(...)` with `axis=1` and a proper `meta='object'`
+        - Always specify `meta='object'` when using `.map` or `.apply` with Dask
+
         To solve certain tasks, you might need to create new columns as a preprocessing step. These comlumns can be created using regular dask operations or using the Map operation from datatune, depending on whether you need to use an LLM or not.
         The dataframe you are working with is a Dask DataFrame and is available as the variable `df`.
-        You are either at step 0 (you are seeing all this for the first time and df is untouched) or at an intermediate step where you have already performed some operations on df. Make sure to not repeat operations that have already been performed on df.
-        The current schema of df and your overall goal will be available below. At each step you should ideally perform a single operation on df that brings you closer to the goal. Once you have achieved the goal, simply set global variable `DONE` to True.
+        
+        The current schema of df and your overall goal will be available below. 
+        You will be provided a goal. Once your generated code directly and completely fulfills that goal (i.e., the described transformation has been performed on df), you must conclude your response with:
+        ```python
+        DONE = True
+        ```
         ALWAYS RETURN VALID PYTHON CODE THAT CAN BE EXECUTED TO PERFORM THE DESIRED OPERATION ON df IN THE RUNTIME ENVIRONMENT DESCRIBED ABOVE. KEEP IT SIMPLE. NO NEW FUNCTIONS, CLASSES OR IMPORTS UNLESS ABSOLUTELY NECESSARY.
+        You are either at step 0 (you are seeing all this for the first time and df is untouched) or at an intermediate step where you have already performed some operations on df. Make sure to not repeat operations that have already been performed on df.
         If the next operation requires you to look at the actual data in df, you can set global variable `QUERY` to True and use the `df.head(..)` method or any valid dask operation that returns a dataframe and set it to the global variable `OUTPUT_DF`. E.g:
         ```python
         QUERY = True
@@ -50,7 +60,7 @@ class Agent(ABC):
         """
         return persona_prompt
 
-    def get_schema_prompt(df: dd.DataFrame) -> str:
+    def get_schema_prompt(self, df: dd.DataFrame) -> str:
         schema_prompt: str = f"""The current schema of the dataframe df is as follows:
         {df.dtypes.to_string()}
         """
@@ -86,8 +96,9 @@ class Agent(ABC):
             prompt += self.get_context_prompt(prev_agent_query, output_df)
         return prompt
 
-    def _preproc_code(self, code: str) -> str:
+    def _preproc_code(self, code: List[str]) -> str:
         # TODO: make more robust
+        code = code[0]
         lines = code.splitlines()
         if lines and lines[0].startswith("```"):
             lines = lines[1:]
