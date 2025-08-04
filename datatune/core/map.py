@@ -9,7 +9,11 @@ from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 import logging
 
 
-def input_as_string(serialized_input_column: str, df: pd.DataFrame, input_fields:Optional[List[str]] = None) -> pd.DataFrame:
+def input_as_string(
+    serialized_input_column: str,
+    df: pd.DataFrame,
+    input_fields: Optional[List[str]] = None,
+) -> pd.DataFrame:
     """
     Converts each row in the DataFrame to a string representation and stores it in a new column.
 
@@ -22,7 +26,9 @@ def input_as_string(serialized_input_column: str, df: pd.DataFrame, input_fields
         pd.DataFrame: DataFrame with the added serialized input column.
     """
     df_inputs = df[input_fields] if input_fields else df
-    df[serialized_input_column] = [str(row.to_dict()) for _, row in df_inputs.iterrows()]
+    df[serialized_input_column] = [
+        str(row.to_dict()) for _, row in df_inputs.iterrows()
+    ]
     return df
 
 
@@ -66,6 +72,7 @@ def llm_batch_inference(
 
     df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
     return df
+
 
 def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception]:
     """
@@ -202,7 +209,13 @@ class Map(Op):
         Returns:
             Dict: The processed DataFrame with transformed values.
         """
-        df = df.map_partitions(partial(input_as_string, self.serialized_input_column, input_fields=self.input_fields))
+        df = df.map_partitions(
+            partial(
+                input_as_string,
+                self.serialized_input_column,
+                input_fields=self.input_fields,
+            )
+        )
 
         meta_dict = df._meta.dtypes.to_dict()
         meta_dict[self.llm_output_column] = str
@@ -242,7 +255,7 @@ class Map(Op):
         )
         return result
 
+
 __all__ = [
     "Map",
 ]
-

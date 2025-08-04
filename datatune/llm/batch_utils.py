@@ -50,9 +50,9 @@ def create_batched_prompts(
         q = f"{prompt_per_row}\n {prompt} <endofrow>\n"
         batch += q
         ntokens = token_counter(model_name, messages=message(batch))
-        if total_ntokens+ntokens < max_tokens:
+        if total_ntokens + ntokens < max_tokens:
             count += 1
-            total_ntokens+=ntokens
+            total_ntokens += ntokens
         else:
             batch = batch[: -len(q)]
             batched_prompts.append(message(batch)[0]["content"])
@@ -71,4 +71,4 @@ def create_batched_prompts(
     print(nrows_per_api_call)
     print("No of rows:", sum(nrows_per_api_call))
     print("No of api calls:", len(nrows_per_api_call))
-    return batched_prompts,batch_ranges
+    return batched_prompts, batch_ranges

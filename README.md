@@ -112,7 +112,7 @@ llm = Ollama()
 # Using Azure
 from datatune.llm.llm import Azure
 llm = Azure(
-    model_name="gpt-35-turbo",
+    model_name="gpt-3.5-turbo",
     api_key=api_key,
     api_base=api_base,
     api_version=api_version)
@@ -121,6 +121,20 @@ llm = Azure(
 from datatune.llm.llm import OpenAI
 llm = OpenAI(model_name="gpt-3.5-turbo")
 ```
+### Agents
+Datatune provides an agentic framework which allows you to deploy agents that can generate and execute python scripts with datatune operations.
+
+```python
+llm = OpenAI(model_name="gpt-3.5-turbo",tpm=200000)
+
+# Initialize an agent by providing an LLM
+agent = Agent(llm)
+prompt = "your prompt for data transformation"
+
+# Transform your dask DataFrame
+df = agent.do(prompt,df)
+```
+- This allows for intelligent operation selection based on the given prompt
 
 
 ### Data Compatibility
