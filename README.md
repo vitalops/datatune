@@ -125,6 +125,9 @@ llm = OpenAI(model_name="gpt-3.5-turbo")
 Datatune provides an agentic framework which allows you to deploy agents that can generate and execute python scripts with datatune operations.
 
 ```python
+from datatune.agent.agent import Agent
+from datatune.llm.llm import OpenAI
+
 llm = OpenAI(model_name="gpt-3.5-turbo",tpm=200000)
 
 # Initialize an agent by providing an LLM
