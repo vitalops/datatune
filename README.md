@@ -106,7 +106,7 @@ anonymized = dt.Map(
 
 ### Example 2: Data Classification
 
-Extract and categorize information from unstructured data:
+Extract and categorize information:
 
 ```python
 # Classify customer support emails by department and urgency
