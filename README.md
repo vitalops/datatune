@@ -5,7 +5,7 @@
 [![PyPI Downloads](https://static.pepy.tech/badge/datatune)](https://pepy.tech/projects/datatune)
 [![Docs](https://img.shields.io/badge/docs-docs.datatune.ai-blue)](https://docs.datatune.ai)
 
-Transform your data with natural language using LLMs
+Perform transformations on your data with natural language using LLMs
 
 ## Installation
 
@@ -20,7 +20,6 @@ pip install -e .
 ```
 
 ## Quick Start
-
 ```python
 import os
 import dask.dataframe as dd
@@ -34,70 +33,54 @@ os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
 llm = OpenAI(model_name="gpt-3.5-turbo", tpm = 200000, rpm = 50)
 
 # Load data from your source with Dask
-df = dd.read_csv("customer_feedback.csv")
+df = dd.read_csv("tests/test_data/products.csv")
 print(df.head())
 
-# Extract insights from customer feedback
+# Transform data with Map
 mapped = dt.Map(
-    prompt="Extract customer sentiment and main concern from feedback text",
-    output_fields=["sentiment", "main_concern"],
-    input_fields = ["feedback_text"] # Relevant input fields (optional)
+    prompt="Extract categories from the description and name of product.",
+    output_fields=["Category", "Subcategory"],
+    input_fields = ["Description","Name"] # Relevant input fields (optional)
 )(llm, df)
 
-# Filter for negative feedback requiring immediate attention
-urgent = dt.Filter(
-    prompt="Keep only negative feedback that indicates urgent issues",
-    input_fields = ["sentiment", "main_concern"]
+# Filter data based on criteria
+filtered = dt.Filter(
+    prompt="Keep only electronics products",
+    input_fields = ["Name"] # Relevant input fields (optional)
 )(llm, mapped)
 
-# Get the final dataframe
-result = dt.finalize(urgent)
-result.compute().to_csv("urgent_feedback.csv")
+# Get the final dataframe after cleanup of metadata and deleted rows after operations using `finalize`.
+result = dt.finalize(filtered)
+result.compute().to_csv("electronics_products.csv")
 
-print(result.head())
-```
-
-**customer_feedback.csv**
-```
-   CustomerID                                      feedback_text    date
-0        1001  "The product quality is terrible and arrived damaged"  2024-01-15
-1        1002  "Great service, very happy with my purchase"           2024-01-16  
-2        1003  "Website is broken, can't complete my order"           2024-01-17
-3        1004  "Love this product, will definitely buy again"         2024-01-18
-4        1005  "Billing error on my account, need immediate help"     2024-01-19
+new_df = dd.read_csv("electronics_products.csv")
+print(new_df.head())
 ```
 
-**urgent_feedback.csv**
+**products.csv**
 ```
-   CustomerID                                      feedback_text         sentiment       main_concern
-0        1001  "The product quality is terrible and arrived damaged"  Negative    Product Quality
-1        1003  "Website is broken, can't complete my order"           Negative    Technical Issue  
-2        1005  "Billing error on my account, need immediate help"     Negative    Billing Error
+   ProductID             Name   Price  Quantity                                        Description      SKU
+0       1001   Wireless Mouse   25.99       150  Ergonomic wireless mouse with 2.4GHz connectivity  WM-1001
+1       1002     Office Chair   89.99        75  Comfortable swivel office chair with lumbar su...  OC-2002
+2       1003       Coffee Mug    9.49       300                  Ceramic mug, 12oz, microwave safe  CM-3003
+3       1004  LED Monitor 24"  149.99        60  24-inch Full HD LED monitor with HDMI and VGA ...  LM-2404
+4       1005    Notebook Pack    6.99       500          Pack of 3 ruled notebooks, 100 pages each  NP-5005
 ```
+
+**electronics_products.csv**
+```
+   Unnamed: 0  ProductID               Name  ...      SKU     Category           Subcategory
+0           0       1001     Wireless Mouse  ...  WM-1001  Electronics  Computer Accessories
+1           3       1004    LED Monitor 24"  ...  LM-2404  Electronics              Monitors
+2           6       1007     USB-C Cable 1m  ...  UC-7007  Electronics                Cables
+3           8       1009  Bluetooth Speaker  ...  BS-9009  Electronics                 Audio
+```
+
+If you don't set `rpm` or `tpm`, Datatune will automatically look up default limits for your model from our [model_rate_limits](datatune/llm/model_rate_limits.py). If model is not available in the lookup dictionary rpm and tpm will default to **gpt-3.5-turbo** limits.
+
+Passing `input_fields` reduces the number of tokens sent by sending only relevant columns as input to the given LLM API, hence reducing the cost.
 
 ## Features
-
-### Map Operation
-
-Transform data with natural language:
-
-```python
-# Classify support tickets by priority
-tickets = dd.read_csv("support_tickets.csv")
-classified = dt.Map(
-    prompt="Classify by priority (Low/Medium/High) and extract estimated resolution time",
-    output_fields=["priority", "estimated_hours"],
-    input_fields=["subject", "description"]
-)(llm, tickets)
-```
-
-**Output:**
-```
-   TicketID                    Subject         Priority  Estimated_Hours
-0      2001    "Website login broken"          High              2
-1      2002    "Update billing info"           Low               1  
-2      2003    "Payment processing error"      Critical          4
-```
 
 ### Example 1: Data Anonymization
 
@@ -107,7 +90,7 @@ Protect sensitive information while preserving data utility:
 # Anonymize personally identifiable information
 customer_data = dd.read_csv("customer_records.csv")
 anonymized = dt.Map(
-    prompt="Replace all personally identifiable fields with XX",
+    prompt="Replace all personally identifiable fields with XX - emails, phone numbers, names, addresses",
     output_fields=["anonymized_text"],
     input_fields=["customer_notes"]
 )(llm, customer_data)
@@ -123,7 +106,7 @@ anonymized = dt.Map(
 
 ### Example 2: Data Classification
 
-Extract and categorize information:
+Extract and categorize information from unstructured data:
 
 ```python
 # Classify customer support emails by department and urgency
@@ -164,16 +147,37 @@ quality_reviews = dt.Filter(
 2      5007    "Quality exceeded my expectations..."        "15+ reviews, verified"   5
 ```
 
-## Multiple LLM Support
+### Map Operation
+
+Transform data with natural language:
+
+```python
+customers = dd.read_csv("customers.csv")
+mapped = dt.Map(
+    prompt="Extract country and city from the address field",
+    output_fields=["country", "city"]
+)(llm, customers)
+```
+
+### Filter operation
+
+```python
+# Filter to remove rows
+filtered = dt.Filter(
+    prompt="Keep only customers who are from Asia"
+)(llm, mapped)
+```
+
+### Multiple LLM Support
 
 Datatune works with various LLM providers with the help of LiteLLM under the hood:
 
 ```python
-# Using Ollama for local processing
+# Using Ollama
 from datatune.llm.llm import Ollama
 llm = Ollama()
 
-# Using Azure OpenAI
+# Using Azure
 from datatune.llm.llm import Azure
 llm = Azure(
     model_name="gpt-3.5-turbo",
@@ -186,7 +190,7 @@ from datatune.llm.llm import OpenAI
 llm = OpenAI(model_name="gpt-3.5-turbo")
 ```
 
-## Agents
+### Agents
 
 Datatune provides an agentic framework which allows you to deploy agents that can generate and execute python scripts with datatune operations:
 
@@ -195,44 +199,44 @@ import datatune as dt
 from datatune.llm.llm import OpenAI
 
 llm = OpenAI(model_name="gpt-3.5-turbo", tpm=200000)
-agent = dt.Agent(llm)
 
-# Let the agent decide the best transformation approach
-df = agent.do("Clean this data and extract key business insights for reporting", df)
+# Initialize an agent by providing an LLM
+agent = dt.Agent(llm)
+prompt = "your prompt for data transformation"
+
+# Transform your dask DataFrame
+df = agent.do(prompt, df)
 ```
 
 - This allows for intelligent operation selection based on the given prompt
 
-## Data Compatibility
+### Data Compatibility
 
-Datatune uses Dask DataFrames for scalable processing. Convert pandas DataFrames with:
+Datatune leverages Dask DataFrames to enable scalable processing across large datasets. This approach allows you to:
+
+- Process data larger than context length of LLMs
+- Execute parallel computations efficiently
+
+If you're working with pandas DataFrames, convert them with a simple:
 
 ```python
 import dask.dataframe as dd
-dask_df = dd.from_pandas(pandas_df, npartitions=4)
+dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
 ```
 
-## Performance Tips
+### Examples
+Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 
-Reduce costs by specifying relevant input fields:
+### Documentation
 
-```python
-# Only send relevant columns to the LLM
-result = dt.Map(
-    prompt="Extract sentiment from reviews",
-    output_fields=["sentiment"],
-    input_fields=["review_text"]  # Reduces token usage
-)(llm, df)
-```
+Check out our [documentation](https://docs.datatune.ai/) to learn how to use datatune.
 
-If you don't set `rpm` or `tpm`, Datatune automatically uses optimal limits for your model.
+### Issues 
 
-## Resources
+Want to raise an issue or want us to build a new feature?
+Head over to [issues](https://github.com/vitalops/datatune/issues) and raise a ticket!   
 
-- [Examples](https://github.com/vitalops/datatune/tree/main/examples)
-- [Documentation](https://docs.datatune.ai/)
-- [Issues](https://github.com/vitalops/datatune/issues)
-- Email: hello@vitalops.ai
+You can also mail us at hello@vitalops.ai
 
 ## License
 MIT License
