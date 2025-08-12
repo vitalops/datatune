@@ -99,7 +99,7 @@ classified = dt.Map(
 2      2003    "Payment processing error"      Critical          4
 ```
 
-### Data Anonymization
+### Example 1: Data Anonymization
 
 Protect sensitive information while preserving data utility:
 
