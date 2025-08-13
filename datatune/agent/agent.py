@@ -141,6 +141,7 @@ class Agent(ABC):
             
             # Check if task is done first
             if self.runtime.get("DONE", False):
+                _ = self.runtime["df"].head()
                 return True, None
                 
             # Handle query case
@@ -151,6 +152,7 @@ class Agent(ABC):
                 
                 # Check again if DONE was set to True in the same execution
                 if self.runtime.get("DONE", False):
+                    _ = self.runtime["df"].head() 
                     return True, None
                     
             return False, None
