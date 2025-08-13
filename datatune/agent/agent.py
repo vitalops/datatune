@@ -1,6 +1,7 @@
 from abc import ABC
 import dask.dataframe as dd
 from typing import Optional, List
+import traceback
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 
@@ -58,6 +59,7 @@ class Agent(ABC):
         OUTPUT_DF = df.head(10)
         ```
         Make sure to not ask for too many rows at once, as the output will be limited to a few rows. If you need to see more data, you can ask for it in subsequent steps.
+
         """
         return persona_prompt
 
@@ -83,18 +85,41 @@ class Agent(ABC):
         # TODO: Hard limit on number of rows
         return context_prompt
 
+    def get_error_prompt(self, error_msg: str, failed_code: str) -> str:
+        error_prompt: str = f"""
+        The previous code execution failed with the following error:
+        Error: {error_msg}
+        
+        Failed code:
+        {failed_code}
+        
+        Please fix the error and provide corrected code. Make sure to:
+        1. Address the specific error mentioned above
+        2. Follow all the Dask rules mentioned in the persona
+        3. Ensure the code is syntactically correct
+        4. Test your logic before providing the response
+        """
+        return error_prompt
+
     def get_full_prompt(
         self,
         df: dd.DataFrame,
         goal: str,
         prev_agent_query: Optional[str] = None,
         output_df: Optional[dd.DataFrame] = None,
+        error_msg: Optional[str] = None,
+        failed_code: Optional[str] = None,
     ) -> str:
         prompt = self.get_persona_prompt()
         prompt += self.get_schema_prompt(df)
         prompt += self.get_goal_prompt(goal)
+        
         if prev_agent_query and output_df is not None:
             prompt += self.get_context_prompt(prev_agent_query, output_df)
+        
+        if error_msg and failed_code:
+            prompt += self.get_error_prompt(error_msg, failed_code)
+            
         return prompt
 
     def _preproc_code(self, code: List[str]) -> str:
@@ -107,15 +132,32 @@ class Agent(ABC):
             lines = lines[:-1]
         return "\n".join(lines).strip()
 
-    def _execute_llm_output(self, llm_output: str) -> bool:
-        self.runtime.execute(llm_output)
-        if self.runtime.get("DONE", False):
-            return True
-        if self.runtime.get("QUERY", False):
-            self.runtime["QUERY"] = False
-            self.prev_query = self.runtime.get("QUERY", None)
-            self.output_df = self.runtime["OUTPUT_DF"]  # TODO: what if this is not set?
-        return False
+    def _execute_llm_output(self, llm_output: str) -> tuple[bool, Optional[str]]:
+        """
+        Execute LLM output and return (success, error_message)
+        """
+        try:
+            self.runtime.execute(llm_output)
+            
+            # Check if task is done first
+            if self.runtime.get("DONE", False):
+                return True, None
+                
+            # Handle query case
+            if self.runtime.get("QUERY", False):
+                self.runtime["QUERY"] = False
+                self.prev_query = llm_output  # Store the query code
+                self.output_df = self.runtime["OUTPUT_DF"]
+                
+                # Check again if DONE was set to True in the same execution
+                if self.runtime.get("DONE", False):
+                    return True, None
+                    
+            return False, None
+            
+        except Exception as e:
+            error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+            return False, error_msg
 
     def __init__(self, llm: LLM):
         self.llm = llm
@@ -132,15 +174,81 @@ class Agent(ABC):
         self.prev_query = None
         self.output_df = None
 
-    def do(self, task: str, df: dd.DataFrame) -> dd.DataFrame:
+    def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5) -> dd.DataFrame:
+        """
+        Execute task with evaluation loop and error handling
+        
+        Args:
+            task: The task description
+            df: The input dataframe
+            max_iterations: Maximum number of correction attempts (default: 5)
+        """
         self._set_df(df)
-        prompt = self.get_full_prompt(df, task, self.prev_query, self.output_df)
+        
+        iteration = 0
         done = False
-        while not done:
-            llm_output = self.llm(prompt)
-            code = self._preproc_code(llm_output)
-            if not code:
-                raise ValueError("LLM output is empty or invalid.")
-            done = self._execute_llm_output(code)
-            done = True
+        last_error = None
+        last_failed_code = None
+        
+        while not done and iteration < max_iterations:
+            iteration += 1
+            print(f"Iteration {iteration}/{max_iterations}")
+            
+            # Build prompt with error context if available
+            prompt = self.get_full_prompt(
+                df, 
+                task, 
+                self.prev_query, 
+                self.output_df,
+                last_error,
+                last_failed_code
+            )
+            
+            # Get LLM response
+            try:
+                llm_output = self.llm(prompt)
+                code = self._preproc_code(llm_output)
+                
+                if not code:
+                    last_error = "LLM output is empty or invalid"
+                    last_failed_code = llm_output
+                    print(f"  Error: {last_error}")
+                    continue
+                
+                print(f"  Executing code:\n{code[:200]}{'...' if len(code) > 200 else ''}")
+                
+                # Execute and handle results
+                success, error_msg = self._execute_llm_output(code)
+                
+                if success:
+                    done = True
+                    print(f"  ✅ Task completed successfully in iteration {iteration}")
+                elif error_msg:
+                    last_error = error_msg
+                    last_failed_code = code
+                    print(f"  ❌ Execution error: {error_msg.split(chr(10))[0]}")  # Print first line of error
+                else:
+                    # Code executed successfully but task not done (probably QUERY=True case)
+                    print(f"  🔄 Code executed, continuing...")
+                    # Reset error context since this iteration was successful
+                    last_error = None
+                    last_failed_code = None
+                    
+            except Exception as e:
+                last_error = f"LLM call failed: {str(e)}"
+                last_failed_code = None
+                print(f"  ❌ LLM error: {last_error}")
+        
+        if not done:
+            if last_error:
+                raise RuntimeError(
+                    f"Agent failed to complete task after {max_iterations} iterations. "
+                    f"Last error: {last_error}"
+                )
+            else:
+                raise RuntimeError(
+                    f"Agent failed to complete task after {max_iterations} iterations. "
+                    f"Task may be too complex or require more iterations."
+                )
+        
         return self.runtime["df"]
