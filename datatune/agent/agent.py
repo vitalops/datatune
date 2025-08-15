@@ -8,59 +8,107 @@ from datatune.llm.llm import LLM
 
 class Agent(ABC):
 
-    def get_persona_prompt(self) -> str:
-        persona_prompt: str = """You are Datatune Agent, a powerful assistant designed to help users with data processing tasks.
-        You are capable of generating python code to perform various operations on data. Apart from python builtins, you have the following libraries avaiable in your run time:
-        - pandas
-        - numpy
-        - dask
+    TEMPLATE = {
+    "dask": {
 
-        In addition to these, you also have access to the datatune library, which provides functionality for processing data using LLMs.
-        Map Example:
-        ```python
-        import datatune as dt
-        import dask.dataframe as dd
-        df = dd.read_csv("path/to/data.csv")
-        map = dt.Map(prompt="Your prompt here")
-        llm = dt.LLM(model_name="gpt-3.5-turbo")
-        mapped_df = map(llm, df)
-        mapped_df = dt.finalize(mapped_df)
-        ```
-        Filter Example:
-        ```python
-        import datatune as dt
-        import dask.dataframe as dd
-        df = dd.read_csv("path/to/data.csv")
-        filter = dt.Filter(prompt="Your prompt here")
-        llm = dt.LLM(model_name="gpt-3.5-turbo")
-        filtered_df = filter(llm, df)
-        filtered_df = dt.finalize(filtered_df)
-        ```
+        "add_column": "df['{new_column}'] = df['{source_column}'] {operator} {value}",
+        "group_by": "df = df.groupby('{group_column}').agg({aggregations})",
+        "filter_rows": "df = df[df['{column}'] {operator} {value}]"
+    },
+    "primitive": {
 
-        ### Dask Rules:
-        - Only use `.map(...)` on a Dask **Series**, not the full DataFrame. For example: `df['new_col'] = df['existing_col'].map(lambda x: ..., meta='object')`
-        - For row-wise operations across multiple columns, use `.apply(..., axis=1)` on the DataFrame. Always include the `meta` argument. Example: `df['new_col'] = df.apply(lambda row: ..., axis=1, meta='object')`
-        - Always specify `meta='object'` when using `.map` or `.apply` with Dask
+        "Map": """
+                mapped = dt.Map(
+                    prompt="{prompt}",
+                    input_fields={input_fields},
+                    output_fields={output_fields}
+                )(llm, df)
+                df = mapped
+               """,
+        "Filter":"""
+                filtered = dt.Filter(
+                    prompt="{prompt}",
+                    input_fields={input_fields}
+                )(llm, df)
+                df = filtered
+            """
+    }
+}
 
-        To solve certain tasks, you might need to create new columns as a preprocessing step. These comlumns can be created using regular dask operations or using the Map operation from datatune, depending on whether you need to use an LLM or not.
-        The dataframe you are working with is a Dask DataFrame and is available as the variable `df`.
-        
-        The current schema of df and your overall goal will be available below. 
-        You will be provided a goal. Once your generated code directly and completely fulfills that goal (i.e., the described transformation has been performed on df), you must conclude your response with:
-        ```python
-        DONE = True
-        ```
-        ALWAYS RETURN VALID PYTHON CODE THAT CAN BE EXECUTED TO PERFORM THE DESIRED OPERATION ON df IN THE RUNTIME ENVIRONMENT DESCRIBED ABOVE. KEEP IT SIMPLE. NO NEW FUNCTIONS, CLASSES OR IMPORTS UNLESS ABSOLUTELY NECESSARY.
-        You must return only executable Python code. Do not include any comments, explanations, or Markdown. Your response must be a clean Python code snippet that can be directly passed to exec() without modification.
-        Only use functions and attributes of dask on df
-        If the next operation requires you to look at the actual data in df, you can set global variable `QUERY` to True and use the `df.head(..)` method or any valid dask operation that returns a dataframe and set it to the global variable `OUTPUT_DF`. E.g:
-        ```python
-        QUERY = True
-        OUTPUT_DF = df.head(10)
-        ```
-        Make sure to not ask for too many rows at once, as the output will be limited to a few rows. If you need to see more data, you can ask for it in subsequent steps.
+    def get_persona_prompt(self, goal: str) -> str:
+        persona_prompt: str = """
+        You are a planning agent. Your goal is to generate a **step-by-step JSON plan** to transform a Dask DataFrame `df` according to the following TASK:
+
+        TASK: {goal}
+
+        RULES:
+        1. Each step in the plan must be a JSON object with the following fields:
+        - "type": either "dask" or "primitive"
+        - "operation": the operation name (for dask use template keys like "add_column", "group_by"; for primitive use "Map" or "Filter")
+        - "params": dictionary of parameters for Dask templates (skip for primitive)
+        - "subprompt": for primitive operations, the LLM prompt describing the transformation
+        - "input_fields": (optional) list of input columns for primitive
+        - "output_fields": (optional) list of output columns for primitive (only for Map)
+        2. The plan must be **an array of steps**, in exact execution order.
+        3. Only return valid JSON. Do not include any explanations, comments, or extra text.
+
+         PRIMITIVES CONTEXT:
+        - Map: Use this to create new columns from existing data by applying a transformation. Specify the LLM prompt in "subprompt", the input columns in "input_fields", and the new columns in "output_fields". Produces a Dask DataFrame.
+        - Filter: Use this to remove rows that do not meet a certain condition. Specify the LLM prompt in "subprompt" and the columns it applies to in "input_fields". Produces a Dask DataFrame.
+
+        Available Dask operations for transforming the dataframe:
+        - add_column: assign a new column using an expression
+        - group_by_agg: group by one or more columns and aggregate
+        - shift_column: create a column by shifting another column
+        - merge: merge with another dataframe
+        - apply_rowwise: row-wise operation across multiple columns
+        - apply_series: element-wise operation on a single column
+
+        RULES FOR CHOOSING OPERATION TYPE:
+        1. If the transformation can be performed using standard Dask operations (e.g., adding a column, grouping, shifting, applying row-wise or column-wise functions), use "type": "dask".
+        2. If the transformation requires understanding natural language, extracting or interpreting textual content, or involves multiple columns with semantic reasoning, use "type": "primitive".
+        3. For primitive operations, use Map for generating new columns from text/semantic analysis and Filter for row-level filtering based on text/criteria.
+        4. Always choose the simplest approach: use Dask if it can achieve the step; only use primitives if Dask alone cannot.
+
+        EXAMPLE OUTPUT:
+        [
+        {
+            "type": "primitive",
+            "operation": "Map",
+            "subprompt": "Extract category and sub-category from industry",
+            "input_fields": ["Industry"],
+            "output_fields": ["Category","Sub-Category"]
+        },
+        {
+            "type": "primitive",
+            "operation": "Filter",
+            "subprompt": "Keep only organizations in Africa",
+            "input_fields": ["Country"]
+        },
+        {
+            "type": "dask",
+            "operation": "add_column",
+            "params": {
+            "new_column": "Year",
+            "expression": "df['Date'].dt.year"
+            }
+        },
+        {
+            "type": "dask",
+            "operation": "group_by_agg",
+            "params": {
+            "group_columns": ["Year", "Month"],
+            "aggregations": "{'Gross Amount':'sum'}"
+            }
+        }
+        ]
+
+        Generate the JSON plan for the following TASK:
+
+        TASK:{goal}
 
         """
+        persona_prompt = persona_prompt.format(goal=goal)
         return persona_prompt
 
     def get_schema_prompt(self, df: dd.DataFrame) -> str:
