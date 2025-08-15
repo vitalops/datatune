@@ -1,9 +1,10 @@
 from abc import ABC
 import dask.dataframe as dd
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import traceback
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
+import json
 
 
 class Agent(ABC):
@@ -19,16 +20,16 @@ class Agent(ABC):
 
         "Map": """
                 mapped = dt.Map(
-                    prompt="{prompt}",
-                    input_fields={input_fields},
-                    output_fields={output_fields}
+                    prompt="{{subprompt}}",
+                    input_fields={{input_fields}},
+                    output_fields={{output_fields}}
                 )(llm, df)
                 df = mapped
                """,
         "Filter":"""
                 filtered = dt.Filter(
-                    prompt="{prompt}",
-                    input_fields={input_fields}
+                    prompt="{{subprompt}}",
+                    input_fields={{input_fields}}
                 )(llm, df)
                 df = filtered
             """
@@ -75,15 +76,19 @@ class Agent(ABC):
         {
             "type": "primitive",
             "operation": "Map",
-            "subprompt": "Extract category and sub-category from industry",
-            "input_fields": ["Industry"],
-            "output_fields": ["Category","Sub-Category"]
+            "params": {
+                "subprompt": "Extract category and sub-category from industry",
+                "input_fields": ["Industry"],
+                "output_fields": ["Category","Sub-Category"]
+            }
         },
         {
             "type": "primitive",
             "operation": "Filter",
-            "subprompt": "Keep only organizations in Africa",
-            "input_fields": ["Country"]
+            "params": {
+                "subprompt": "Keep only organizations in Africa",
+                "input_fields": ["Country"]
+            }
         },
         {
             "type": "dask",
@@ -106,6 +111,8 @@ class Agent(ABC):
         Generate the JSON plan for the following TASK:
 
         TASK:{goal}
+        For the Dask DataFrame schema given below:
+        
 
         """
         persona_prompt = persona_prompt.format(goal=goal)
@@ -133,19 +140,17 @@ class Agent(ABC):
         # TODO: Hard limit on number of rows
         return context_prompt
 
-    def get_error_prompt(self, error_msg: str, failed_code: str) -> str:
+    def get_error_prompt(self, error_msg: str, failed_step: Dict) -> str:
         error_prompt: str = f"""
         The previous code execution failed with the following error:
         Error: {error_msg}
-        
-        Failed code:
-        {failed_code}
-        
-        Please fix the error and provide corrected code. Make sure to:
-        1. Address the specific error mentioned above
-        2. Follow all the Dask rules mentioned in the persona
-        3. Ensure the code is syntactically correct
-        4. Test your logic before providing the response
+
+        Failed step:
+        {failed_step}
+
+        Provide the json plan with the corrected step. Make sure to:
+        1. Address the specific error mentioned above.
+        2. DO NOT include any explanations or comments.
         """
         return error_prompt
 
@@ -158,59 +163,45 @@ class Agent(ABC):
         error_msg: Optional[str] = None,
         failed_code: Optional[str] = None,
     ) -> str:
-        prompt = self.get_persona_prompt()
+        prompt = self.get_persona_prompt(goal)
         prompt += self.get_schema_prompt(df)
-        prompt += self.get_goal_prompt(goal)
-        
-        if prev_agent_query and output_df is not None:
-            prompt += self.get_context_prompt(prev_agent_query, output_df)
-        
-        if error_msg and failed_code:
-            prompt += self.get_error_prompt(error_msg, failed_code)
-            
+
         return prompt
 
-    def _preproc_code(self, code: List[str]) -> str:
-        # TODO: make more robust
-        code = code[0]
-        lines = code.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].endswith("```"):
-            lines = lines[:-1]
-        return "\n".join(lines).strip()
+    def get_plan(self,prompt,error_msg):
+        prompt+=error_msg
+        for i in range(5):
+            try:
+                llm_output = self.llm(prompt)
+                plan = json.loads(llm_output[0])
+                break
+            except json.JSONDecodeError as e:
+                prompt += f"""Only produce valid JSON with no other text or explanations."""
+                continue
+        return plan
 
-    def _execute_llm_output(self, llm_output: str) -> tuple[bool, Optional[str]]:
+    def _execute_step(self, step: Dict) -> tuple[bool, Optional[str]]:
         """
         Execute LLM output and return (success, error_message)
         """
         try:
-            self.runtime.execute(llm_output)
-            
-            # Check if task is done first
-            if self.runtime.get("DONE", False):
-                _ = self.runtime["df"].head()
-                return True, None
-                
-            # Handle query case
-            if self.runtime.get("QUERY", False):
-                self.runtime["QUERY"] = False
-                self.prev_query = llm_output  # Store the query code
-                self.output_df = self.runtime["OUTPUT_DF"]
-                
-                # Check again if DONE was set to True in the same execution
-                if self.runtime.get("DONE", False):
-                    _ = self.runtime["df"].head() 
-                    return True, None
-                    
-            return False, None
+            if step["type"] == "dask":
+                template = self.TEMPLATE["dask"][step["operation"]].format(**step["params"])
+                self.runtime.execute(template)
+            elif step["type"] == "primitive":
+                template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
+                self.runtime.execute(template)
+            else:
+                raise ValueError(f"Unknown step type: {step['type']}")
+            return None
             
         except Exception as e:
             error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
-            return False, error_msg
+            return error_msg
 
     def __init__(self, llm: LLM):
         self.llm = llm
+        self.history: List[Dict[str, Any]] = []
 
     def _set_df(self, df: dd.DataFrame):
         self.df = df
@@ -239,66 +230,19 @@ class Agent(ABC):
         done = False
         last_error = None
         last_failed_code = None
-        
+        error_msg = ""
+        prompt = self.get_full_prompt(
+            df, 
+            task 
+        )
+       
+
         while not done and iteration < max_iterations:
-            iteration += 1
-            print(f"Iteration {iteration}/{max_iterations}")
-            
-            # Build prompt with error context if available
-            prompt = self.get_full_prompt(
-                df, 
-                task, 
-                self.prev_query, 
-                self.output_df,
-                last_error,
-                last_failed_code
-            )
-            
-            # Get LLM response
-            try:
-                llm_output = self.llm(prompt)
-                code = self._preproc_code(llm_output)
-                
-                if not code:
-                    last_error = "LLM output is empty or invalid"
-                    last_failed_code = llm_output
-                    print(f"  Error: {last_error}")
-                    continue
-                
-                print(f"  Executing code:\n{code[:200]}{'...' if len(code) > 200 else ''}")
-                
-                # Execute and handle results
-                success, error_msg = self._execute_llm_output(code)
-                
-                if success:
-                    done = True
-                    print(f"  ✅ Task completed successfully in iteration {iteration}")
-                elif error_msg:
-                    last_error = error_msg
-                    last_failed_code = code
-                    print(f"  ❌ Execution error: {error_msg.split(chr(10))[0]}")  # Print first line of error
-                else:
-                    # Code executed successfully but task not done (probably QUERY=True case)
-                    print(f"  🔄 Code executed, continuing...")
-                    # Reset error context since this iteration was successful
-                    last_error = None
-                    last_failed_code = None
-                    
-            except Exception as e:
-                last_error = f"LLM call failed: {str(e)}"
-                last_failed_code = None
-                print(f"  ❌ LLM error: {last_error}")
-        
-        if not done:
-            if last_error:
-                raise RuntimeError(
-                    f"Agent failed to complete task after {max_iterations} iterations. "
-                    f"Last error: {last_error}"
-                )
-            else:
-                raise RuntimeError(
-                    f"Agent failed to complete task after {max_iterations} iterations. "
-                    f"Task may be too complex or require more iterations."
-                )
-        
-        return self.runtime["df"]
+            iteration+=1
+            plan = self.get_plan(prompt,error_msg)
+            for step in plan:
+                error_msg = self._execute_step(step)
+                if error_msg:
+                    error_msg = self.get_error_prompt(error_msg, step)
+                    break
+            continue
