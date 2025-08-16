@@ -5,34 +5,50 @@ import traceback
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 import json
+import textwrap
 
 
 class Agent(ABC):
 
     TEMPLATE = {
     "dask": {
+        # Add / transform columns
+        "add_column": "df['{new_column}'] = {expression}",
+        "rename_column": "df = df.rename(columns={{'{old_name}': '{new_name}'}})",
+        "apply_function": "df['{new_column}'] = df['{source_column}'].apply({function}, meta=('{new_column}', '{dtype}'))",
 
-        "add_column": "df['{new_column}'] = df['{source_column}'] {operator} {value}",
-        "group_by": "df = df.groupby('{group_column}').agg({aggregations})",
-        "filter_rows": "df = df[df['{column}'] {operator} {value}]"
+        # Filtering / selecting
+        "filter_rows": "df = df[df['{column}'] {operator} {value}]",
+        "select_columns": "df = df[{columns}]",
+        "drop_column": "df = df.drop(columns={columns})",
+
+        # Grouping and aggregation
+        "group_by_agg": "df = df.groupby('{group_column}').agg({aggregations}).reset_index()",
+
+        # Sorting / ordering
+        "sort_values": "df = df.sort_values(by='{column}', ascending={ascending})",
+
+        # Combining
+        "merge": "df = df.merge({other_df}, on='{on_column}', how='{how}')",
+        "concat": "df = dd.concat([{df_list}], axis={axis})"
     },
     "primitive": {
 
-        "Map": """
-                mapped = dt.Map(
-                    prompt="{{subprompt}}",
-                    input_fields={{input_fields}},
-                    output_fields={{output_fields}}
-                )(llm, df)
-                df = mapped
-               """,
-        "Filter":"""
-                filtered = dt.Filter(
-                    prompt="{{subprompt}}",
-                    input_fields={{input_fields}}
-                )(llm, df)
-                df = filtered
-            """
+        "Map": textwrap.dedent("""\
+            mapped = Map(
+                prompt="{subprompt}",
+                input_fields={input_fields},
+                output_fields={output_fields}
+            )(llm, df)
+            df = mapped
+        """),
+        "Filter": textwrap.dedent("""\
+            filtered = Filter(
+                prompt="{subprompt}",
+                input_fields={input_fields}
+            )(llm, df)
+            df = filtered
+        """)
     }
 }
 
@@ -108,6 +124,12 @@ class Agent(ABC):
         }}
         ]
 
+        INSTRUCTIONS: 1.ONLY USE THE PARAM NAMES FROM THE TEMPLATE GIVEN BELOW
+        {TEMPLATE}
+
+        2. When generating a plan, always prefer using Dask operations for any data transformation that can be expressed programmatically (e.g., filtering, grouping, aggregating, adding columns, renaming, merging, sorting).
+           Only use primitive operations (such as Map, Filter, Finalize) when the task requires contextual understanding of the data's meaning that cannot be achieved through Dask alone (e.g., semantic extraction, classification, interpretation, natural language reasoning).
+
         Generate the JSON plan for the following TASK:
 
         TASK:{goal}
@@ -115,7 +137,7 @@ class Agent(ABC):
         
 
         """
-        persona_prompt = persona_prompt.format(goal=goal)
+        persona_prompt = persona_prompt.format(goal=goal, TEMPLATE=self.TEMPLATE)
         return persona_prompt
 
     def get_schema_prompt(self, df: dd.DataFrame) -> str:
@@ -188,9 +210,11 @@ class Agent(ABC):
             if step["type"] == "dask":
                 template = self.TEMPLATE["dask"][step["operation"]].format(**step["params"])
                 self.runtime.execute(template)
+                self.runtime.execute("_ = df.head()")
             elif step["type"] == "primitive":
                 template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
                 self.runtime.execute(template)
+                self.runtime.execute("_ = df.head()")
             else:
                 raise ValueError(f"Unknown step type: {step['type']}")
             return None
@@ -209,8 +233,9 @@ class Agent(ABC):
         runtime["df"] = df
         runtime["DONE"] = False
         runtime["QUERY"] = False
+        runtime["llm"] = self.llm
         runtime.execute(
-            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt"
+            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nfrom datatune.datatune.core.map import Map\nfrom datatune.datatune.core.filter import Filter\n"
         )
         self.prev_query = None
         self.output_df = None
@@ -224,11 +249,11 @@ class Agent(ABC):
             df: The input dataframe
             max_iterations: Maximum number of correction attempts (default: 5)
         """
-        self._set_df(df)
         
+        self._set_df(df)
         iteration = 0
         done = False
-        error_msg = ""
+        error_msg = " "
         prompt = self.get_full_prompt(
             df, 
             task 
@@ -236,18 +261,23 @@ class Agent(ABC):
        
 
         while not done and iteration < max_iterations:
-            iteration+=1
+            iteration += 1
+            self._set_df(df)
             plan = self.get_plan(prompt,error_msg)
+            print(f"📝Plan: {plan}")
             for step in plan:
                 error_msg = self._execute_step(step)
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
+                    print(f"❌Step Failed: {error_msg}")
                     self.history = []
                     break  
                 else:
                     print(f"✅ Executed step: {step}")
                     self.history.append(step)
 
-            if self.history:
+            if not self.history:
                 continue
+            else:
+                break
         return self.runtime["df"]
