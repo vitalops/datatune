@@ -209,12 +209,10 @@ class Agent(ABC):
         try:
             if step["type"] == "dask":
                 template = self.TEMPLATE["dask"][step["operation"]].format(**step["params"])
-                self.runtime.execute(template)
-                self.runtime.execute("_ = df.head()")
+                self.runtime.execute(template+"\n_ = df.head()")
             elif step["type"] == "primitive":
                 template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
-                self.runtime.execute(template)
-                self.runtime.execute("_ = df.head()")
+                self.runtime.execute(template+"\n_ = df.head()")
             else:
                 raise ValueError(f"Unknown step type: {step['type']}")
             return None
@@ -266,6 +264,7 @@ class Agent(ABC):
             plan = self.get_plan(prompt,error_msg)
             print(f"📝Plan: {plan}")
             for step in plan:
+                print(f"🔍Executing step: {step} {iteration}")
                 error_msg = self._execute_step(step)
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
