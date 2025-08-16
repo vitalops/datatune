@@ -73,39 +73,39 @@ class Agent(ABC):
 
         EXAMPLE OUTPUT:
         [
-        {
+        {{
             "type": "primitive",
             "operation": "Map",
-            "params": {
+            "params": {{
                 "subprompt": "Extract category and sub-category from industry",
                 "input_fields": ["Industry"],
                 "output_fields": ["Category","Sub-Category"]
-            }
-        },
-        {
+            }},
+        }},
+        {{
             "type": "primitive",
             "operation": "Filter",
-            "params": {
+            "params": {{
                 "subprompt": "Keep only organizations in Africa",
                 "input_fields": ["Country"]
-            }
-        },
-        {
+            }},
+        }},
+        {{
             "type": "dask",
             "operation": "add_column",
-            "params": {
+            "params": {{
             "new_column": "Year",
             "expression": "df['Date'].dt.year"
-            }
-        },
-        {
+            }}
+        }},
+        {{
             "type": "dask",
             "operation": "group_by_agg",
-            "params": {
+            "params": {{
             "group_columns": ["Year", "Month"],
-            "aggregations": "{'Gross Amount':'sum'}"
-            }
-        }
+            "aggregations": {{'Gross Amount':'sum'}}
+            }}
+        }}
         ]
 
         Generate the JSON plan for the following TASK:
@@ -228,8 +228,6 @@ class Agent(ABC):
         
         iteration = 0
         done = False
-        last_error = None
-        last_failed_code = None
         error_msg = ""
         prompt = self.get_full_prompt(
             df, 
@@ -244,5 +242,12 @@ class Agent(ABC):
                 error_msg = self._execute_step(step)
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
-                    break
-            continue
+                    self.history = []
+                    break  
+                else:
+                    print(f"✅ Executed step: {step}")
+                    self.history.append(step)
+
+            if self.history:
+                continue
+        return self.runtime["df"]
