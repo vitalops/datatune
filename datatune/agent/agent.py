@@ -35,7 +35,7 @@ class Agent(ABC):
     "primitive": {
 
         "Map": textwrap.dedent("""\
-            mapped = dt.Map(
+            mapped = Map(
                 prompt="{subprompt}",
                 input_fields={input_fields},
                 output_fields={output_fields}
@@ -43,7 +43,7 @@ class Agent(ABC):
             df = mapped
         """),
         "Filter": textwrap.dedent("""\
-            filtered = dt.Filter(
+            filtered = Filter(
                 prompt="{subprompt}",
                 input_fields={input_fields}
             )(llm, df)
@@ -124,7 +124,7 @@ class Agent(ABC):
         }}
         ]
 
-        INSTRUCTIONS: 1.ONLY USE THE PARAM NAMES FROM THE TEMPLATE GIVEN BELOW
+        INSTRUCTIONS: 1.ONLY USE OPERATIONS AND PARAM NAMES FROM THE TEMPLATE GIVEN BELOW
         {TEMPLATE}
 
         2. When generating a plan, always prefer using Dask operations for any data transformation that can be expressed programmatically (e.g., filtering, grouping, aggregating, adding columns, renaming, merging, sorting).
@@ -146,22 +146,6 @@ class Agent(ABC):
         """
         return schema_prompt
 
-    def get_goal_prompt(self, goal) -> str:
-        goal_prompt: str = f"""Your overall goal is as follows:
-        {goal}.
-        """
-        return goal_prompt
-
-    def get_context_prompt(self, query: str, output_df: dd.DataFrame) -> str:
-        context_prompt: str = f"""you previously asked for the output of the following query:
-        {query}
-
-        The output dataframe after the last operation is as follows:
-        {output_df.head().to_string()}
-        """
-        # TODO: Hard limit on number of rows
-        return context_prompt
-
     def get_error_prompt(self, error_msg: str, failed_step: Dict) -> str:
         error_prompt: str = f"""
         The previous code execution failed with the following error:
@@ -180,10 +164,6 @@ class Agent(ABC):
         self,
         df: dd.DataFrame,
         goal: str,
-        prev_agent_query: Optional[str] = None,
-        output_df: Optional[dd.DataFrame] = None,
-        error_msg: Optional[str] = None,
-        failed_code: Optional[str] = None,
     ) -> str:
         prompt = self.get_persona_prompt(goal)
         prompt += self.get_schema_prompt(df)
@@ -212,7 +192,7 @@ class Agent(ABC):
                 self.runtime.execute(template+"\n_ = df.head()")
             elif step["type"] == "primitive":
                 template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
-                self.runtime.execute(template+"\n_ = df.head()")
+                self.runtime.execute(template)
             else:
                 raise ValueError(f"Unknown step type: {step['type']}")
             return None
@@ -229,14 +209,10 @@ class Agent(ABC):
         self.df = df
         runtime = self.runtime = Runtime()
         runtime["df"] = df
-        runtime["DONE"] = False
-        runtime["QUERY"] = False
         runtime["llm"] = self.llm
         runtime.execute(
-            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
+            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nfrom datatune.datatune.core.map import Map\nfrom datatune.datatune.core.filter import Filter\n"
         )
-        self.prev_query = None
-        self.output_df = None
 
     def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5) -> dd.DataFrame:
         """
@@ -250,17 +226,14 @@ class Agent(ABC):
         
         self._set_df(df)
         iteration = 0
-        done = False
         error_msg = " "
         prompt = self.get_full_prompt(
             df, 
             task 
         )
-       
 
-        while not done and iteration < max_iterations:
+        while iteration < max_iterations:
             iteration += 1
-            self._set_df(df)
             plan = self.get_plan(prompt,error_msg)
             print(f"📝Plan: {plan}")
             for step in plan:
