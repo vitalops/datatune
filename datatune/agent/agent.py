@@ -35,7 +35,7 @@ class Agent(ABC):
     "primitive": {
 
         "Map": textwrap.dedent("""\
-            mapped = Map(
+            mapped = dt.Map(
                 prompt="{subprompt}",
                 input_fields={input_fields},
                 output_fields={output_fields}
@@ -43,7 +43,7 @@ class Agent(ABC):
             df = mapped
         """),
         "Filter": textwrap.dedent("""\
-            filtered = Filter(
+            filtered = dt.Filter(
                 prompt="{subprompt}",
                 input_fields={input_fields}
             )(llm, df)
@@ -127,8 +127,9 @@ class Agent(ABC):
         INSTRUCTIONS: 1.ONLY USE OPERATIONS AND PARAM NAMES FROM THE TEMPLATE GIVEN BELOW
         {TEMPLATE}
 
-        2. When generating a plan, always prefer using Dask operations for any data transformation that can be expressed programmatically (e.g., filtering, grouping, aggregating, adding columns, renaming, merging, sorting).
-           Only use primitive operations (such as Map, Filter, Finalize) when the task requires contextual understanding of the data's meaning that cannot be achieved through Dask alone (e.g., semantic extraction, classification, interpretation, natural language reasoning).
+        2. Use existing dask functions in expressions
+        3. When generating a plan, always prefer using Dask operations for any data transformation that can be expressed programmatically (e.g., filtering, grouping, aggregating, adding columns, renaming, merging, sorting).
+           Only use primitive operations (such as Map, Filter) when the task requires contextual understanding of the data's meaning that cannot be achieved through Dask alone (e.g., semantic extraction, classification, interpretation, natural language reasoning).
 
         Generate the JSON plan for the following TASK:
 
@@ -211,7 +212,7 @@ class Agent(ABC):
         runtime["df"] = df
         runtime["llm"] = self.llm
         runtime.execute(
-            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nfrom datatune.datatune.core.map import Map\nfrom datatune.datatune.core.filter import Filter\n"
+            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
 
     def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5) -> dd.DataFrame:
