@@ -1,64 +1,144 @@
 from abc import ABC
 import dask.dataframe as dd
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
+import traceback
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
+import json
+import textwrap
 
 
 class Agent(ABC):
 
-    def get_persona_prompt(self) -> str:
-        persona_prompt: str = """You are Datatune Agent, a powerful assistant designed to help users with data processing tasks.
-        You are capable of generating python code to perform various operations on data. Apart from python builtins, you have the following libraries avaiable in your run time:
-        - pandas
-        - numpy
-        - dask
+    TEMPLATE = {
+    "dask": {
+        # Add / transform columns
+        "add_column": "df['{new_column}'] = {expression}",
+        "rename_column": "df = df.rename(columns={{'{old_name}': '{new_name}'}})",
+        "apply_function": "df['{new_column}'] = df['{source_column}'].apply({function}, meta=('{new_column}', '{dtype}'))",
 
-        In addition to these, you also have access to the datatune library, which provides functionality for processing data using LLMs.
-        Map Example:
-        ```python
-        import datatune as dt
-        import dask.dataframe as dd
-        df = dd.read_csv("path/to/data.csv")
-        map = dt.Map(prompt="Your prompt here")
-        llm = dt.LLM(model_name="gpt-3.5-turbo")
-        mapped_df = map(llm, df)
-        mapped_df = dt.finalize(mapped_df)
-        ```
-        Filter Example:
-        ```python
-        import datatune as dt
-        import dask.dataframe as dd
-        df = dd.read_csv("path/to/data.csv")
-        filter = dt.Filter(prompt="Your prompt here")
-        llm = dt.LLM(model_name="gpt-3.5-turbo")
-        filtered_df = filter(llm, df)
-        filtered_df = dt.finalize(filtered_df)
-        ```
+        # Filtering / selecting
+        "filter_rows": "df = df[df['{column}'] {operator} {value}]",
+        "select_columns": "df = df[{columns}]",
+        "drop_column": "df = df.drop(columns={columns})",
 
-        ### Dask Rules:
-        - Only use `.map(...)` on a Dask **Series**, not the full DataFrame. For example: `df['new_col'] = df['existing_col'].map(lambda x: ..., meta='object')`
-        - For row-wise operations across multiple columns, use `.apply(..., axis=1)` on the DataFrame. Always include the `meta` argument. Example: `df['new_col'] = df.apply(lambda row: ..., axis=1, meta='object')`
-        - Always specify `meta='object'` when using `.map` or `.apply` with Dask
+        # Grouping and aggregation
+        "group_by_agg": "df = df.groupby('{group_column}').agg({aggregations}).reset_index()",
 
-        To solve certain tasks, you might need to create new columns as a preprocessing step. These comlumns can be created using regular dask operations or using the Map operation from datatune, depending on whether you need to use an LLM or not.
-        The dataframe you are working with is a Dask DataFrame and is available as the variable `df`.
+        # Sorting / ordering
+        "sort_values": "df = df.sort_values(by='{column}', ascending={ascending})",
+
+        # Combining
+        "merge": "df = df.merge({other_df}, on='{on_column}', how='{how}')",
+        "concat": "df = dd.concat([{df_list}], axis={axis})"
+    },
+    "primitive": {
+
+        "Map": textwrap.dedent("""\
+            mapped = dt.Map(
+                prompt="{subprompt}",
+                input_fields={input_fields},
+                output_fields={output_fields}
+            )(llm, df)
+            df = mapped
+        """),
+        "Filter": textwrap.dedent("""\
+            filtered = dt.Filter(
+                prompt="{subprompt}",
+                input_fields={input_fields}
+            )(llm, df)
+            df = filtered
+        """)
+    }
+}
+
+    def get_persona_prompt(self, goal: str) -> str:
+        persona_prompt: str = """
+        You are a planning agent. Your goal is to generate a **step-by-step JSON plan** to transform a Dask DataFrame `df` according to the following TASK:
+
+        TASK: {goal}
+
+        RULES:
+        1. Each step in the plan must be a JSON object with the following fields:
+        - "type": either "dask" or "primitive"
+        - "operation": the operation name (for dask use template keys like "add_column", "group_by"; for primitive use "Map" or "Filter")
+        - "params": dictionary of parameters for Dask templates (skip for primitive)
+        - "subprompt": for primitive operations, the LLM prompt describing the transformation
+        - "input_fields": (optional) list of input columns for primitive
+        - "output_fields": (optional) list of output columns for primitive (only for Map)
+        2. The plan must be **an array of steps**, in exact execution order.
+        3. Only return valid JSON. Do not include any explanations, comments, or extra text.
+
+         PRIMITIVES CONTEXT:
+        - Map: Use this to create new columns from existing data by applying a transformation. Specify the LLM prompt in "subprompt", the input columns in "input_fields", and the new columns in "output_fields". Produces a Dask DataFrame.
+        - Filter: Use this to remove rows that do not meet a certain condition. Specify the LLM prompt in "subprompt" and the columns it applies to in "input_fields". Produces a Dask DataFrame.
+
+        Available Dask operations for transforming the dataframe:
+        - add_column: assign a new column using an expression
+        - group_by_agg: group by one or more columns and aggregate
+        - shift_column: create a column by shifting another column
+        - merge: merge with another dataframe
+        - apply_rowwise: row-wise operation across multiple columns
+        - apply_series: element-wise operation on a single column
+
+        RULES FOR CHOOSING OPERATION TYPE:
+        1. If the transformation can be performed using standard Dask operations (e.g., adding a column, grouping, shifting, applying row-wise or column-wise functions), use "type": "dask".
+        2. If the transformation requires understanding natural language, extracting or interpreting textual content, or involves multiple columns with semantic reasoning, use "type": "primitive".
+        3. For primitive operations, use Map for generating new columns from text/semantic analysis and Filter for row-level filtering based on text/criteria.
+        4. Always choose the simplest approach: use Dask if it can achieve the step; only use primitives if Dask alone cannot.
+
+        EXAMPLE OUTPUT:
+        [
+        {{
+            "type": "primitive",
+            "operation": "Map",
+            "params": {{
+                "subprompt": "Extract category and sub-category from industry",
+                "input_fields": ["Industry"],
+                "output_fields": ["Category","Sub-Category"]
+            }},
+        }},
+        {{
+            "type": "primitive",
+            "operation": "Filter",
+            "params": {{
+                "subprompt": "Keep only organizations in Africa",
+                "input_fields": ["Country"]
+            }},
+        }},
+        {{
+            "type": "dask",
+            "operation": "add_column",
+            "params": {{
+            "new_column": "Year",
+            "expression": "df['Date'].dt.year"
+            }}
+        }},
+        {{
+            "type": "dask",
+            "operation": "group_by_agg",
+            "params": {{
+            "group_columns": ["Year", "Month"],
+            "aggregations": {{'Gross Amount':'sum'}}
+            }}
+        }}
+        ]
+
+        INSTRUCTIONS: 1.ONLY USE OPERATIONS AND PARAM NAMES FROM THE TEMPLATE GIVEN BELOW
+        {TEMPLATE}
+
+        2. Use existing dask functions in expressions
+        3. When generating a plan, always prefer using Dask operations for any data transformation that can be expressed programmatically (e.g., filtering, grouping, aggregating, adding columns, renaming, merging, sorting).
+           Only use primitive operations (such as Map, Filter) when the task requires contextual understanding of the data's meaning that cannot be achieved through Dask alone (e.g., semantic extraction, classification, interpretation, natural language reasoning).
+
+        Generate the JSON plan for the following TASK:
+
+        TASK:{goal}
+        For the Dask DataFrame schema given below:
         
-        The current schema of df and your overall goal will be available below. 
-        You will be provided a goal. Once your generated code directly and completely fulfills that goal (i.e., the described transformation has been performed on df), you must conclude your response with:
-        ```python
-        DONE = True
-        ```
-        ALWAYS RETURN VALID PYTHON CODE THAT CAN BE EXECUTED TO PERFORM THE DESIRED OPERATION ON df IN THE RUNTIME ENVIRONMENT DESCRIBED ABOVE. KEEP IT SIMPLE. NO NEW FUNCTIONS, CLASSES OR IMPORTS UNLESS ABSOLUTELY NECESSARY.
-        You must return only executable Python code. Do not include any comments, explanations, or Markdown. Your response must be a clean Python code snippet that can be directly passed to exec() without modification.
-        Only use functions and attributes of dask on df
-        If the next operation requires you to look at the actual data in df, you can set global variable `QUERY` to True and use the `df.head(..)` method or any valid dask operation that returns a dataframe and set it to the global variable `OUTPUT_DF`. E.g:
-        ```python
-        QUERY = True
-        OUTPUT_DF = df.head(10)
-        ```
-        Make sure to not ask for too many rows at once, as the output will be limited to a few rows. If you need to see more data, you can ask for it in subsequent steps.
+
         """
+        persona_prompt = persona_prompt.format(goal=goal, TEMPLATE=self.TEMPLATE)
         return persona_prompt
 
     def get_schema_prompt(self, df: dd.DataFrame) -> str:
@@ -67,80 +147,110 @@ class Agent(ABC):
         """
         return schema_prompt
 
-    def get_goal_prompt(self, goal) -> str:
-        goal_prompt: str = f"""Your overall goal is as follows:
-        {goal}.
-        """
-        return goal_prompt
+    def get_error_prompt(self, error_msg: str, failed_step: Dict) -> str:
+        error_prompt: str = f"""
+        The previous code execution failed with the following error:
+        Error: {error_msg}
 
-    def get_context_prompt(self, query: str, output_df: dd.DataFrame) -> str:
-        context_prompt: str = f"""you previously asked for the output of the following query:
-        {query}
+        Failed step:
+        {failed_step}
 
-        The output dataframe after the last operation is as follows:
-        {output_df.head().to_string()}
+        Provide the json plan with the corrected step. Make sure to:
+        1. Address the specific error mentioned above.
+        2. DO NOT include any explanations or comments.
         """
-        # TODO: Hard limit on number of rows
-        return context_prompt
+        return error_prompt
 
     def get_full_prompt(
         self,
         df: dd.DataFrame,
         goal: str,
-        prev_agent_query: Optional[str] = None,
-        output_df: Optional[dd.DataFrame] = None,
     ) -> str:
-        prompt = self.get_persona_prompt()
+        prompt = self.get_persona_prompt(goal)
         prompt += self.get_schema_prompt(df)
-        prompt += self.get_goal_prompt(goal)
-        if prev_agent_query and output_df is not None:
-            prompt += self.get_context_prompt(prev_agent_query, output_df)
+
         return prompt
 
-    def _preproc_code(self, code: List[str]) -> str:
-        # TODO: make more robust
-        code = code[0]
-        lines = code.splitlines()
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        if lines and lines[-1].endswith("```"):
-            lines = lines[:-1]
-        return "\n".join(lines).strip()
+    def get_plan(self,prompt,error_msg):
+        prompt+=error_msg
+        for i in range(5):
+            try:
+                llm_output = self.llm(prompt)
+                plan = json.loads(llm_output[0])
+                break
+            except json.JSONDecodeError as e:
+                prompt += f"""Only produce valid JSON with no other text or explanations."""
+                continue
+        return plan
 
-    def _execute_llm_output(self, llm_output: str) -> bool:
-        self.runtime.execute(llm_output)
-        if self.runtime.get("DONE", False):
-            return True
-        if self.runtime.get("QUERY", False):
-            self.runtime["QUERY"] = False
-            self.prev_query = self.runtime.get("QUERY", None)
-            self.output_df = self.runtime["OUTPUT_DF"]  # TODO: what if this is not set?
-        return False
+    def _execute_step(self, step: Dict) -> tuple[bool, Optional[str]]:
+        """
+        Execute LLM output and return (success, error_message)
+        """
+        try:
+            if step["type"] == "dask":
+                template = self.TEMPLATE["dask"][step["operation"]].format(**step["params"])
+                self.runtime.execute(template+"\n_ = df.head()")
+            elif step["type"] == "primitive":
+                template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
+                self.runtime.execute(template)
+            else:
+                raise ValueError(f"Unknown step type: {step['type']}")
+            return None
+            
+        except Exception as e:
+            error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+            return error_msg
 
     def __init__(self, llm: LLM):
         self.llm = llm
+        self.history: List[Dict[str, Any]] = []
 
     def _set_df(self, df: dd.DataFrame):
         self.df = df
         runtime = self.runtime = Runtime()
         runtime["df"] = df
-        runtime["DONE"] = False
-        runtime["QUERY"] = False
+        runtime["llm"] = self.llm
         runtime.execute(
-            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt"
+            "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
-        self.prev_query = None
-        self.output_df = None
 
-    def do(self, task: str, df: dd.DataFrame) -> dd.DataFrame:
+    def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5) -> dd.DataFrame:
+        """
+        Execute task with evaluation loop and error handling
+        
+        Args:
+            task: The task description
+            df: The input dataframe
+            max_iterations: Maximum number of correction attempts (default: 5)
+        """
+        
         self._set_df(df)
-        prompt = self.get_full_prompt(df, task, self.prev_query, self.output_df)
-        done = False
-        while not done:
-            llm_output = self.llm(prompt)
-            code = self._preproc_code(llm_output)
-            if not code:
-                raise ValueError("LLM output is empty or invalid.")
-            done = self._execute_llm_output(code)
-            done = True
+        iteration = 0
+        error_msg = " "
+        prompt = self.get_full_prompt(
+            df, 
+            task 
+        )
+
+        while iteration < max_iterations:
+            iteration += 1
+            plan = self.get_plan(prompt,error_msg)
+            print(f"📝Plan: {plan}")
+            for step in plan:
+                print(f"🔍Executing step: {step} {iteration}")
+                error_msg = self._execute_step(step)
+                if error_msg:
+                    error_msg = self.get_error_prompt(error_msg, step)
+                    print(f"❌Step Failed: {error_msg}")
+                    self.history = []
+                    break  
+                else:
+                    print(f"✅ Executed step: {step}")
+                    self.history.append(step)
+
+            if not self.history:
+                continue
+            else:
+                break
         return self.runtime["df"]
