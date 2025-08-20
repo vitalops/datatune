@@ -42,14 +42,15 @@ def create_batched_prompts(
     batch_ranges = []
     nrows_per_api_call = []
     count = 0
-    total_ntokens = 0
     message = lambda x: [
         {"role": "user", "content": f"{batch_prefix}{x}{batch_suffix}"}
     ]
+    total_ntokens = token_counter(model_name, messages=message(""))
+
     for i, prompt in enumerate(input_rows):
         q = f"{prompt_per_row}\n {prompt} <endofrow>\n"
         batch += q
-        ntokens = token_counter(model_name, messages=message(batch))
+        ntokens = token_counter(model_name, messages=[{"role": "user", "content": q}])
         if total_ntokens + ntokens < max_tokens:
             count += 1
             total_ntokens += ntokens
