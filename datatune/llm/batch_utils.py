@@ -45,7 +45,8 @@ def create_batched_prompts(
     message = lambda x: [
         {"role": "user", "content": f"{batch_prefix}{x}{batch_suffix}"}
     ]
-    total_ntokens = token_counter(model_name, messages=message(""))
+    prefix_suffix_tokens = token_counter(model_name, messages=message(""))
+    total_ntokens = prefix_suffix_tokens
 
     for i, prompt in enumerate(input_rows):
         q = f"{prompt_per_row}\n {prompt} <endofrow>\n"
@@ -62,7 +63,7 @@ def create_batched_prompts(
 
             count = 1
             batch = q
-            total_ntokens = ntokens
+            total_ntokens = ntokens + prefix_suffix_tokens
 
     if count > 0:
         batched_prompts.append(message(batch)[0]["content"])
