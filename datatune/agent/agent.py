@@ -15,7 +15,7 @@ class Agent(ABC):
         # Add / transform columns
         "add_column": "df['{new_column}'] = {expression}",
         "rename_column": "df = df.rename(columns={{'{old_name}': '{new_name}'}})",
-        "apply_function": "df['{new_column}'] = df['{source_column}'].apply({function}, meta=('{new_column}', '{dtype}'))",
+        "apply_function": "df['{new_column}'] = df['{source_column}'].apply({function}, meta=('{new_column}', {dtype}))",
 
         # Filtering / selecting
         "filter_rows": "df = df[df['{column}'] {operator} {value}]",
@@ -23,14 +23,10 @@ class Agent(ABC):
         "drop_column": "df = df.drop(columns={columns})",
 
         # Grouping and aggregation
-        "group_by_agg": "df = df.groupby('{group_column}').agg({aggregations}).reset_index()",
+        "group_by_agg": "df['{new_column}'] = df.groupby({group_columns})['{target_column}'].transform({agg_func})",
 
         # Sorting / ordering
-        "sort_values": "df = df.sort_values(by='{column}', ascending={ascending})",
-
-        # Combining
-        "merge": "df = df.merge({other_df}, on='{on_column}', how='{how}')",
-        "concat": "df = dd.concat([{df_list}], axis={axis})"
+        "sort_values": "df = df.sort_values(by='{column}', ascending={ascending})"
     },
     "primitive": {
 
@@ -75,11 +71,14 @@ class Agent(ABC):
 
         Available Dask operations for transforming the dataframe:
         - add_column: assign a new column using an expression
-        - group_by_agg: group by one or more columns and aggregate
-        - shift_column: create a column by shifting another column
-        - merge: merge with another dataframe
-        - apply_rowwise: row-wise operation across multiple columns
-        - apply_series: element-wise operation on a single column
+        - rename_column: rename an existing column
+        - apply_function: apply a function to a column with a specified dtype
+        - filter_rows: filter rows based on a condition
+        - select_columns: select a subset of columns
+        - drop_column: drop one or more columns
+        - group_by_agg: group by one or more columns and apply an aggregation
+        - sort_values: sort the dataframe by a column
+
 
         RULES FOR CHOOSING OPERATION TYPE:
         1. If the transformation can be performed using standard Dask operations (e.g., adding a column, grouping, shifting, applying row-wise or column-wise functions), use "type": "dask".
@@ -118,8 +117,10 @@ class Agent(ABC):
             "type": "dask",
             "operation": "group_by_agg",
             "params": {{
-            "group_columns": ["Year", "Month"],
-            "aggregations": {{'Gross Amount':'sum'}}
+                "new_column": "Region Total Profit",
+                "group_columns": "['Region']",
+                "target_column": "Total Profit",
+                "agg_func": "sum"
             }}
         }}
         ]
@@ -147,17 +148,21 @@ class Agent(ABC):
         """
         return schema_prompt
 
-    def get_error_prompt(self, error_msg: str, failed_step: Dict) -> str:
+    def get_error_prompt(self, error_msg: str, failed_step: Dict, failed_plan: List[Dict]) -> str:
         error_prompt: str = f"""
-        The previous code execution failed with the following error:
+        The previous Plan execution failed with the following error:
         Error: {error_msg}
+
+        Failed Plan : {failed_plan}
 
         Failed step:
         {failed_step}
 
         Provide the json plan with the corrected step. Make sure to:
         1. Address the specific error mentioned above.
-        2. DO NOT include any explanations or comments.
+        2. Always use param names using the template given
+        3. Use column names from the schema.
+        4. DO NOT include any explanations or comments.
         """
         return error_prompt
 
@@ -190,7 +195,7 @@ class Agent(ABC):
         try:
             if step["type"] == "dask":
                 template = self.TEMPLATE["dask"][step["operation"]].format(**step["params"])
-                self.runtime.execute(template+"\n_ = df.head()")
+                self.runtime.execute(template)
             elif step["type"] == "primitive":
                 template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
                 self.runtime.execute(template)
@@ -215,7 +220,7 @@ class Agent(ABC):
             "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
 
-    def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5) -> dd.DataFrame:
+    def do(self, task: str, df: dd.DataFrame, max_iterations: int = 10) -> dd.DataFrame:
         """
         Execute task with evaluation loop and error handling
         
@@ -228,20 +233,18 @@ class Agent(ABC):
         self._set_df(df)
         iteration = 0
         error_msg = " "
-        prompt = self.get_full_prompt(
-            df, 
-            task 
-        )
+        prompt = self.get_full_prompt(df, task)
 
         while iteration < max_iterations:
             iteration += 1
-            plan = self.get_plan(prompt,error_msg)
+            prompt = self.get_full_prompt(df, task)
+            plan = self.get_plan(prompt, error_msg)
             print(f"📝Plan: {plan}")
             for step in plan:
                 print(f"🔍Executing step: {step} {iteration}")
                 error_msg = self._execute_step(step)
                 if error_msg:
-                    error_msg = self.get_error_prompt(error_msg, step)
+                    error_msg = self.get_error_prompt(error_msg, step, plan)
                     print(f"❌Step Failed: {error_msg}")
                     self.history = []
                     break  
