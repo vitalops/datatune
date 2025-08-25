@@ -19,7 +19,7 @@ From source:
 pip install -e .
 ```
 
-## Quick Start
+## 🚀 Quick Start
 ```python
 import os
 import dask.dataframe as dd
@@ -82,7 +82,7 @@ Passing `input_fields` reduces the number of tokens sent by sending only relevan
 
 ## Features
 
-### Example 1: Data Anonymization
+### 🕶️ Example 1: Data Anonymization
 
 Protect sensitive information while preserving data utility:
 
@@ -104,7 +104,7 @@ anonymized = dt.Map(
 2        3003    "Call 555-1234 regarding order"       "Call XX regarding order"
 ```
 
-### Example 2: Data Classification
+### 🏷️ Example 2: Data Classification
 
 Extract and categorize information:
 
@@ -126,7 +126,7 @@ classified = dt.Map(
 2     4003    "Server completely down"     Technical        Critical          "30 minutes"
 ```
 
-### Example 3: Smart Filtering
+### 🔍 Example 3: Smart Filtering
 
 Filter to remove rows based on criteria:
 
@@ -147,7 +147,7 @@ quality_reviews = dt.Filter(
 2      5007    "Quality exceeded my expectations..."        "15+ reviews, verified"   5
 ```
 
-### Map Operation
+### 🗺️ Map Operation
 
 Transform data with natural language:
 
@@ -159,7 +159,7 @@ mapped = dt.Map(
 )(llm, customers)
 ```
 
-### Filter operation
+### 🔍 Filter operation
 
 ```python
 # Filter to remove rows
@@ -168,7 +168,7 @@ filtered = dt.Filter(
 )(llm, mapped)
 ```
 
-### Multiple LLM Support
+### 🤝 Multiple LLM Support
 
 Datatune works with various LLM providers with the help of LiteLLM under the hood:
 
@@ -190,27 +190,78 @@ from datatune.llm.llm import OpenAI
 llm = OpenAI(model_name="gpt-3.5-turbo")
 ```
 
-### Agents
+### 🤖 Agents
 
-Datatune provides an agentic framework which allows you to deploy agents that can generate and execute python scripts with datatune operations:
+Datatune provides an agentic interface that allows large language models (LLMs) to autonomously plan and execute data transformation steps using natural language prompts. Agents understand your instructions and dynamically generate the appropriate sequence of Map, Filter, and other operations on your data — no need to manually compose transformation chains.
 
-```python
+✅ How It Works
+
+With just a single prompt, the agent analyzes your intent, determines the necessary transformations, and applies them directly to your Dask DataFrame.
+
 import datatune as dt
 from datatune.llm.llm import OpenAI
 
 llm = OpenAI(model_name="gpt-3.5-turbo", tpm=200000)
 
-# Initialize an agent by providing an LLM
+# Create a Datatune Agent
 agent = dt.Agent(llm)
-prompt = "your prompt for data transformation"
 
-# Transform your dask DataFrame
+# Define your transformation task
+prompt = "Add a new column called ProfitMargin = (Total Profit / Total Revenue) * 100."
+
+# Let the agent handle it!
 df = agent.do(prompt, df)
-```
+result = dt.finalize(df)
 
-- This allows for intelligent operation selection based on the given prompt
+🧠 Intelligent Operation Selection
 
-### Data Compatibility
+The agent automatically infers the right operations for the job:
+
+Column creation: Derive new columns using arithmetic, string manipulation, or semantic understanding.
+
+Conditional filtering: Keep or drop rows based on complex logic.
+
+Semantic classification: Categorize data based on textual cues or domain knowledge.
+
+Multi-step pipelines: Chain multiple transformations from a single prompt.
+
+🔍 Examples
+
+1. Add Derived Metrics
+
+prompt = "Add a new column called ProfitMargin = (Total Profit / Total Revenue) * 100."
+df = agent.do(prompt, df)
+
+
+✅ Adds the column, infers data types, and inserts it in-place.
+
+2. Classify and Filter in One Go
+
+prompt = "Create a new column called Category and Sub-Category based on the Industry column and only keep organizations that are in Africa."
+df = agent.do(prompt, df)
+
+
+✅ Categorizes based on industry and filters by region — all in a single command.
+
+3. Extract and Filter Rows
+
+prompt = "Extract year from date of birth column into a new column called Year and keep only people who are in STEM related jobs."
+df = agent.do(prompt, df)
+
+
+✅ Extracts the year, identifies STEM professions, and filters accordingly.
+
+🏁 Finalizing Agent Results
+
+After the agent has performed its tasks, finalize the dataframe to apply clean-up and remove intermediate metadata:
+
+result = dt.finalize(df)
+result.compute().to_csv("output.csv", index=False)
+
+
+Agents make Datatune ideal for non-technical users, rapid prototyping, and intelligent data workflows — just describe what you want, and let the agent do the rest.
+
+### 🧩 Data Compatibility
 
 Datatune leverages Dask DataFrames to enable scalable processing across large datasets. This approach allows you to:
 
@@ -224,14 +275,14 @@ import dask.dataframe as dd
 dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
 ```
 
-### Examples
+### 📁 Examples
 Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 
-### Documentation
+### 📚 Documentation
 
 Check out our [documentation](https://docs.datatune.ai/) to learn how to use datatune.
 
-### Issues 
+### 🛠️ Issues 
 
 Want to raise an issue or want us to build a new feature?
 Head over to [issues](https://github.com/vitalops/datatune/issues) and raise a ticket!   
