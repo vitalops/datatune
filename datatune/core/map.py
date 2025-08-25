@@ -153,7 +153,7 @@ def update_df_with_llm_output(
     return df
 
 
-class Map(Op):
+class map(Op):
     """
     A mapping operation that uses an LLM to transform rows in a dataset.
 
@@ -257,5 +257,5 @@ class Map(Op):
 
 
 __all__ = [
-    "Map",
+    "map",
 ]

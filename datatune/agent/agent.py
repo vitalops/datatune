@@ -8,7 +8,7 @@ import json
 import textwrap
 
 
-class Agent(ABC):
+class agent(ABC):
 
     TEMPLATE = {
     "dask": {
@@ -35,15 +35,15 @@ class Agent(ABC):
     "primitive": {
 
         "Map": textwrap.dedent("""\
-            mapped = dt.Map(
+            mapped = dt.map(
                 prompt="{subprompt}",
                 input_fields={input_fields},
                 output_fields={output_fields}
             )(llm, df)
             df = mapped
         """),
-        "Filter": textwrap.dedent("""\
-            filtered = dt.Filter(
+        "filter": textwrap.dedent("""\
+            filtered = dt.filter(
                 prompt="{subprompt}",
                 input_fields={input_fields}
             )(llm, df)
@@ -236,17 +236,13 @@ class Agent(ABC):
         while iteration < max_iterations:
             iteration += 1
             plan = self.get_plan(prompt,error_msg)
-            print(f"📝Plan: {plan}")
             for step in plan:
-                print(f"🔍Executing step: {step} {iteration}")
                 error_msg = self._execute_step(step)
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
-                    print(f"❌Step Failed: {error_msg}")
                     self.history = []
                     break  
                 else:
-                    print(f"✅ Executed step: {step}")
                     self.history.append(step)
 
             if not self.history:
