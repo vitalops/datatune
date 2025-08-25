@@ -194,10 +194,11 @@ llm = OpenAI(model_name="gpt-3.5-turbo")
 
 Datatune provides an agentic interface that allows large language models (LLMs) to autonomously plan and execute data transformation steps using natural language prompts. Agents understand your instructions and dynamically generate the appropriate sequence of Map, Filter, and other operations on your data — no need to manually compose transformation chains.
 
-✅ How It Works
+#### ✅ How It Works
 
 With just a single prompt, the agent analyzes your intent, determines the necessary transformations, and applies them directly to your Dask DataFrame.
 
+```
 import datatune as dt
 from datatune.llm.llm import OpenAI
 
@@ -212,52 +213,53 @@ prompt = "Add a new column called ProfitMargin = (Total Profit / Total Revenue) 
 # Let the agent handle it!
 df = agent.do(prompt, df)
 result = dt.finalize(df)
+```
 
-🧠 Intelligent Operation Selection
+#### 🧠 Intelligent Operation Selection
 
 The agent automatically infers the right operations for the job:
 
-Column creation: Derive new columns using arithmetic, string manipulation, or semantic understanding.
+* Column creation: Derive new columns using arithmetic, string manipulation, or semantic understanding.
+* Conditional filtering: Keep or drop rows based on complex logic.
+* Semantic classification: Categorize data based on textual cues or domain knowledge.
+* Multi-step pipelines: Chain multiple transformations from a single prompt.
 
-Conditional filtering: Keep or drop rows based on complex logic.
+#### 📁 Examples
 
-Semantic classification: Categorize data based on textual cues or domain knowledge.
+##### 1. Add Derived Metrics
 
-Multi-step pipelines: Chain multiple transformations from a single prompt.
-
-🔍 Examples
-
-1. Add Derived Metrics
-
+```python
 prompt = "Add a new column called ProfitMargin = (Total Profit / Total Revenue) * 100."
 df = agent.do(prompt, df)
-
+```
 
 ✅ Adds the column, infers data types, and inserts it in-place.
 
-2. Classify and Filter in One Go
+##### 2. Classify and Filter in One Go
 
+```python
 prompt = "Create a new column called Category and Sub-Category based on the Industry column and only keep organizations that are in Africa."
 df = agent.do(prompt, df)
-
+```
 
 ✅ Categorizes based on industry and filters by region — all in a single command.
 
-3. Extract and Filter Rows
+##### 3. Extract and Filter Rows
 
+```python
 prompt = "Extract year from date of birth column into a new column called Year and keep only people who are in STEM related jobs."
 df = agent.do(prompt, df)
-
+```
 
 ✅ Extracts the year, identifies STEM professions, and filters accordingly.
 
-🏁 Finalizing Agent Results
+##### 🏁 Finalizing Agent Results
 
 After the agent has performed its tasks, finalize the dataframe to apply clean-up and remove intermediate metadata:
-
+```
 result = dt.finalize(df)
 result.compute().to_csv("output.csv", index=False)
-
+```
 
 Agents make Datatune ideal for non-technical users, rapid prototyping, and intelligent data workflows — just describe what you want, and let the agent do the rest.
 
