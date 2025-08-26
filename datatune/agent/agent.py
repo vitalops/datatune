@@ -33,7 +33,6 @@ class agent(ABC):
         "concat": "df = dd.concat([{df_list}], axis={axis})"
     },
     "primitive": {
-
         "Map": textwrap.dedent("""\
             mapped = dt.map(
                 prompt="{subprompt}",
@@ -171,8 +170,8 @@ class agent(ABC):
 
         return prompt
 
-    def get_plan(self,prompt,error_msg):
-        prompt+=error_msg
+    def get_plan(self, prompt, error_msg):
+        prompt += error_msg
         for i in range(5):
             try:
                 llm_output = self.llm(prompt)
@@ -190,7 +189,7 @@ class agent(ABC):
         try:
             if step["type"] == "dask":
                 template = self.TEMPLATE["dask"][step["operation"]].format(**step["params"])
-                self.runtime.execute(template+"\n_ = df.head()")
+                self.runtime.execute(template + "\n_ = df.head()")
             elif step["type"] == "primitive":
                 template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
                 self.runtime.execute(template)
@@ -235,7 +234,8 @@ class agent(ABC):
 
         while iteration < max_iterations:
             iteration += 1
-            plan = self.get_plan(prompt,error_msg)
+            plan = self.get_plan(prompt, error_msg)
+            
             for step in plan:
                 error_msg = self._execute_step(step)
                 if error_msg:
@@ -249,4 +249,11 @@ class agent(ABC):
                 continue
             else:
                 break
+
+        try:
+            self.runtime.execute("df = df.compute()")
+            self.runtime.execute("df = dt.finalize(df)")
+        except Exception as e:
+            print(f"Warning: Could not compute and finalize result: {e}")
+                
         return self.runtime["df"]
