@@ -139,8 +139,6 @@ class LLM:
                             ret[idx] = str(result)
                             print(result)
                             n += 1
-                    print(n)
-                    print()
 
         while remaining:
             remaining_prompts = [input_rows[i] for i in remaining]

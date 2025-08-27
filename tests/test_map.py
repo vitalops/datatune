@@ -1,4 +1,4 @@
-from datatune.core.map import Map
+from datatune.core.map import map
 from datatune.llm.llm import Azure
 import pandas as pd
 import dask.dataframe as dd
@@ -12,7 +12,7 @@ api_version = os.getenv("AZURE_API_VERSION")
 def test_map_replace():
     df = dd.read_csv("tests/test_data/test_map.csv")
     prompt = "Replace all personally identifiable terms with XX"
-    map = Map(prompt=prompt)
+    map_op = map(prompt=prompt)
     llm = Azure(
         model_name="gpt-35-turbo",
         api_key=api_key,
@@ -27,7 +27,7 @@ def test_map_replace():
 def test_map_create():
     df = dd.read_csv("tests/test_data/test_map.csv")
     prompt = "Calculate the length of each names"
-    map = Map(prompt=prompt, output_fields=["first_name_length", "last_name_length"])
+    map_ = map(prompt=prompt, output_fields=["first_name_length", "last_name_length"])
     llm = Azure(
         model_name="gpt-35-turbo",
         api_base=api_base,

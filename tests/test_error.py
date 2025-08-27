@@ -1,7 +1,7 @@
 from typing import List, Union, Dict
 import pandas as pd
-from datatune.core.map import Map
-from datatune.core.filter import Filter
+from datatune.core.map import map
+from datatune.core.filter import filter
 import dask.dataframe as dd
 from datatune.core.constants import ERRORED_COLUMN, DELETED_COLUMN
 
@@ -9,8 +9,10 @@ from datatune.core.constants import ERRORED_COLUMN, DELETED_COLUMN
 class MockLLM:
     def __init__(self, responses: List[str]):
         self.responses = responses
+        self.response_index = 0
 
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
+        """Standard call method for backward compatibility."""
         if isinstance(prompt, pd.Series):
             num_responses = len(prompt)
             return self.responses[:num_responses]
@@ -19,6 +21,36 @@ class MockLLM:
         else:
             num_responses = len(prompt)
             return self.responses[:num_responses]
+
+    def true_batch_completion(
+        self,
+        input_rows: List[str],
+        batch_prefix: str,
+        prompt_per_row: str,
+        batch_suffix: str,
+    ) -> List[Union[str, Exception]]:
+        """
+        Mock implementation that simply returns the predefined responses.
+        Let the datatune library handle parsing and error detection.
+        """
+        input_rows = list(input_rows)
+        ret = []
+        
+        for i, input_row in enumerate(input_rows):
+            # Get the next response, cycling through available responses
+            if self.response_index < len(self.responses):
+                response = self.responses[self.response_index]
+                self.response_index += 1
+            else:
+                # Cycle back to the beginning if we run out of responses
+                self.response_index = 0
+                response = self.responses[self.response_index]
+                self.response_index += 1
+            
+            # Return exactly what was provided - let the library handle parsing
+            ret.append(response)
+        
+        return ret
 
 
 def create_test_dataframe():
@@ -67,19 +99,19 @@ def create_test_dataframe():
 def test_map_replace():
     df = create_test_dataframe()
     prompt = "Replace all personally identifiable terms with XX"
-    map_op = Map(prompt=prompt)
+    map_op = map(prompt=prompt)
 
     responses = [
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
-        "{first_name: 'XX', last_name: 'XX'}",  # syntaxError
+        "{first_name: 'XX', last_name: 'XX'}",  # Invalid JSON - should cause error
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
-        "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'",  # syntaxError
+        "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'",  # Missing closing brace - should cause error
     ]
 
     expected_error_indices = [2, 9]
@@ -124,19 +156,20 @@ def create_test_filter_dataframe():
 def test_filter():
     df = create_test_filter_dataframe()
     prompt = "Check if the statement is factually correct."
-    filter_op = Filter(prompt=prompt)
+    filter_op = filter(prompt=prompt)
 
+    # Based on the error, filter responses need to be in JSON format with curly braces
     responses = [
-        "TRUE",
-        "FALSE",
-        "I think it's true",
-        "TRUE",
-        "Maybe",
-        "FALSE",
-        "The statement is false",
-        "TRUE",
-        "TRUE",
-        "UNTRUE",
+        '{"result": "TRUE"}',
+        '{"result": "FALSE"}', 
+        "I think it's true",  # No JSON braces - should cause error
+        '{"result": "TRUE"}',
+        "Maybe",  # No JSON braces - should cause error  
+        '{"result": "FALSE"}',
+        "The statement is false",  # No JSON braces - should cause error
+        '{"result": "TRUE"}',
+        '{"result": "TRUE"}',
+        "UNTRUE",  # No JSON braces - should cause error
     ]
 
     expected_error_indices = [2, 4, 6, 9]
@@ -174,18 +207,19 @@ def test_filter():
 def test_filter_on_error_delete():
     df = create_test_filter_dataframe()
     prompt = "Check if the statement is factually correct."
-    filter_op = Filter(prompt=prompt, on_error="delete")
+    filter_op = filter(prompt=prompt, on_error="delete")
 
+    # Using JSON format for valid responses, non-JSON for error cases
     responses = [
-        "TRUE",
-        "FALSE",
-        "Not sure",
-        "TRUE",
-        "This is incorrect",
-        "FALSE",
-        "50% accurate",
-        "TRUE",
-        "TRUE",
+        '{"result": "TRUE"}',
+        '{"result": "FALSE"}',
+        "Not sure",  # No JSON braces - should cause error
+        '{"result": "TRUE"}',
+        "This is incorrect",  # No JSON braces - should cause error
+        '{"result": "FALSE"}',
+        "50% accurate",  # No JSON braces - should cause error
+        '{"result": "TRUE"}',
+        '{"result": "TRUE"}',
         Exception("Rate limit exceeded"),
     ]
 

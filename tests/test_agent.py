@@ -9,7 +9,7 @@ def test_agent_dask():
     csv_path = os.path.join(test_path, "test_data", "dask_only.csv")
     df = dd.read_csv(csv_path)
     llm = OpenAI(model_name="gpt-4o-mini-2024-07-18", tpm=1000000, rpm=5000)
-    agent = dt.Agent(llm)
+    agent = dt.agent(llm)
     prompt = "Add a new column called ProfitMargin = (Total Profit / Total Revenue) * 100."
     df = agent.do(prompt,df)
     df["ProfitMargin"] = df["ProfitMargin"].astype("float64")
@@ -23,7 +23,7 @@ def test_agent_datatune():
     csv_path = os.path.join(test_path, "test_data", "datatune_only.csv")
     df = dd.read_csv(csv_path)
     llm = OpenAI(model_name="gpt-4o-mini-2024-07-18", tpm=1000000, rpm=5000)
-    agent = dt.Agent(llm)
+    agent = dt.agent(llm)
     prompt = "Create a new column called Category and Sub-Category based on the Industry column and only keep organizations that are in Africa."
     df = agent.do(prompt,df)
     df["Category"] = df["Category"].astype("string")
@@ -40,7 +40,7 @@ def test_agent_combined():
     csv_path = os.path.join(test_path, "test_data", "combined.csv")
     df = dd.read_csv(csv_path)
     llm = OpenAI(model_name="gpt-4o-mini-2024-07-18", tpm=1000000, rpm=5000)
-    agent = dt.Agent(llm)
+    agent = dt.agent(llm)
     prompt = "Extract year from date of birth column into a new column called Year and keep only people who are in STEM related jobs."
     df = agent.do(prompt,df)
     df["Year"] = df["Year"].astype("int64")
