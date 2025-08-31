@@ -205,7 +205,7 @@ from datatune.llm.llm import OpenAI
 llm = OpenAI(model_name="gpt-3.5-turbo", tpm=200000)
 
 # Create a Datatune Agent
-agent = dt.agent(llm)
+agent = dt.Agent(llm)
 
 # Define your transformation task
 prompt = "Add a new column called ProfitMargin = (Total Profit / Total Revenue) * 100."

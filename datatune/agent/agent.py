@@ -8,7 +8,7 @@ import json
 import textwrap
 
 
-class agent(ABC):
+class Agent(ABC):
 
     TEMPLATE = {
     "dask": {
