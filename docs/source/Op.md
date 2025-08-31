@@ -35,17 +35,16 @@ The `finalize` method cleans up DataFrames after operations have been applied by
 ### Usage
 
 ```python
-from datatune.core.op import finalize
-from datatune.core.map import Map
+import datatune as dt
 from datatune.llm.llm import LLM
 import dask.dataframe as dd
 
 # Process data
 df = dd.read_csv("data.csv")
-processed_df = Map(prompt="Extract data")(llm, df)
+processed_df = dt.map(prompt="Extract data")(llm, df)
 
 # Clean up the result
-result = finalize(processed_df)
+result = dt.finalize(processed_df)
 ```
 
 ### Parameters
