@@ -12,18 +12,16 @@ pip install datatune
 
 From source:
 
-```
+```bash
 pip install -e .
 ```
 ## Quick Start
-```
+```python
 import os
 import dask.dataframe as dd
 
-from datatune.core.map import Map
-from datatune.core.filter import Filter
+import datatune as dt
 from datatune.llm.llm import OpenAI
-from datatune.core.op import finalize
 
 os.environ["OPENAI_API_KEY"] = "your-openai-api-key"
 llm = OpenAI(model_name="gpt-3.5-turbo")
@@ -33,18 +31,18 @@ df = dd.read_csv("tests/test_data/products.csv")
 print(df.head())
 
 # Transform data with Map
-mapped = Map(
+mapped = dt.Map(
     prompt="Extract categories from the description.",
     output_fields=["Category", "Subcategory"]
 )(llm, df)
 
 # Filter data based on criteria
-filtered = Filter(
+filtered = dt.Filter(
     prompt="Keep only electronics products"
 )(llm, mapped)
 
 # Get the final dataframe after cleanup of metadata and deleted rows after operations using `finalize`.
-result = finalize(filtered)
+result = dt.finalize(filtered)
 result.compute().to_csv("electronics_products.csv")
 
 new_df = dd.read_csv("electronics_products.csv")
@@ -76,7 +74,7 @@ print(new_df.head())
 
 Transform data with natural language:
 
-```
+```python
 customers = dd.read_csv("customers.csv")
 mapped = Map(
     prompt="Extract country and city from the address field",
@@ -86,7 +84,7 @@ mapped = Map(
 
 ### Filter operation
 
-```
+```python
 # Filter to remove rows
 filtered = Filter(
     prompt="Keep only customers who are from Asia"
@@ -96,7 +94,7 @@ filtered = Filter(
 ### Multiple LLM Support
 Datatune works with various LLM providers:
 
-```
+```python
 # Using Ollama
 from datatune.llm.llm import Ollama
 llm = Ollama()
@@ -109,6 +107,20 @@ llm = Azure(
     api_base=api_base,
     api_version=api_version)
 ```
+### Agents
+Datatune `Agent` allows large language models (LLMs) to autonomously plan and execute data transformation steps using natural language prompts.
+```python
+# Load data
+df = dd.read_csv("data.csv")
+
+# Initialize Agent
+agent = dt.Agent(llm)
+
+# Transform data with natural language prompt
+prompt = "your prompt for data transfromation"
+df = agent.do(prompt,df)
+```
+
 
 ### Data Compatibility
 
@@ -119,7 +131,7 @@ Datatune leverages Dask DataFrames to enable scalable processing across large da
 
 If you're working with pandas DataFrames, convert them with a simple:
 
-```
+```python
 import dask.dataframe as dd
 dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
 ```
