@@ -107,6 +107,7 @@ class LLM:
 
             """
             from litellm import batch_completion
+
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )

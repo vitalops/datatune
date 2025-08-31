@@ -1,9 +1,8 @@
 from typing import List, Union, Dict
 import pandas as pd
-from datatune.core.map import map
-from datatune.core.filter import filter
 import dask.dataframe as dd
 from datatune.core.constants import ERRORED_COLUMN, DELETED_COLUMN
+import datatune as dt
 
 
 class MockLLM:
@@ -35,7 +34,7 @@ class MockLLM:
         """
         input_rows = list(input_rows)
         ret = []
-        
+
         for i, input_row in enumerate(input_rows):
             # Get the next response, cycling through available responses
             if self.response_index < len(self.responses):
@@ -46,10 +45,10 @@ class MockLLM:
                 self.response_index = 0
                 response = self.responses[self.response_index]
                 self.response_index += 1
-            
+
             # Return exactly what was provided - let the library handle parsing
             ret.append(response)
-        
+
         return ret
 
 
@@ -99,7 +98,7 @@ def create_test_dataframe():
 def test_map_replace():
     df = create_test_dataframe()
     prompt = "Replace all personally identifiable terms with XX"
-    map_op = map(prompt=prompt)
+    map_op = dt.map(prompt=prompt)
 
     responses = [
         "{'first_name': 'XX', 'last_name': 'XX', 'email': 'XX'}",
@@ -156,15 +155,15 @@ def create_test_filter_dataframe():
 def test_filter():
     df = create_test_filter_dataframe()
     prompt = "Check if the statement is factually correct."
-    filter_op = filter(prompt=prompt)
+    filter_op = dt.filter(prompt=prompt)
 
     # Based on the error, filter responses need to be in JSON format with curly braces
     responses = [
         '{"result": "TRUE"}',
-        '{"result": "FALSE"}', 
+        '{"result": "FALSE"}',
         "I think it's true",  # No JSON braces - should cause error
         '{"result": "TRUE"}',
-        "Maybe",  # No JSON braces - should cause error  
+        "Maybe",  # No JSON braces - should cause error
         '{"result": "FALSE"}',
         "The statement is false",  # No JSON braces - should cause error
         '{"result": "TRUE"}',
@@ -207,7 +206,7 @@ def test_filter():
 def test_filter_on_error_delete():
     df = create_test_filter_dataframe()
     prompt = "Check if the statement is factually correct."
-    filter_op = filter(prompt=prompt, on_error="delete")
+    filter_op = dt.filter(prompt=prompt, on_error="delete")
 
     # Using JSON format for valid responses, non-JSON for error cases
     responses = [

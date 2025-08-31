@@ -1,6 +1,5 @@
-from datatune.core.map import map
-from datatune.core.filter import filter
 from datatune.llm.llm import Azure
+import datatune as dt
 import pandas as pd
 import dask.dataframe as dd
 import os
@@ -21,14 +20,14 @@ def test_map_and_filter():
     )
 
     map_prompt = "Calculate the length of each name"
-    map_op = map(
+    map_op = dt.map(
         prompt=map_prompt,
         output_fields=["first_name_length", "last_name_length"],
     )
     mapped_df = map_op(llm, df)
 
     filter_prompt = "Keep only rows where the first name length is greater than 5"
-    filter_op = filter(prompt=filter_prompt)
+    filter_op = dt.filter(prompt=filter_prompt)
     filtered_df = filter_op(llm, mapped_df)
 
     result = filtered_df.head(10)

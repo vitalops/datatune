@@ -11,45 +11,45 @@ import textwrap
 class Agent(ABC):
 
     TEMPLATE = {
-    "dask": {
-        # Add / transform columns
-        "add_column": "df['{new_column}'] = {expression}",
-        "rename_column": "df = df.rename(columns={{'{old_name}': '{new_name}'}})",
-        "apply_function": "df['{new_column}'] = df['{source_column}'].apply({function}, meta=('{new_column}', '{dtype}'))",
-
-        # Filtering / selecting
-        "filter_rows": "df = df[df['{column}'] {operator} {value}]",
-        "select_columns": "df = df[{columns}]",
-        "drop_column": "df = df.drop(columns={columns})",
-
-        # Grouping and aggregation
-        "group_by_agg": "df = df.groupby('{group_column}').agg({aggregations}).reset_index()",
-
-        # Sorting / ordering
-        "sort_values": "df = df.sort_values(by='{column}', ascending={ascending})",
-
-        # Combining
-        "merge": "df = df.merge({other_df}, on='{on_column}', how='{how}')",
-        "concat": "df = dd.concat([{df_list}], axis={axis})"
-    },
-    "primitive": {
-        "Map": textwrap.dedent("""\
+        "dask": {
+            # Add / transform columns
+            "add_column": "df['{new_column}'] = {expression}",
+            "rename_column": "df = df.rename(columns={{'{old_name}': '{new_name}'}})",
+            "apply_function": "df['{new_column}'] = df['{source_column}'].apply({function}, meta=('{new_column}', '{dtype}'))",
+            # Filtering / selecting
+            "filter_rows": "df = df[df['{column}'] {operator} {value}]",
+            "select_columns": "df = df[{columns}]",
+            "drop_column": "df = df.drop(columns={columns})",
+            # Grouping and aggregation
+            "group_by_agg": "df = df.groupby('{group_column}').agg({aggregations}).reset_index()",
+            # Sorting / ordering
+            "sort_values": "df = df.sort_values(by='{column}', ascending={ascending})",
+            # Combining
+            "merge": "df = df.merge({other_df}, on='{on_column}', how='{how}')",
+            "concat": "df = dd.concat([{df_list}], axis={axis})",
+        },
+        "primitive": {
+            "Map": textwrap.dedent(
+                """\
             mapped = dt.map(
                 prompt="{subprompt}",
                 input_fields={input_fields},
                 output_fields={output_fields}
             )(llm, df)
             df = mapped
-        """),
-        "filter": textwrap.dedent("""\
+        """
+            ),
+            "filter": textwrap.dedent(
+                """\
             filtered = dt.filter(
                 prompt="{subprompt}",
                 input_fields={input_fields}
             )(llm, df)
             df = filtered
-        """)
+        """
+            ),
+        },
     }
-}
 
     def get_persona_prompt(self, goal: str) -> str:
         persona_prompt: str = """
@@ -178,7 +178,9 @@ class Agent(ABC):
                 plan = json.loads(llm_output[0])
                 break
             except json.JSONDecodeError as e:
-                prompt += f"""Only produce valid JSON with no other text or explanations."""
+                prompt += (
+                    f"""Only produce valid JSON with no other text or explanations."""
+                )
                 continue
         return plan
 
@@ -188,15 +190,19 @@ class Agent(ABC):
         """
         try:
             if step["type"] == "dask":
-                template = self.TEMPLATE["dask"][step["operation"]].format(**step["params"])
+                template = self.TEMPLATE["dask"][step["operation"]].format(
+                    **step["params"]
+                )
                 self.runtime.execute(template + "\n_ = df.head()")
             elif step["type"] == "primitive":
-                template = self.TEMPLATE["primitive"][step["operation"]].format(**step["params"])
+                template = self.TEMPLATE["primitive"][step["operation"]].format(
+                    **step["params"]
+                )
                 self.runtime.execute(template)
             else:
                 raise ValueError(f"Unknown step type: {step['type']}")
             return None
-            
+
         except Exception as e:
             error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
             return error_msg
@@ -217,31 +223,28 @@ class Agent(ABC):
     def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5) -> dd.DataFrame:
         """
         Execute task with evaluation loop and error handling
-        
+
         Args:
             task: The task description
             df: The input dataframe
             max_iterations: Maximum number of correction attempts (default: 5)
         """
-        
+
         self._set_df(df)
         iteration = 0
         error_msg = " "
-        prompt = self.get_full_prompt(
-            df, 
-            task 
-        )
+        prompt = self.get_full_prompt(df, task)
 
         while iteration < max_iterations:
             iteration += 1
             plan = self.get_plan(prompt, error_msg)
-            
+
             for step in plan:
                 error_msg = self._execute_step(step)
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
                     self.history = []
-                    break  
+                    break
                 else:
                     self.history.append(step)
 
@@ -255,5 +258,5 @@ class Agent(ABC):
             self.runtime.execute("df = dt.finalize(df)")
         except Exception as e:
             print(f"Warning: Could not compute and finalize result: {e}")
-                
+
         return self.runtime["df"]
