@@ -37,14 +37,14 @@ df = dd.read_csv("tests/test_data/products.csv")
 print(df.head())
 
 # Transform data with Map
-mapped = dt.Map(
+mapped = dt.map(
     prompt="Extract categories from the description and name of product.",
     output_fields=["Category", "Subcategory"],
     input_fields = ["Description","Name"] # Relevant input fields (optional)
 )(llm, df)
 
 # Filter data based on criteria
-filtered = dt.Filter(
+filtered = dt.filter(
     prompt="Keep only electronics products",
     input_fields = ["Name"] # Relevant input fields (optional)
 )(llm, mapped)
@@ -89,7 +89,7 @@ Protect sensitive information while preserving data utility:
 ```python
 # Anonymize personally identifiable information
 customer_data = dd.read_csv("customer_records.csv")
-anonymized = dt.Map(
+anonymized = dt.map(
     prompt="Replace all personally identifiable fields with XX - emails, phone numbers, names, addresses",
     output_fields=["anonymized_text"],
     input_fields=["customer_notes"]
@@ -111,7 +111,7 @@ Extract and categorize information:
 ```python
 # Classify customer support emails by department and urgency
 support_emails = dd.read_csv("support_emails.csv")
-classified = dt.Map(
+classified = dt.map(
     prompt="Classify emails by department (Technical/Billing/Sales) and urgency level (Low/Medium/High/Critical)",
     output_fields=["department", "urgency_level", "estimated_response_time"],
     input_fields=["subject", "email_body"]
@@ -133,7 +133,7 @@ Filter to remove rows based on criteria:
 ```python
 # Filter high-quality product reviews
 reviews = dd.read_csv("reviews.csv")
-quality_reviews = dt.Filter(
+quality_reviews = dt.filter(
     prompt="Keep only genuine, detailed reviews that are not spam",
     input_fields=["review_text", "reviewer_history"]
 )(llm, reviews)
@@ -153,7 +153,7 @@ Transform data with natural language:
 
 ```python
 customers = dd.read_csv("customers.csv")
-mapped = dt.Map(
+mapped = dt.map(
     prompt="Extract country and city from the address field",
     output_fields=["country", "city"]
 )(llm, customers)
@@ -163,7 +163,7 @@ mapped = dt.Map(
 
 ```python
 # Filter to remove rows
-filtered = dt.Filter(
+filtered = dt.filter(
     prompt="Keep only customers who are from Asia"
 )(llm, mapped)
 ```

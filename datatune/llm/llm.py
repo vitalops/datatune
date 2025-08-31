@@ -108,7 +108,6 @@ class LLM:
             """
             from litellm import batch_completion
 
-            print("Number of batches sent: ", len(messages))
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )
@@ -137,10 +136,7 @@ class LLM:
                                 continue
                             remaining.remove(idx)
                             ret[idx] = str(result)
-                            print(result)
                             n += 1
-                    print(n)
-                    print()
 
         while remaining:
             remaining_prompts = [input_rows[i] for i in remaining]
@@ -171,8 +167,6 @@ class LLM:
 
             if messages:
                 _send(messages, batch_ranges[start:])
-
-        print(len(ret), "rows returned")
         return ret
 
     def __call__(self, prompt: Union[str, List[str]]) -> List[str]:

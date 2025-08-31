@@ -5,9 +5,8 @@ The `Filter` operation in Datatune uses LLMs to evaluate and filter rows in a da
 ## Basic Usage
 
 ```python
-from datatune.core.filter import Filter
+import datatune as dt
 from datatune.llm.llm import LLM
-from datatune.core.op import finalize
 import dask.dataframe as dd
 
 # Initialize LLM
@@ -17,12 +16,12 @@ llm = LLM(model_name="openai/gpt-3.5-turbo")
 df = dd.read_csv("data.csv")
 
 # Apply filter
-filtered_df = Filter(
+filtered_df = dt.filter(
     prompt="Keep only rows where the product price is reasonable for its category"
 )(llm, df)
 
 # Finalize to remove deleted rows
-result = finalize(filtered_df)
+result = dt.finalize(filtered_df)
 result.compute()
 ```
 

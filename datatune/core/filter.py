@@ -155,7 +155,7 @@ def delete_rows(result_column: str, on_error: str, df: pd.DataFrame) -> pd.DataF
     return df
 
 
-class Filter(Op):
+class filter(Op):
     """
     A filtering operation that uses an LLM to determine which rows to keep or delete.
 
@@ -252,5 +252,5 @@ class Filter(Op):
 
 
 __all__ = [
-    "Filter",
+    "filter",
 ]

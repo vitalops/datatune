@@ -5,7 +5,7 @@ The `Map` operation in Datatune uses LLMs to transform data in a dataset by gene
 ## Basic Usage
 
 ```python
-from datatune.core.map import Map
+import datatune as dt
 from datatune.llm.llm import LLM
 import dask.dataframe as dd
 
@@ -16,7 +16,7 @@ llm = LLM(model_name="openai/gpt-3.5-turbo")
 df = dd.read_csv("data.csv")
 
 # Apply transformation
-mapped_df = Map(
+mapped_df = dt.map(
     prompt="Extract country and city from the address field",
     output_fields=["country", "city"]
 )(llm, df)

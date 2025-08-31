@@ -69,8 +69,4 @@ def create_batched_prompts(
         batched_prompts.append(message(batch)[0]["content"])
         batch_ranges.append(len(input_rows))
         nrows_per_api_call.append(count)
-
-    print(nrows_per_api_call)
-    print("No of rows:", sum(nrows_per_api_call))
-    print("No of api calls:", len(nrows_per_api_call))
     return batched_prompts, batch_ranges
