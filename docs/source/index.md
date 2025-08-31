@@ -31,13 +31,13 @@ df = dd.read_csv("tests/test_data/products.csv")
 print(df.head())
 
 # Transform data with Map
-mapped = dt.Map(
+mapped = dt.map(
     prompt="Extract categories from the description.",
     output_fields=["Category", "Subcategory"]
 )(llm, df)
 
 # Filter data based on criteria
-filtered = dt.Filter(
+filtered = dt.filter(
     prompt="Keep only electronics products"
 )(llm, mapped)
 
@@ -76,7 +76,7 @@ Transform data with natural language:
 
 ```python
 customers = dd.read_csv("customers.csv")
-mapped = Map(
+mapped = dt.map(
     prompt="Extract country and city from the address field",
     output_fields=["country", "city"]
 )(llm, customers)
@@ -86,7 +86,7 @@ mapped = Map(
 
 ```python
 # Filter to remove rows
-filtered = Filter(
+filtered = dt.filter(
     prompt="Keep only customers who are from Asia"
 )(llm, mapped)
 ```
