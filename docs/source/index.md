@@ -150,8 +150,10 @@ Filter.md
 Map.md
 Op.md
 LLM.md
+Agent.md
 build/html/_sources/Filter.md
 build/html/_sources/Map.md
 build/html/_sources/Op.md
 build/html/_sources/LLM.md
+build/html/_sources/Agent.md
 ```
