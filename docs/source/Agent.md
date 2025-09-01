@@ -35,7 +35,7 @@ result.compute().to_csv("transformed_data.csv")
 ## Methods
 ## **Agent.do()**
 
-  `do(prompt: str, df: dask.dataframe.DataFrame) -> dask.dataframe.DataFrame`
+  `do(prompt: str, df: dask.dataframe.DataFrame) -> pandas.DataFrame`
  - Executes a natural language prompt to transform the given dataframe.
 
 **Parameters**  
@@ -43,9 +43,8 @@ result.compute().to_csv("transformed_data.csv")
   - `df` (`dask.dataframe.DataFrame`, *required*): Input dataframe to transform.  
 
   **Returns**  
-  - `dask.dataframe.DataFrame`: A transformed dataframe, ready for `.compute()` or further processing.  
+  - `pandas.DataFrame`: A transformed pandas data frame.
 
-`Agent.do()` internally finalizes the resultant DataFrame and therefore can be readily computed.
 
 ## Examples
 
