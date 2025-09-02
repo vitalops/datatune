@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/github/license/vitalops/datatune)](https://github.com/vitalops/datatune/blob/main/LICENSE)
 [![PyPI Downloads](https://static.pepy.tech/badge/datatune)](https://pepy.tech/projects/datatune)
 [![Docs](https://img.shields.io/badge/docs-docs.datatune.ai-blue)](https://docs.datatune.ai)
-[![Discord](https://img.shields.io/discord/YOUR_DISCORD_ID?color=7289da&label=discord&logo=discord&logoColor=white)](https://discord.gg/3RKA5AryQX)
+[![Discord](https://img.shields.io/badge/Discord-7289da?logo=discord&logoColor=white)](https://discord.gg/3RKA5AryQX)
 
 Perform transformations on your data with natural language using LLMs
 
@@ -296,7 +296,7 @@ You can also mail us at hello@vitalops.ai
 
 Join our Discord community to connect with other users, ask questions, and get support:
 
-[![Join Discord](https://img.shields.io/discord/YOUR_DISCORD_ID?color=7289da&label=Join%20Discord&logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/3RKA5AryQX)
+[![Join Discord](https://img.shields.io/badge/Join%20Discord-7289da?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/3RKA5AryQX)
 
 ## License
 MIT License
