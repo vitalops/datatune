@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "datatune"
-version = "0.0.2"
+version = "0.0.3"
 description = "Your backend for LLM powered Big Data Apps"
 readme = "README.md"
 authors = [
