@@ -177,7 +177,7 @@ class Agent(ABC):
         for i in range(5):
             try:
                 llm_output = self.llm(prompt)
-                plan = json.loads(llm_output[0])
+                plan = json.loads(llm_output)
                 break
             except json.JSONDecodeError as e:
                 prompt += (
