@@ -172,6 +172,8 @@ class Agent(ABC):
 
     def get_plan(self, prompt, error_msg):
         prompt += error_msg
+        plan = None  # Initialize plan to avoid UnboundLocalError
+        
         for i in range(5):
             try:
                 llm_output = self.llm(prompt)
@@ -182,6 +184,10 @@ class Agent(ABC):
                     f"""Only produce valid JSON with no other text or explanations."""
                 )
                 continue
+        
+        if plan is None:
+            raise ValueError("Failed to generate valid JSON plan after 5 attempts")
+        
         return plan
 
     def _execute_step(self, step: Dict) -> tuple[bool, Optional[str]]:

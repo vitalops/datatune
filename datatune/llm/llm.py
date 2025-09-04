@@ -169,10 +169,9 @@ class LLM:
                 _send(messages, batch_ranges[start:])
         return ret
 
-    def __call__(self, prompt: Union[str, List[str]]) -> List[str]:
-        """Always return a list of strings, regardless of input type"""
+    def __call__(self, prompt: Union[str, List[str]]) -> Union[str, List[str]]:
         if isinstance(prompt, str):
-            return [self._completion(prompt)]
+            return self._completion(prompt)
         return self._batch_completion(prompt)
 
 
