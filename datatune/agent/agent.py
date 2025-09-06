@@ -29,7 +29,7 @@ class Agent(ABC):
             "concat": "df = dd.concat([{df_list}], axis={axis})",
         },
         "primitive": {
-            "Map": textwrap.dedent(
+            "map": textwrap.dedent(
                 """\
             mapped = dt.map(
                 prompt="{subprompt}",
@@ -90,7 +90,7 @@ class Agent(ABC):
         [
         {{
             "type": "primitive",
-            "operation": "Map",
+            "operation": "map",
             "params": {{
                 "subprompt": "Extract category and sub-category from industry",
                 "input_fields": ["Industry"],
@@ -99,7 +99,7 @@ class Agent(ABC):
         }},
         {{
             "type": "primitive",
-            "operation": "Filter",
+            "operation": "filter",
             "params": {{
                 "subprompt": "Keep only organizations in Africa",
                 "input_fields": ["Country"]
