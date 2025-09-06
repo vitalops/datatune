@@ -1,0 +1,43 @@
+/* Card styling */
+.sd-card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1rem;
+}
+
+.sd-card-header {
+    background-color: #f8f9fa;
+}
+
+.sd-card-body {
+    padding: 1.5rem;
+}
+
+/* Code block styling */
+div[class^='highlight'] {
+    background: #f8f9fa;
+    border-radius: 4px;
+    margin: 1em 0;
+}
+
+div[class^='highlight'] pre {
+    padding: 1rem;
+}
+
+/* Dark mode fixes */
+[data-theme="dark"] div[class^='highlight'] {
+    background: #1a1a1a;
+}
+
+[data-theme="dark"] .highlight {
+    color: #ffffff;
+}
+
+/* Remove lined bars from titles */
+h1::after, h2::after, h3::after {
+    display: none !important;
+}
+
+.navbar-brand.logo img {
+    max-width: 150px !important;
+    height: 100px !important;
+}
