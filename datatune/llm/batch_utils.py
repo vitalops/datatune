@@ -74,6 +74,6 @@ def create_batched_prompts(
 
     logger.info(f"📦 Prompts have been batched: {nrows_per_api_call}")
     logger.info(f"📝 Total rows to process: {sum(nrows_per_api_call)}")
-    logger.info(f"📨 Number of batches to send: {len(nrows_per_api_call)}")
+    logger.info(f"📤 Number of batches to send: {len(nrows_per_api_call)}\n")
 
     return batched_prompts, batch_ranges

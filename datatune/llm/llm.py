@@ -106,10 +106,12 @@ class LLM:
 
             """
             from litellm import batch_completion
-            logger.info(f"📤 {len(messages)} Batches sent")
+            logger.info(f"📨 {len(messages)} Batches sent\n")
+            logger.info(f"⏳ Waiting for responses...")
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )
+            logger.info(f"📬 Responses received")
 
             for i, response in enumerate(responses):
                 if isinstance(response, Exception):
@@ -166,7 +168,7 @@ class LLM:
 
             if messages:
                 _send(messages, batch_ranges[start:])
-        logger.info(f"✅ Processed {len(ret)} rows")
+        logger.info(f"✅ Processed {len(ret)} rows\n")
         return ret
 
     def __call__(self, prompt: Union[str, List[str]]) -> Union[str, List[str]]:
