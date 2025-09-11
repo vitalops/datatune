@@ -1,13 +1,12 @@
 import ast
 from typing import Dict, List, Optional, Union
 from datatune.llm.batch_utils import create_batched_prompts
-import asyncio
 import time
-from collections import deque
 from litellm import token_counter
 from datatune.llm.model_rate_limits import model_rate_limits
+from datatune.logger import get_logger
 
-
+logger = get_logger(__name__)
 class LLM:
     def __init__(self, model_name: str, **kwargs) -> None:
         self.model_name = model_name
@@ -18,11 +17,11 @@ class LLM:
         else:
             model_limits = model_rate_limits[DEFAULT_MODEL]
             if "rpm" not in kwargs:
-                print(
+                logger.warning(
                     f"REQUESTS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['rpm']} RPM. Set limits by passing tpm,rpm arguments to your llm "
                 )
             if "tpm" not in kwargs:
-                print(
+                logger.warning(
                     f"TOKENS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['tpm']} TPM. Set limits by passing tpm,rpm arguments to your llm "
                 )
 
@@ -107,7 +106,7 @@ class LLM:
 
             """
             from litellm import batch_completion
-
+            logger.info(f"📤 {len(messages)} Batches sent")
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )
@@ -167,6 +166,7 @@ class LLM:
 
             if messages:
                 _send(messages, batch_ranges[start:])
+        logger.info(f"✅ Processed {len(ret)} rows")
         return ret
 
     def __call__(self, prompt: Union[str, List[str]]) -> Union[str, List[str]]:

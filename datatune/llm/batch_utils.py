@@ -1,6 +1,8 @@
 from litellm import token_counter, get_max_tokens
 from typing import List
+from datatune.logger import get_logger
 
+logger = get_logger(__name__)
 
 def create_batched_prompts(
     input_rows: List[str],
@@ -69,4 +71,9 @@ def create_batched_prompts(
         batched_prompts.append(message(batch)[0]["content"])
         batch_ranges.append(len(input_rows))
         nrows_per_api_call.append(count)
+
+    logger.info(f"📦 Prompts have been batched: {nrows_per_api_call}")
+    logger.info(f"📝 Total rows to process: {sum(nrows_per_api_call)}")
+    logger.info(f"📨 Number of batches to send: {len(nrows_per_api_call)}")
+
     return batched_prompts, batch_ranges
