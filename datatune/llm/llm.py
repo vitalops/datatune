@@ -138,17 +138,19 @@ class LLM:
                             remaining.remove(idx)
                             ret[idx] = str(result)
                             n += 1
-
+        retries = 0
         while remaining:
             remaining_prompts = [input_rows[i] for i in remaining]
             ntokens = 0
             start = 0
+            retries += 1
             messages = []
             batched_prompts, batch_ranges = create_batched_prompts(
                 remaining_prompts,
                 batch_prefix,
                 prompt_per_row,
                 batch_suffix,
+                retries,
                 self.model_name,
             )
             for i, batched_prompt in enumerate(batched_prompts):

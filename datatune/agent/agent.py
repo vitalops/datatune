@@ -268,7 +268,7 @@ class Agent(ABC):
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
                     logger.error(f"❌ Step {i + 1}/{len(plan)} failed")
-                    logger.debug(f"Step {i + 1}\n{step} \nfailed with error: {error_msg}\n")
+                    logger.debug(f"Step {i + 1}/{len(plan)}\n{step} \nfailed with error: {error_msg}\n")
                     self.history = []
                     break
                 else:
