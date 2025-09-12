@@ -23,6 +23,8 @@ def create_batched_prompts(
 
         model_name (str): Name of model being used.
 
+        retries (int): Number of retries for failed rows.
+
     Returns:
         List[str]: A list of prompt batches, each within the token limit of the model.
 

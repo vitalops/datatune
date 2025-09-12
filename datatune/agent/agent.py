@@ -242,6 +242,7 @@ class Agent(ABC):
             task: The task description
             df: The input dataframe
             max_iterations: Maximum number of correction attempts (default: 5)
+            verbose: Whether to enable detailed debug logging 
         """
         
         if verbose is None:
