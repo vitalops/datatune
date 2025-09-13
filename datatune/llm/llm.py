@@ -1,13 +1,12 @@
 import ast
 from typing import Dict, List, Optional, Union
 from datatune.llm.batch_utils import create_batched_prompts
-import asyncio
 import time
-from collections import deque
 from litellm import token_counter
 from datatune.llm.model_rate_limits import model_rate_limits
+from datatune.logger import get_logger
 
-
+logger = get_logger(__name__)
 class LLM:
     def __init__(self, model_name: str, **kwargs) -> None:
         self.model_name = model_name
@@ -18,11 +17,11 @@ class LLM:
         else:
             model_limits = model_rate_limits[DEFAULT_MODEL]
             if "rpm" not in kwargs:
-                print(
+                logger.warning(
                     f"REQUESTS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['rpm']} RPM. Set limits by passing tpm,rpm arguments to your llm "
                 )
             if "tpm" not in kwargs:
-                print(
+                logger.warning(
                     f"TOKENS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['tpm']} TPM. Set limits by passing tpm,rpm arguments to your llm "
                 )
 
@@ -107,10 +106,12 @@ class LLM:
 
             """
             from litellm import batch_completion
-
+            logger.info(f"📨 {len(messages)} Batches sent\n")
+            logger.info(f"⏳ Waiting for responses...")
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )
+            logger.info(f"📬 Responses received")
 
             for i, response in enumerate(responses):
                 if isinstance(response, Exception):
@@ -137,17 +138,19 @@ class LLM:
                             remaining.remove(idx)
                             ret[idx] = str(result)
                             n += 1
-
+        retries = 0
         while remaining:
             remaining_prompts = [input_rows[i] for i in remaining]
             ntokens = 0
             start = 0
+            retries += 1
             messages = []
             batched_prompts, batch_ranges = create_batched_prompts(
                 remaining_prompts,
                 batch_prefix,
                 prompt_per_row,
                 batch_suffix,
+                retries,
                 self.model_name,
             )
             for i, batched_prompt in enumerate(batched_prompts):
@@ -167,6 +170,7 @@ class LLM:
 
             if messages:
                 _send(messages, batch_ranges[start:])
+        logger.info(f"✅ Processed {len(ret)} rows\n")
         return ret
 
     def __call__(self, prompt: Union[str, List[str]]) -> Union[str, List[str]]:

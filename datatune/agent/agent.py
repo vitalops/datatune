@@ -6,7 +6,10 @@ from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 import json
 import textwrap
+from datatune.logger import get_logger
+import logging
 
+logger = get_logger(__name__)
 
 class Agent(ABC):
 
@@ -213,9 +216,14 @@ class Agent(ABC):
             error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
             return error_msg
 
-    def __init__(self, llm: LLM):
+    def __init__(self, llm: LLM, verbose: bool = False):
         self.llm = llm
         self.history: List[Dict[str, Any]] = []
+        self.verbose = verbose
+        if self.verbose:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
 
     def _set_df(self, df: dd.DataFrame):
         self.df = df
@@ -226,7 +234,7 @@ class Agent(ABC):
             "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
 
-    def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5) -> dd.DataFrame:
+    def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5, verbose: bool = None) -> dd.DataFrame:
         """
         Execute task with evaluation loop and error handling
 
@@ -234,7 +242,16 @@ class Agent(ABC):
             task: The task description
             df: The input dataframe
             max_iterations: Maximum number of correction attempts (default: 5)
+            verbose: Whether to enable detailed debug logging 
         """
+        
+        if verbose is None:
+            verbose = self.verbose
+        if verbose:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
+        
 
         self._set_df(df)
         iteration = 0
@@ -243,16 +260,23 @@ class Agent(ABC):
 
         while iteration < max_iterations:
             iteration += 1
+            logger.info(f"⚙️ Iteration {iteration} - Generating New Plan...")
             plan = self.get_plan(prompt, error_msg)
+            logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
+            logger.info(f"📝 Plan Generated - Executing Plan...")
 
-            for step in plan:
+            for i, step in enumerate(plan):
+                logger.info(f"🔄 Executing step {i + 1}/{len(plan)}: {step['operation']}\n")
                 error_msg = self._execute_step(step)
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
+                    logger.error(f"❌ Step {i + 1}/{len(plan)} failed")
+                    logger.debug(f"Step {i + 1}/{len(plan)}\n{step} \nfailed with error: {error_msg}\n")
                     self.history = []
                     break
                 else:
                     self.history.append(step)
+                    logger.info(f"✅ Step {i + 1}/{len(plan)}: {step['operation']} - executed successfully")
 
             if not self.history:
                 continue
@@ -260,9 +284,9 @@ class Agent(ABC):
                 break
 
         try:
-            self.runtime.execute("df = df.compute()")
             self.runtime.execute("df = dt.finalize(df)")
+            self.runtime.execute("df = df.compute()")
         except Exception as e:
-            print(f"Warning: Could not compute and finalize result: {e}")
+            logger.error(f"Warning: Could not compute and finalize result: {e}")
 
         return self.runtime["df"]

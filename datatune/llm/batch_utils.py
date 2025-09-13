@@ -1,12 +1,15 @@
 from litellm import token_counter, get_max_tokens
 from typing import List
+from datatune.logger import get_logger
 
+logger = get_logger(__name__)
 
 def create_batched_prompts(
     input_rows: List[str],
     batch_prefix: str,
     prompt_per_row: str,
     batch_suffix: str,
+    retries:int,
     model_name: str,
 ) -> List[str]:
     """
@@ -19,6 +22,8 @@ def create_batched_prompts(
         input_rows (List[str]): List of input prompts.
 
         model_name (str): Name of model being used.
+
+        retries (int): Number of retries for failed rows.
 
     Returns:
         List[str]: A list of prompt batches, each within the token limit of the model.
@@ -69,4 +74,10 @@ def create_batched_prompts(
         batched_prompts.append(message(batch)[0]["content"])
         batch_ranges.append(len(input_rows))
         nrows_per_api_call.append(count)
+    if retries>1:
+        logger.info(f"🔄 Retrying failed rows\n")
+    logger.info(f"📦 Prompts have been batched: {nrows_per_api_call}")
+    logger.info(f"📝 Total rows to process: {sum(nrows_per_api_call)}")
+    logger.info(f"📤 Number of batches to send: {len(nrows_per_api_call)}\n")
+
     return batched_prompts, batch_ranges

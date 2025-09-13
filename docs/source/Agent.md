@@ -16,11 +16,11 @@ llm = OpenAI(model_name="gpt-3.5-turbo")
 df = dd.read_csv("data.csv")
 
 # Initialize Agent
-agent = dt.Agent(llm)
+agent = dt.Agent(llm,verbose=True)
 
 # Transform data with natural language prompt
 prompt = "your prompt for data transfromation"
-df = agent.do(prompt,df)
+df = agent.do(prompt,df,verbose=False)
  
 
 # Compute DataFrame
@@ -30,6 +30,7 @@ result.compute().to_csv("transformed_data.csv")
 ## Parameters
 
 - `llm` (LLM, *required*): The large language model backend to be used for data tranformations (e.g. OpenAI, Azure etc)
+- `verbose` (bool, *optional*, default=`False`): If set to `True`, the agent will print the full generated plan, show detailed information for each transformation step and display error messages if a step fails.
 
 
 ## Methods
@@ -41,11 +42,12 @@ result.compute().to_csv("transformed_data.csv")
 **Parameters**  
   - `prompt` (`str`, *required*): Natural language instruction describing the desired transformation.  
   - `df` (`dask.dataframe.DataFrame`, *required*): Input dataframe to transform.  
+  - `verbose` (`bool`, *optional*, default=`None`): Controls logging behavior for this call.
+    - If set to `True`, the agent will print the full generated plan, show detailed information for each transformation step and display error messages if a step fails.
+    - If `verbose` is not provided, method uses Agent's verbose setting.
 
   **Returns**  
-  - `dask.dataframe.DataFrame`: A transformed dataframe, ready for `.compute()` or further processing.  
-
-`Agent.do()` internally finalizes the resultant DataFrame and therefore can be readily computed.
+  - `pandas.DataFrame`: A transformed pandas dataframe.  
 
 ## Examples
 
