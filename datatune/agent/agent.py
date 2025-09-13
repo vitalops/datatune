@@ -249,6 +249,8 @@ class Agent(ABC):
             verbose = self.verbose
         if verbose:
             logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.INFO)
         
 
         self._set_df(df)
