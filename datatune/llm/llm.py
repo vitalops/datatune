@@ -65,7 +65,7 @@ class LLM:
         prompt_per_row: str,
         batch_suffix: str,
     ) -> List[Union[str, Exception]]:
-        input_rows = list(input_rows)
+        
         """
     Executes completions on batched input prompts without trigerring RateLimitErrors and retries failed requests
     by associating responses with original inputs via indexing.
@@ -83,13 +83,7 @@ class LLM:
 
     Returns:
         List[Union[str, Exception]]: A list containing the parsed LLM responses.
-    """
-
-        for i in range(len(input_rows)):
-            input_rows[i] = input_rows[i].strip()
-            assert input_rows[i][-1] == "}", input_rows[i]
-            input_rows[i] = input_rows[i][:-1] + f', "__index__": {i}}}'
-
+    """ 
         remaining = set(range(len(input_rows)))
         ret = [None] * len(input_rows)
 

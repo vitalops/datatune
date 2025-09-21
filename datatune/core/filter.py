@@ -64,7 +64,14 @@ def llm_batch_inference(
         f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
         f"No explanations or additional text."
     )
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
+    
+    input_rows = list(df[serialized_input_column])
+    for i in range(len(input_rows)):
+            input_rows[i] = input_rows[i].strip()
+            assert input_rows[i][-1] == "}", input_rows[i]
+            input_rows[i] = input_rows[i][:-1] + f', "__index__": {i}}}'
+
+    df[llm_output_column] = llm(input_rows, prefix, prompt, suffix)
     return df
 
 

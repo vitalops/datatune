@@ -69,8 +69,13 @@ def llm_batch_inference(
         Format your entire response as a valid Python dictionary ONLY with no other text.
         """
     )
-
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
+    input_rows = list(df[serialized_input_column])
+    for i in range(len(input_rows)):
+            input_rows[i] = input_rows[i].strip()
+            assert input_rows[i][-1] == "}", input_rows[i]
+            input_rows[i] = input_rows[i][:-1] + f', "__index__": {i}}}'
+            
+    df[llm_output_column] = llm(input_rows, prefix, prompt, suffix)
     return df
 
 
