@@ -8,6 +8,7 @@ import json
 import textwrap
 from datatune.logger import get_logger
 import logging
+import time
 
 logger = get_logger(__name__)
 
@@ -185,6 +186,10 @@ class Agent(ABC):
         2. Use existing dask functions in expressions
         3. When generating a plan, always prefer using Dask operations for any data transformation that can be expressed programmatically (e.g., filtering, grouping, aggregating, adding columns, renaming, merging, sorting).
            Only use primitive operations (such as Map, Filter) when the task requires contextual understanding of the data's meaning that cannot be achieved through Dask alone (e.g., semantic extraction, classification, interpretation, natural language reasoning).
+        4. IMPORTANT : If task is numbered  ignore the numbers and combine the steps for example
+        TASK: 1. create column a based on column x
+              2. create column b based on column y
+        should be combined into one step using map primitive. Numbered prompts that need primitives should be combined into fewer steps.
 
         Generate the JSON plan for the following TASK:
 
@@ -316,6 +321,7 @@ class Agent(ABC):
             logger.info(f"⚙️ Iteration {iteration} - Generating New Plan...")
             plan = self.get_plan(prompt, error_msg)
             logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
+            time.sleep(60)
             logger.info(f"📝 Plan Generated - Executing Plan...")
 
             for i, step in enumerate(plan):
