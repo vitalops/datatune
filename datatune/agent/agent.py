@@ -8,6 +8,7 @@ import json
 import textwrap
 from datatune.logger import get_logger
 import logging
+import time
 
 logger = get_logger(__name__)
 
@@ -15,22 +16,38 @@ class Agent(ABC):
 
     TEMPLATE = {
         "dask": {
-            # Add / transform columns
+            # Column operations
             "add_column": "df['{new_column}'] = {expression}",
-            "rename_column": "df = df.rename(columns={{'{old_name}': '{new_name}'}})",
             "apply_function": "df['{new_column}'] = df['{source_column}'].apply({function}, meta=('{new_column}', '{dtype}'))",
-            # Filtering / selecting
-            "filter_rows": "df = df[df['{column}'] {operator} {value}]",
+            "rename_columns": "df = df.rename(columns={rename_map})",
+            "astype_column": "df['{column}'] = df['{column}'].astype('{dtype}')",
+            "fillna": "df['{column}'] = df['{column}'].fillna({value})",
+            "replace_values": "df['{column}'] = df['{column}'].replace({to_replace}, {value})",
+
+            # Conditional column creation
+            "conditional_column": (
+                "df['{new_column}'] = '{default}'\n"
+                "df['{new_column}'] = df['{new_column}'].mask({condition1}, '{value1}')\n"
+                "df['{new_column}'] = df['{new_column}'].mask({condition2}, '{value2}')"
+            ),
+
+            # Row operations
+            "filter_rows": "df = df.query('{condition}')",
+            "drop_duplicates": "df = df.drop_duplicates(subset={columns})",
+            "dropna": "df = df.dropna(subset={columns})",
+
+            # Selection
             "select_columns": "df = df[{columns}]",
-            "drop_column": "df = df.drop(columns={columns})",
+            "drop_columns": "df = df.drop(columns={columns})",
+
             # Grouping and aggregation
-            "group_by_agg": "df = df.groupby('{group_column}').agg({aggregations}).reset_index()",
-            # Sorting / ordering
-            "sort_values": "df = df.sort_values(by='{column}', ascending={ascending})",
-            # Combining
-            "merge": "df = df.merge({other_df}, on='{on_column}', how='{how}')",
-            "concat": "df = dd.concat([{df_list}], axis={axis})",
+            "group_by": "df = df.groupby({group_columns})",
+            "group_by_agg": "df = df.groupby({group_columns}).agg({aggregations}).reset_index()",
+
+            # Sorting
+            "sort_values": "df = df.sort_values(by={columns}, ascending={ascending})"
         },
+
         "primitive": {
             "map": textwrap.dedent(
                 """\
@@ -60,6 +77,11 @@ class Agent(ABC):
 
         TASK: {goal}
 
+        IMPORTANT: ALWAYS USE THE MINMUM NUMBER OF STEPS REQUIRED TO COMPLETE THE TASK.
+        DO NOT MIND THAT THE TASK IS GIVEN IN NUMBERED OR BULLETED FORM. THE NUMBER OF STEPS IN THE PLAN SHOULD BE MINIMAL AND DOES NOT NEED TO MATCH THE NUMBER OF SUBTASKS IN THE TASK DESCRIPTION.
+        REMEMBER THAT MAP CAN GENERATE MULTIPLE COLUMNS IN A SINGLE STEP.
+
+
         RULES:
         1. Each step in the plan must be a JSON object with the following fields:
         - "type": either "dask" or "primitive"
@@ -75,13 +97,33 @@ class Agent(ABC):
         - Map: Use this to create new columns from existing data by applying a transformation. Specify the LLM prompt in "subprompt", the input columns in "input_fields", and the new columns in "output_fields". Produces a Dask DataFrame.
         - Filter: Use this to remove rows that do not meet a certain condition. Specify the LLM prompt in "subprompt" and the columns it applies to in "input_fields". Produces a Dask DataFrame.
 
-        Available Dask operations for transforming the dataframe:
-        - add_column: assign a new column using an expression
-        - group_by_agg: group by one or more columns and aggregate
-        - shift_column: create a column by shifting another column
-        - merge: merge with another dataframe
-        - apply_rowwise: row-wise operation across multiple columns
-        - apply_series: element-wise operation on a single column
+        Available Dask operations:
+
+        # Column operations
+        - add_column: create a new column from an expression
+        - apply_function: apply a function to one column (element-wise)
+        - rename_columns: rename columns using a mapping
+        - astype_column: change a column’s data type
+        - fillna: fill missing values in a column
+        - replace_values: replace values in a column
+        - conditional_column: create a column with conditional logic (default + masks)
+
+        # Row operations
+        - filter_rows: keep rows that match a condition
+        - drop_duplicates: remove duplicate rows
+        - dropna: remove rows with missing values
+
+        # Selection
+        - select_columns: select a subset of columns
+        - drop_columns: drop specific columns
+
+        # Grouping & aggregation
+        - group_by: group by one or more columns
+        - group_by_agg: group and aggregate columns
+
+        # Sorting
+        - sort_values: sort rows by one or more columns
+
 
         RULES FOR CHOOSING OPERATION TYPE:
         1. If the transformation can be performed using standard Dask operations (e.g., adding a column, grouping, shifting, applying row-wise or column-wise functions), use "type": "dask".
@@ -123,6 +165,18 @@ class Agent(ABC):
             "group_columns": ["Year", "Month"],
             "aggregations": {{'Gross Amount':'sum'}}
             }}
+        }},
+        {{
+            "type": "dask",
+            "operation": "conditional_column",
+            "params": {{
+                "new_column": "sales_category",
+                "default": "High",
+                "condition1": "df['sales_amount'] < 1000",
+                "value1": "Low",
+                "condition2": "(df['sales_amount'] >= 1000) & (df['sales_amount'] < 5000)",
+                "value2": "Medium"
+            }}
         }}
         ]
 
@@ -132,6 +186,10 @@ class Agent(ABC):
         2. Use existing dask functions in expressions
         3. When generating a plan, always prefer using Dask operations for any data transformation that can be expressed programmatically (e.g., filtering, grouping, aggregating, adding columns, renaming, merging, sorting).
            Only use primitive operations (such as Map, Filter) when the task requires contextual understanding of the data's meaning that cannot be achieved through Dask alone (e.g., semantic extraction, classification, interpretation, natural language reasoning).
+        4. IMPORTANT : If task is numbered  ignore the numbers and combine the steps for example
+        TASK: 1. create column a based on column x
+              2. create column b based on column y
+        should be combined into one step using map primitive. Numbered prompts that need primitives should be combined into fewer steps.
 
         Generate the JSON plan for the following TASK:
 
@@ -263,6 +321,7 @@ class Agent(ABC):
             logger.info(f"⚙️ Iteration {iteration} - Generating New Plan...")
             plan = self.get_plan(prompt, error_msg)
             logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
+            time.sleep(60)
             logger.info(f"📝 Plan Generated - Executing Plan...")
 
             for i, step in enumerate(plan):
