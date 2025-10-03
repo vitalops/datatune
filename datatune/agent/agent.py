@@ -321,7 +321,6 @@ class Agent(ABC):
             logger.info(f"⚙️ Iteration {iteration} - Generating New Plan...")
             plan = self.get_plan(prompt, error_msg)
             logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
-            time.sleep(60)
             logger.info(f"📝 Plan Generated - Executing Plan...")
 
             for i, step in enumerate(plan):
