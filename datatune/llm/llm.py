@@ -78,7 +78,7 @@ class LLM:
             "- Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
             "- End with '<endofrow>'\n\n"
             "You MUST respond to each row in order. For each answer:\n"
-            "- Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
+            "IMPORTANT: - Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
             "- End with '<endofrow>'\n"
             "- Do NOT skip or omit any rows\n"
             "Your entire response MUST include one answer per row. Respond strictly in the format described.\n\n"
@@ -146,7 +146,7 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
-
+    
     def optimized_batch_completion(
         self,
         input_rows: List[str],
@@ -211,6 +211,7 @@ class LLM:
                     for result in response["choices"][0]["message"]["content"].split(
                         "<endofrow>"
                     ):
+                        #print(result)
                         result = result.strip()
                         if result:
                             try:
@@ -236,13 +237,13 @@ class LLM:
             start = 0
             retries += 1
             messages = []
-            batched_prompts, batch_ranges = self.create_batched_prompts(
+            batched_prompts, batch_ranges = self._create_batched_prompts(
                 remaining_prompts,
                 batch_prefix,
                 prompt_per_row,
                 batch_suffix,
                 retries,
-                self.model_name,
+                
             )
             for i, batched_prompt in enumerate(batched_prompts):
                 message = [{"role": "user", "content": batched_prompt}]
@@ -265,12 +266,14 @@ class LLM:
         return ret
 
     def __call__(
-        self, prompt: Union[str, List[str]], optimized: bool = True
+        self, prompt: Union[str, List[str]], batch_prefix: str=None,prompt_per_row: str=None, batch_suffix: str=None, optimized: bool = False
     ) -> Union[str, List[str]]:
         if isinstance(prompt, str):
             return self._completion(prompt)
         if optimized:
-            return self.optimized_batch_completion(prompt)
+            if batch_prefix is None or prompt_per_row is None or batch_suffix is None:
+                raise ValueError("Batch prefix, prompt per row, and batch suffix are required when optimized=True")
+            return self.optimized_batch_completion(prompt, batch_prefix, prompt_per_row, batch_suffix)
         return self._batch_completion(prompt)
 
 
@@ -286,7 +289,7 @@ class Ollama(LLM):
 
 
 class OpenAI(LLM):
-    def __init__(self, model_name: str, api_key: Optional[str] = None, **kwargs):
+    def __init__(self, model_name: str = "gpt-3.5-turbo", api_key: Optional[str] = None, **kwargs):
         kwargs.update({"api_key": api_key})
         super().__init__(model_name=f"openai/{model_name}", **kwargs)
 

@@ -66,7 +66,7 @@ def llm_batch_inference(
         f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
         f"No explanations or additional text."
     )
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
+    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
     return df
 
 
