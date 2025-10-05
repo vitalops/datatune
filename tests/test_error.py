@@ -1,8 +1,10 @@
-from typing import List, Union, Dict
-import pandas as pd
+from typing import Dict, List, Union
+
 import dask.dataframe as dd
-from datatune.core.constants import ERRORED_COLUMN, DELETED_COLUMN
+import pandas as pd
+
 import datatune as dt
+from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
 
 
 class MockLLM:
@@ -20,36 +22,6 @@ class MockLLM:
         else:
             num_responses = len(prompt)
             return self.responses[:num_responses]
-
-    def true_batch_completion(
-        self,
-        input_rows: List[str],
-        batch_prefix: str,
-        prompt_per_row: str,
-        batch_suffix: str,
-    ) -> List[Union[str, Exception]]:
-        """
-        Mock implementation that simply returns the predefined responses.
-        Let the datatune library handle parsing and error detection.
-        """
-        input_rows = list(input_rows)
-        ret = []
-
-        for i, input_row in enumerate(input_rows):
-            # Get the next response, cycling through available responses
-            if self.response_index < len(self.responses):
-                response = self.responses[self.response_index]
-                self.response_index += 1
-            else:
-                # Cycle back to the beginning if we run out of responses
-                self.response_index = 0
-                response = self.responses[self.response_index]
-                self.response_index += 1
-
-            # Return exactly what was provided - let the library handle parsing
-            ret.append(response)
-
-        return ret
 
 
 def create_test_dataframe():

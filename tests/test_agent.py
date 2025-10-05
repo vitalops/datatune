@@ -1,12 +1,15 @@
+import os
+
 import dask.dataframe as dd
+
 import datatune as dt
 from datatune.llm.llm import Azure
-import os
 
 test_path = os.path.dirname(__file__)
 api_key = os.getenv("AZURE_API_KEY")
 api_base = os.getenv("AZURE_API_BASE")
 api_version = os.getenv("AZURE_API_VERSION")
+
 
 def test_agent_dask():
     csv_path = os.path.join(test_path, "test_data", "dask_only.csv")

@@ -1,19 +1,25 @@
 import ast
-from typing import Dict, List, Optional, Union
-from datatune.llm.batch_utils import create_batched_prompts
 import time
-from litellm import token_counter
+from typing import Dict, List, Optional, Union
+
+from litellm import get_max_tokens, token_counter
+
 from datatune.llm.model_rate_limits import model_rate_limits
 from datatune.logger import get_logger
 
 logger = get_logger(__name__)
+
+
 class LLM:
     def __init__(self, model_name: str, **kwargs) -> None:
-        self.model_name = model_name
+        self.model_name = (
+            model_name  # of the form "provider/model" e.g. "openai/gpt-3.5-turbo"
+        )
+        self._base_model_name = model_name.split("/", 1)[1]  # e.g. "gpt-3.5-turbo"
         self.kwargs = kwargs
         DEFAULT_MODEL = "gpt-3.5-turbo"
-        if model_name[model_name.index("/") + 1 :] in model_rate_limits:
-            model_limits = model_rate_limits[model_name[model_name.index("/") + 1 :]]
+        if self._base_model_name in model_rate_limits:
+            model_limits = model_rate_limits[self._base_model_name]
         else:
             model_limits = model_rate_limits[DEFAULT_MODEL]
             if "rpm" not in kwargs:
@@ -41,6 +47,89 @@ class LLM:
             return response
         return response["choices"][0]["message"]["content"]
 
+    def get_max_tokens(self) -> int:
+        return get_max_tokens(self._base_model_name)
+
+    def _create_batched_prompts(
+        self,
+        input_rows: List[str],
+        batch_prefix: str,
+        prompt_per_row: str,
+        batch_suffix: str,
+        retries: int,
+    ) -> List[str]:
+        """
+        Groups a list of prompts into batches for LLM.
+
+        This function concatenates prompts into batch strings, ensuring that the total
+        token count for each batch does not exceed the maximum token limit for the given model.
+
+        Args:
+            input_rows (List[str]): List of input prompts.
+
+            retries (int): Number of retries for failed rows.
+
+        Returns:
+            List[str]: A list of prompt batches, each within the token limit of the model.
+
+        """
+        batch_prefix = (
+            "You will be given multiple data rows to process. Each request will:\n"
+            "- Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
+            "- End with '<endofrow>'\n\n"
+            "You MUST respond to each row in order. For each answer:\n"
+            "- Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
+            "- End with '<endofrow>'\n"
+            "- Do NOT skip or omit any rows\n"
+            "Your entire response MUST include one answer per row. Respond strictly in the format described.\n\n"
+            f"Instructions:\n{batch_prefix}"
+        )
+
+        max_tokens = self.get_max_tokens()
+        model_name = self._base_model_name
+
+        batch = ""
+        batched_prompts = []
+        batch_ranges = []
+        nrows_per_api_call = []
+        count = 0
+        message = lambda x: [
+            {"role": "user", "content": f"{batch_prefix}{x}{batch_suffix}"}
+        ]
+        prefix_suffix_tokens = token_counter(model_name, messages=message(""))
+        total_ntokens = prefix_suffix_tokens
+
+        for i, prompt in enumerate(input_rows):
+            q = f"{prompt_per_row}\n {prompt} <endofrow>\n"
+            batch += q
+            ntokens = token_counter(
+                model_name, messages=[{"role": "user", "content": q}]
+            )
+            if total_ntokens + ntokens < max_tokens:
+                count += 1
+                total_ntokens += ntokens
+            else:
+                batch = batch[: -len(q)]
+                batched_prompts.append(message(batch)[0]["content"])
+                batch_ranges.append(i)
+                nrows_per_api_call.append(count)
+
+                count = 1
+                batch = q
+                total_ntokens = ntokens + prefix_suffix_tokens
+
+        if count > 0:
+            batched_prompts.append(message(batch)[0]["content"])
+            batch_ranges.append(len(input_rows))
+            nrows_per_api_call.append(count)
+        if retries > 1:
+            logger.info(f"🔄 Retrying failed rows\n")
+        logger.info(f"📦 Prompts have been batched: {nrows_per_api_call}")
+        logger.info(f"📝 Total rows to process: {sum(nrows_per_api_call)}")
+        logger.info(f"📤 Number of batches to send: {len(nrows_per_api_call)}\n")
+
+        return batched_prompts, batch_ranges
+
     def _batch_completion(self, prompts: List[str]) -> List[Union[str, Exception]]:
         messages = [[{"role": "user", "content": prompt}] for prompt in prompts]
         from litellm import batch_completion
@@ -58,7 +147,7 @@ class LLM:
 
         return ret
 
-    def true_batch_completion(
+    def optimized_batch_completion(
         self,
         input_rows: List[str],
         batch_prefix: str,
@@ -85,10 +174,7 @@ class LLM:
         List[Union[str, Exception]]: A list containing the parsed LLM responses.
     """
 
-        for i in range(len(input_rows)):
-            input_rows[i] = input_rows[i].strip()
-            assert input_rows[i][-1] == "}", input_rows[i]
-            input_rows[i] = input_rows[i][:-1] + f', "__index__": {i}}}'
+        input_rows = [f"index={i}|{row}" for i, row in enumerate(input_rows)]
 
         remaining = set(range(len(input_rows)))
         ret = [None] * len(input_rows)
@@ -106,6 +192,7 @@ class LLM:
 
             """
             from litellm import batch_completion
+
             logger.info(f"📨 {len(messages)} Batches sent\n")
             logger.info(f"⏳ Waiting for responses...")
             responses = batch_completion(
@@ -127,10 +214,13 @@ class LLM:
                         result = result.strip()
                         if result:
                             try:
-                                result = ast.literal_eval(
-                                    result[result.index("{") : result.index("}") + 1]
-                                )
-                                idx = result.pop("__index__")
+                                sep_idx = result.index("|")
+                                idx = int(result[result.index("index=") + 6 : sep_idx])
+                                result = result[sep_idx + 1 :]
+                                result = result.split("{", 1)[1]
+                                result = result.rsplit("}", 1)[0]
+                                result = "{" + result + "}"
+                                result = ast.literal_eval(result)
                             except:
                                 continue
                             if idx not in remaining:
@@ -138,6 +228,7 @@ class LLM:
                             remaining.remove(idx)
                             ret[idx] = str(result)
                             n += 1
+
         retries = 0
         while remaining:
             remaining_prompts = [input_rows[i] for i in remaining]
@@ -145,7 +236,7 @@ class LLM:
             start = 0
             retries += 1
             messages = []
-            batched_prompts, batch_ranges = create_batched_prompts(
+            batched_prompts, batch_ranges = self.create_batched_prompts(
                 remaining_prompts,
                 batch_prefix,
                 prompt_per_row,
@@ -173,9 +264,13 @@ class LLM:
         logger.info(f"✅ Processed {len(ret)} rows\n")
         return ret
 
-    def __call__(self, prompt: Union[str, List[str]]) -> Union[str, List[str]]:
+    def __call__(
+        self, prompt: Union[str, List[str]], optimized: bool = True
+    ) -> Union[str, List[str]]:
         if isinstance(prompt, str):
             return self._completion(prompt)
+        if optimized:
+            return self.optimized_batch_completion(prompt)
         return self._batch_completion(prompt)
 
 

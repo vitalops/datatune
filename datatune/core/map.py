@@ -1,12 +1,14 @@
-from typing import Dict, List, Optional, Callable, Union
-from functools import partial
-import json
 import ast
-from datatune.core.op import Op
-import pandas as pd
-import os
-from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+import json
 import logging
+import os
+from functools import partial
+from typing import Callable, Dict, List, Optional, Union
+
+import pandas as pd
+
+from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+from datatune.core.op import Op
 
 
 def input_as_string(
@@ -222,7 +224,7 @@ class map(Op):
         df = df.map_partitions(
             partial(
                 llm_batch_inference,
-                llm.true_batch_completion,
+                llm,
                 self.llm_output_column,
                 self.prompt,
                 self.serialized_input_column,

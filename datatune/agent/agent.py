@@ -1,16 +1,19 @@
-from abc import ABC
-import dask.dataframe as dd
-from typing import Optional, List, Dict, Any
+import json
+import logging
+import textwrap
+import time
 import traceback
+from abc import ABC
+from typing import Any, Dict, List, Optional
+
+import dask.dataframe as dd
+
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
-import json
-import textwrap
 from datatune.logger import get_logger
-import logging
-import time
 
 logger = get_logger(__name__)
+
 
 class Agent(ABC):
 
@@ -23,31 +26,25 @@ class Agent(ABC):
             "astype_column": "df['{column}'] = df['{column}'].astype('{dtype}')",
             "fillna": "df['{column}'] = df['{column}'].fillna({value})",
             "replace_values": "df['{column}'] = df['{column}'].replace({to_replace}, {value})",
-
             # Conditional column creation
             "conditional_column": (
                 "df['{new_column}'] = '{default}'\n"
                 "df['{new_column}'] = df['{new_column}'].mask({condition1}, '{value1}')\n"
                 "df['{new_column}'] = df['{new_column}'].mask({condition2}, '{value2}')"
             ),
-
             # Row operations
             "filter_rows": "df = df.query('{condition}')",
             "drop_duplicates": "df = df.drop_duplicates(subset={columns})",
             "dropna": "df = df.dropna(subset={columns})",
-
             # Selection
             "select_columns": "df = df[{columns}]",
             "drop_columns": "df = df.drop(columns={columns})",
-
             # Grouping and aggregation
             "group_by": "df = df.groupby({group_columns})",
             "group_by_agg": "df = df.groupby({group_columns}).agg({aggregations}).reset_index()",
-
             # Sorting
-            "sort_values": "df = df.sort_values(by={columns}, ascending={ascending})"
+            "sort_values": "df = df.sort_values(by={columns}, ascending={ascending})",
         },
-
         "primitive": {
             "map": textwrap.dedent(
                 """\
@@ -234,7 +231,7 @@ class Agent(ABC):
     def get_plan(self, prompt, error_msg):
         prompt += error_msg
         plan = None  # Initialize plan to avoid UnboundLocalError
-        
+
         for i in range(5):
             try:
                 llm_output = self.llm(prompt)
@@ -245,10 +242,10 @@ class Agent(ABC):
                     f"""Only produce valid JSON with no other text or explanations."""
                 )
                 continue
-        
+
         if plan is None:
             raise ValueError("Failed to generate valid JSON plan after 5 attempts")
-        
+
         return plan
 
     def _execute_step(self, step: Dict) -> tuple[bool, Optional[str]]:
@@ -292,7 +289,9 @@ class Agent(ABC):
             "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
 
-    def do(self, task: str, df: dd.DataFrame, max_iterations: int = 5, verbose: bool = None) -> dd.DataFrame:
+    def do(
+        self, task: str, df: dd.DataFrame, max_iterations: int = 5, verbose: bool = None
+    ) -> dd.DataFrame:
         """
         Execute task with evaluation loop and error handling
 
@@ -300,16 +299,15 @@ class Agent(ABC):
             task: The task description
             df: The input dataframe
             max_iterations: Maximum number of correction attempts (default: 5)
-            verbose: Whether to enable detailed debug logging 
+            verbose: Whether to enable detailed debug logging
         """
-        
+
         if verbose is None:
             verbose = self.verbose
         if verbose:
             logger.setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
-        
 
         self._set_df(df)
         iteration = 0
@@ -324,17 +322,23 @@ class Agent(ABC):
             logger.info(f"📝 Plan Generated - Executing Plan...")
 
             for i, step in enumerate(plan):
-                logger.info(f"🔄 Executing step {i + 1}/{len(plan)}: {step['operation']}\n")
+                logger.info(
+                    f"🔄 Executing step {i + 1}/{len(plan)}: {step['operation']}\n"
+                )
                 error_msg = self._execute_step(step)
                 if error_msg:
                     error_msg = self.get_error_prompt(error_msg, step)
                     logger.error(f"❌ Step {i + 1}/{len(plan)} failed")
-                    logger.debug(f"Step {i + 1}/{len(plan)}\n{step} \nfailed with error: {error_msg}\n")
+                    logger.debug(
+                        f"Step {i + 1}/{len(plan)}\n{step} \nfailed with error: {error_msg}\n"
+                    )
                     self.history = []
                     break
                 else:
                     self.history.append(step)
-                    logger.info(f"✅ Step {i + 1}/{len(plan)}: {step['operation']} - executed successfully")
+                    logger.info(
+                        f"✅ Step {i + 1}/{len(plan)}: {step['operation']} - executed successfully"
+                    )
 
             if not self.history:
                 continue
