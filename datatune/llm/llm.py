@@ -6,7 +6,6 @@ from litellm import get_max_tokens, token_counter
 
 from datatune.llm.model_rate_limits import model_rate_limits
 from datatune.logger import get_logger
-import opik
 
 logger = get_logger(__name__)
 
@@ -148,7 +147,7 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
-    @opik.track
+    
     def optimized_batch_completion(
         self,
         input_rows: List[str],
