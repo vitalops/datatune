@@ -274,8 +274,6 @@ class LLM:
         if isinstance(prompt, str):
             return self._completion(prompt)
         if optimized:
-            #if batch_prefix is None or prompt_per_row is None or batch_suffix is None:
-               # raise ValueError("Batch prefix, prompt per row, and batch suffix are required when optimized=True")
             return self.optimized_batch_completion(prompt, batch_prefix, prompt_per_row, batch_suffix)
         return self._batch_completion(prompt)
 
