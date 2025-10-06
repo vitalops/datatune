@@ -75,14 +75,16 @@ class LLM:
         """
         batch_prefix = (
             "You will be given multiple data rows to process. Each request will:\n"
-            "- Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
+            "- have the format 'index=<row_index>|{<row_data>}' where <row_index> is the zero-based index of the row in the original input list.\n"
             "- End with '<endofrow>'\n\n"
-            "You MUST respond to each row in order. For each answer:\n"
-            "Begin with 'index=<row_index>|{response}' where <row_index> is the zero-based index of the row in the original input list.\n" \
+            "You MUST respond to each row in order. Each answer:\n"
+            "MUST BE OF THE FORMAT 'index=<row_index>|{response}' where <row_index> is the zero-based index of the row in the original input list.\n" \
             "{response} must be enclosed in curly braces and strings should be enclosed in quotes.\n"
-            "- End with '<endofrow>'\n"
+            "- End with '<endofrow>'\n" \
+            "Always begin your response with 'index=<row_index>|' to indicate which row you are responding to without exception.\n"
             "- Do NOT skip or omit any rows\n"
-            "Your entire response MUST include one answer per row. Respond strictly in the format described.\n\n"
+            "Your entire response MUST include one answer per row. Respond strictly in the format described WITHOUT ANY OTHER TEXT, EXPLANATIONS OR BACKSTICKS\n\n" \
+            "ALL RESPONSES MUST START WITH 'index='\n"
             f"Instructions:\n{batch_prefix or ''}"
         )
 
@@ -147,7 +149,7 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
-    
+        
     def optimized_batch_completion(
         self,
         input_rows: List[str],
