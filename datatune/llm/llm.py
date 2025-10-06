@@ -83,7 +83,8 @@ class LLM:
             "- End with '<endofrow>'\n" \
             "Always begin your response with 'index=<row_index>|' to indicate which row you are responding to without exception.\n"
             "- Do NOT skip or omit any rows\n"
-            "Your entire response MUST include one answer per row. Respond strictly in the format described WITHOUT ANY OTHER TEXT, EXPLANATIONS OR BACKSTICKS\n\n" \
+            "Your entire response MUST include one answer per row. Respond strictly in the format described WITHOUT ANY OTHER TEXT, EXPLANATIONS OR BACKSTICKS\n" \
+            "DO NOT CREATE COLUMNS OR FIELDS OTHER THAN THOSE REQUESTED.\n\n"
             "ALL RESPONSES MUST START WITH 'index='\n"
             f"Instructions:\n{batch_prefix or ''}"
         )
@@ -214,7 +215,6 @@ class LLM:
                     for result in response["choices"][0]["message"]["content"].split(
                         "<endofrow>"
                     ):
-                        print(result)
                         result = result.strip()
                         if result:
                             try:
