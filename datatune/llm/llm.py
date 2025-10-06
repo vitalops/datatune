@@ -6,6 +6,7 @@ from litellm import get_max_tokens, token_counter
 
 from datatune.llm.model_rate_limits import model_rate_limits
 from datatune.logger import get_logger
+import opik
 
 logger = get_logger(__name__)
 
@@ -78,11 +79,12 @@ class LLM:
             "- Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
             "- End with '<endofrow>'\n\n"
             "You MUST respond to each row in order. For each answer:\n"
-            "IMPORTANT: - Begin with 'index=<row_index>|' where <row_index> is the zero-based index of the row in the original input list.\n"
+            "Begin with 'index=<row_index>|{response}' where <row_index> is the zero-based index of the row in the original input list.\n" \
+            "{response} must be enclosed in curly braces and strings should be enclosed in quotes.\n"
             "- End with '<endofrow>'\n"
             "- Do NOT skip or omit any rows\n"
             "Your entire response MUST include one answer per row. Respond strictly in the format described.\n\n"
-            f"Instructions:\n{batch_prefix}"
+            f"Instructions:\n{batch_prefix or ''}"
         )
 
         max_tokens = self.get_max_tokens()
@@ -94,13 +96,13 @@ class LLM:
         nrows_per_api_call = []
         count = 0
         message = lambda x: [
-            {"role": "user", "content": f"{batch_prefix}{x}{batch_suffix}"}
+            {"role": "user", "content": f"{batch_prefix or ''}{x}{batch_suffix or ''}"}
         ]
         prefix_suffix_tokens = token_counter(model_name, messages=message(""))
         total_ntokens = prefix_suffix_tokens
 
         for i, prompt in enumerate(input_rows):
-            q = f"{prompt_per_row}\n {prompt} <endofrow>\n"
+            q = f"{prompt_per_row or ''}\n {prompt} <endofrow>\n"
             batch += q
             ntokens = token_counter(
                 model_name, messages=[{"role": "user", "content": q}]
@@ -146,7 +148,7 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
-    
+    @opik.track
     def optimized_batch_completion(
         self,
         input_rows: List[str],
@@ -211,7 +213,7 @@ class LLM:
                     for result in response["choices"][0]["message"]["content"].split(
                         "<endofrow>"
                     ):
-                        #print(result)
+                        print(result)
                         result = result.strip()
                         if result:
                             try:
@@ -271,8 +273,8 @@ class LLM:
         if isinstance(prompt, str):
             return self._completion(prompt)
         if optimized:
-            if batch_prefix is None or prompt_per_row is None or batch_suffix is None:
-                raise ValueError("Batch prefix, prompt per row, and batch suffix are required when optimized=True")
+            #if batch_prefix is None or prompt_per_row is None or batch_suffix is None:
+               # raise ValueError("Batch prefix, prompt per row, and batch suffix are required when optimized=True")
             return self.optimized_batch_completion(prompt, batch_prefix, prompt_per_row, batch_suffix)
         return self._batch_completion(prompt)
 

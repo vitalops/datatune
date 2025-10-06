@@ -68,7 +68,7 @@ def llm_batch_inference(
     suffix = (
         f"{os.linesep}{os.linesep}"
         f"""Your response MUST be the entire input record as a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added keys of expected new fields if any.
-        Format your entire response as a valid Python dictionary ONLY with no other text.
+        Format your response as a valid Python dictionary ONLY with no other text.
         """
     )
 
