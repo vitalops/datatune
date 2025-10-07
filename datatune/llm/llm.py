@@ -84,7 +84,7 @@ class LLM:
             "Always begin your response with 'index=<row_index>|' to indicate which row you are responding to without exception.\n"
             "- Do NOT skip or omit any rows\n"
             "Your entire response MUST include one answer per row. Respond strictly in the format described WITHOUT ANY OTHER TEXT, EXPLANATIONS OR BACKSTICKS\n" \
-            "DO NOT CREATE COLUMNS OR FIELDS OTHER THAN THOSE REQUESTED.\n\n"
+            "IF DATA ROWS ARE NOT GIVEN IN DICTIONARY FORMAT RETURN THE ANSWER ONLY STARTING WITH index=<row_index>|"
             "ALL RESPONSES MUST START WITH 'index='\n"
             f"Instructions:\n{batch_prefix or ''}"
         )
@@ -225,6 +225,8 @@ class LLM:
                                 result = result.rsplit("}", 1)[0]
                                 result = "{" + result + "}"
                                 result = ast.literal_eval(result)
+                                if isinstance(result, set):
+                                    result = next(iter(result))
                             except:
                                 continue
                             if idx not in remaining:
@@ -232,7 +234,7 @@ class LLM:
                             remaining.remove(idx)
                             ret[idx] = str(result)
                             n += 1
-
+                                     
         retries = 0
         while remaining:
             remaining_prompts = [input_rows[i] for i in remaining]
