@@ -3,7 +3,7 @@ import time
 from typing import Dict, List, Optional, Union
 
 from litellm import get_max_tokens, token_counter
-
+from litellm import batch_completion
 from datatune.llm.model_rate_limits import model_rate_limits
 from datatune.logger import get_logger
 
@@ -136,7 +136,7 @@ class LLM:
 
     def _batch_completion(self, prompts: List[str]) -> List[Union[str, Exception]]:
         messages = [[{"role": "user", "content": prompt}] for prompt in prompts]
-        from litellm import batch_completion
+        
 
         responses = batch_completion(
             model=self.model_name, messages=messages, **self.kwargs
@@ -195,7 +195,6 @@ class LLM:
                 batch_ranges (List[int]): Each element of the list is the number of rows in each batch.
 
             """
-            from litellm import batch_completion
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
             logger.info(f"⏳ Waiting for responses...")
