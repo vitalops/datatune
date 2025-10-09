@@ -56,7 +56,6 @@ class LLM:
         batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
-        retries: int,
     ) -> List[str]:
         """
         Groups a list of prompts into batches for LLM.
@@ -66,8 +65,9 @@ class LLM:
 
         Args:
             input_rows (List[str]): List of input prompts.
-
-            retries (int): Number of retries for failed rows.
+            batch_prefix (str): A shared prefix prepended to each batch.
+            prompt_per_row (str): Prompt to transform the input row.
+            batch_suffix (str): A shared suffix appended to each batch.
 
         Returns:
             List[str]: A list of prompt batches, each within the token limit of the model.
@@ -126,8 +126,7 @@ class LLM:
             batched_prompts.append(message(batch)[0]["content"])
             batch_ranges.append(len(input_rows))
             nrows_per_api_call.append(count)
-        if retries > 1:
-            logger.info(f"🔄 Retrying failed rows\n")
+            
         logger.info(f"📦 Prompts have been batched: {nrows_per_api_call}")
         logger.info(f"📝 Total rows to process: {sum(nrows_per_api_call)}")
         logger.info(f"📤 Number of batches to send: {len(nrows_per_api_call)}\n")
@@ -157,8 +156,8 @@ class LLM:
         batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
+        max_retries: int = 5
     ) -> List[Union[str, Exception]]:
-        input_rows = list(input_rows)
         """
     Executes completions on batched input prompts without trigerring RateLimitErrors and retries failed requests
     by associating responses with original inputs via indexing.
@@ -173,11 +172,11 @@ class LLM:
         batch_prefix (str): A shared prefix prepended to each batch.
         prompt_per_row (str): Prompt to transform the input row.
         batch_suffix (str): A shared suffix appended to each batch.
-
+        max_retries (int): Maximum number of retries for failed requests
     Returns:
         List[Union[str, Exception]]: A list containing the parsed LLM responses.
     """
-
+        input_rows = list(input_rows)
         input_rows = [f"index={i}|{row}" for i, row in enumerate(input_rows)]
 
         remaining = set(range(len(input_rows)))
@@ -233,21 +232,22 @@ class LLM:
                             remaining.remove(idx)
                             ret[idx] = str(result)
                             n += 1
-                                     
-        retries = 0
-        while remaining:
+
+        retries = -1
+        while remaining and retries < max_retries:
             remaining_prompts = [input_rows[i] for i in remaining]
             ntokens = 0
             start = 0
             retries += 1
             messages = []
+            if retries>0:
+                logger.info(f"🔄 Retrying failed rows - retry #({retries}/{max_retries})\n")
+
             batched_prompts, batch_ranges = self._create_batched_prompts(
                 remaining_prompts,
                 batch_prefix,
                 prompt_per_row,
                 batch_suffix,
-                retries,
-                
             )
             for i, batched_prompt in enumerate(batched_prompts):
                 message = [{"role": "user", "content": batched_prompt}]

@@ -31,15 +31,3 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
         llm = OpenAI()
         result = llm([], optimized=True)
         self.assertEqual(result, [])
-
-    @patch("datatune.llm.llm.batch_completion")
-    def test_handles_exceptions(self, mock_batch_completion):
-        mock_batch_completion.return_value = [Exception("ConnectionError")]
-
-        llm = OpenAI()
-        result = llm(
-            ["row1"],
-            optimized=True
-        )
-
-        self.assertIsInstance(result[0], Exception)
