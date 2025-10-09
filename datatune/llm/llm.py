@@ -156,7 +156,7 @@ class LLM:
         batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
-        max_retries: int = 5
+        max_retries: int
     ) -> List[Union[str, Exception]]:
         """
     Executes completions on batched input prompts without trigerring RateLimitErrors and retries failed requests
@@ -263,19 +263,23 @@ class LLM:
                     time.sleep(max(0, 61 - (t2 - t1)))
                     messages = [message]
                     ntokens = curr_ntokens
-
+         
             if messages:
                 _send(messages, batch_ranges[start:])
+                
+        if remaining:
+            for i in remaining:
+                ret[i] = Exception("FAILED_AFTER_MAX_RETRIES")
         logger.info(f"✅ Processed {len(ret)} rows\n")
         return ret
 
     def __call__(
-        self, prompt: Union[str, List[str]], batch_prefix: str=None,prompt_per_row: str=None, batch_suffix: str=None, optimized: bool = False
+        self, prompt: Union[str, List[str]], batch_prefix: str=None,prompt_per_row: str=None, batch_suffix: str=None, max_retries: int = 5, optimized: bool = False
     ) -> Union[str, List[str]]:
         if isinstance(prompt, str):
             return self._completion(prompt)
         if optimized:
-            return self.optimized_batch_completion(prompt, batch_prefix, prompt_per_row, batch_suffix)
+            return self.optimized_batch_completion(prompt, batch_prefix, prompt_per_row, batch_suffix, max_retries)
         return self._batch_completion(prompt)
 
 
