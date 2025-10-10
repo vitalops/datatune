@@ -23,8 +23,8 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
             optimized=True
         )
         self.assertEqual(len(result), 2)
-        self.assertIn("hello", result[0])
-        self.assertIn("world", result[1])
+        self.assertEqual("hello", result[0])
+        self.assertEqual("world", result[1])
         self.assertTrue(all(isinstance(x, (str, Exception)) for x in result))
 
     @patch("datatune.llm.llm.batch_completion")
