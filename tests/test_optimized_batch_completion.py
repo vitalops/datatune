@@ -36,14 +36,14 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
 
     @patch("datatune.llm.llm.batch_completion")
     def test_retry_succeeds(self, mock_batch_completion):
-        malformed_response = [
+        bad_response = [
             {"choices": [{"message": {"content": "index=0|{bad_format}<endofrow>index=1|{malformed}"}}]}
         ]
         good_response = [
             {"choices": [{"message": {"content": "index=0|{'fixed'}<endofrow>index=1|{'fixed'}"}}]}
         ]
 
-        mock_batch_completion.side_effect = [malformed_response, good_response]
+        mock_batch_completion.side_effect = [bad_response, good_response]
 
         llm = OpenAI()
 
@@ -54,11 +54,11 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
 
     @patch("datatune.llm.llm.batch_completion")
     def test_exhaust_retries(self, mock_batch_completion):
-        malformed_response = [
+        bad_response = [
             {"choices": [{"message": {"content": "index=0|completely_unparseable"}}]}
         ]
-        
-        mock_batch_completion.side_effect = itertools.cycle([malformed_response])
+
+        mock_batch_completion.side_effect = itertools.cycle([bad_response])
 
         llm = OpenAI()
 
