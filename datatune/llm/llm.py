@@ -78,7 +78,7 @@ class LLM:
             "- have the format 'index=<row_index>|{<row_data>}' where <row_index> is the zero-based index of the row in the original input list.\n"
             "- End with '<endofrow>'\n\n"
             "You MUST respond to each row in order. Each answer:\n"
-            "MUST BE OF THE FORMAT 'index=<row_index>|{response}' where <row_index> is the zero-based index of the row in the original input list.\n" \
+            "MUST BE OF THE FORMAT 'index=<row_index>|{response}<endofrow>' where <row_index> is the zero-based index of the row in the original input list.\n" \
             "{response} must be enclosed in curly braces and strings should be enclosed in quotes.\n"
             "- End with '<endofrow>'\n" \
             "Always begin your response with 'index=<row_index>|' to indicate which row you are responding to without exception.\n"
@@ -86,6 +86,7 @@ class LLM:
             "Your entire response MUST include one answer per row. Respond strictly in the format described WITHOUT ANY OTHER TEXT, EXPLANATIONS OR BACKSTICKS\n" \
             "IF DATA ROWS ARE NOT GIVEN IN DICTIONARY FORMAT RETURN THE ANSWER ONLY STARTING WITH index=<row_index>|"
             "ALL RESPONSES MUST START WITH 'index='\n"
+            "ALL RESPONSES MUST END WITH '<endofrow>'\n"
             f"Instructions:\n{batch_prefix or ''}"
         )
 
@@ -267,9 +268,8 @@ class LLM:
             if messages:
                 _send(messages, batch_ranges[start:])
                 
-        if remaining:
-            for i in remaining:
-                ret[i] = Exception("FAILED_AFTER_MAX_RETRIES")
+        for i in remaining:
+            ret[i] = Exception("FAILED_AFTER_MAX_RETRIES")
         logger.info(f"✅ Processed {len(ret)} rows\n")
         return ret
 
