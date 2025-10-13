@@ -1,8 +1,10 @@
-from datatune.llm.llm import Azure
-import pandas as pd
-import dask.dataframe as dd
 import os
+
+import dask.dataframe as dd
+import pandas as pd
+
 import datatune as dt
+from datatune.llm.llm import Azure
 
 api_key = os.getenv("OPENAI_API_KEY")
 api_base = os.getenv("AZURE_API_BASE")

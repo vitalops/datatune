@@ -1,12 +1,14 @@
-from typing import Dict, List, Optional, Callable, Union
-from functools import partial
-import json
 import ast
-from datatune.core.op import Op
-import pandas as pd
-import os
-from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+import json
 import logging
+import os
+from functools import partial
+from typing import Callable, Dict, List, Optional, Union
+
+import pandas as pd
+
+from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+from datatune.core.op import Op
 
 
 def input_as_string(
@@ -65,12 +67,13 @@ def llm_batch_inference(
 
     suffix = (
         f"{os.linesep}{os.linesep}"
-        f"""Your response MUST be the entire input record as a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added keys of expected new fields if any.
-        Format your entire response as a valid Python dictionary ONLY with no other text.
+        f"""Your response MUST be the entire input record as a valid Python dictionary in the format
+         'index=<row_index>|{{key1: value1, key2: value2, ...}}'  with added keys of expected new fields if any.
+        ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW.
         """
     )
 
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
+    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
     return df
 
 
@@ -222,7 +225,7 @@ class map(Op):
         df = df.map_partitions(
             partial(
                 llm_batch_inference,
-                llm.true_batch_completion,
+                llm,
                 self.llm_output_column,
                 self.prompt,
                 self.serialized_input_column,

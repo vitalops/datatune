@@ -1,11 +1,13 @@
-from typing import Dict, List, Optional, Callable, Union
-from functools import partial
-from datatune.core.op import Op
-import pandas as pd
-import os
-from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
-import logging
 import ast
+import logging
+import os
+from functools import partial
+from typing import Callable, Dict, List, Optional, Union
+
+import pandas as pd
+
+from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+from datatune.core.op import Op
 
 
 def input_as_string(
@@ -64,7 +66,7 @@ def llm_batch_inference(
         f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
         f"No explanations or additional text."
     )
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix)
+    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
     return df
 
 
@@ -230,7 +232,7 @@ class filter(Op):
         llm_outputs = df.map_partitions(
             partial(
                 llm_batch_inference,
-                llm.true_batch_completion,
+                llm,
                 self.llm_output_column,
                 self.prompt,
                 self.serialized_input_column,

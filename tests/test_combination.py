@@ -1,8 +1,10 @@
-from datatune.llm.llm import Azure
-import datatune as dt
-import pandas as pd
-import dask.dataframe as dd
 import os
+
+import dask.dataframe as dd
+import pandas as pd
+
+import datatune as dt
+from datatune.llm.llm import Azure
 
 
 def test_map_and_filter():

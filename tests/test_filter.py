@@ -1,7 +1,8 @@
-from datatune.llm.llm import Ollama
-import pandas as pd
 import dask.dataframe as dd
+import pandas as pd
+
 import datatune as dt
+from datatune.llm.llm import Ollama
 
 
 def test_filter():
