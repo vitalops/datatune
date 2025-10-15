@@ -74,20 +74,15 @@ class LLM:
 
         """
         batch_prefix = (
-            "You will be given requests to process. Each request will:\n"
-            "- have the format 'index=<index>|{prompt}' where <index> is the zero-based index of the prompt in the original input list.\n"
-            "- End with '<endofrow>'\n\n"
-            "You MUST respond to each prompt in order. Each answer:\n"
-            "MUST BE OF THE FORMAT 'index=<index>|{answer}<endofrow>' where <index> is the zero-based index of the row in the original input list.\n" \
-            "ALL RESPONSES MUST START WITH 'index='\n"
-            "ALL RESPONSES MUST END WITH '<endofrow>'\n"
-            "{answer} MUST BE ENCLOSED IN CURLY BRACES and strings should be enclosed in quotes.\n"
-            "- End with '<endofrow>'\n" \
-            "Always begin your response with 'index=<index>|' to indicate which row you are responding to without exception.\n"
-            "- Do NOT skip or omit any rows\n"
-           
-            f"Instructions:\n{batch_prefix or ''}"
+        "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
+        "Respond to each prompt in order.\n"
+        "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
+        "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n"
+        "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
+        "Always start with 'index=<index>|' and end with '<endofrow>'.\n"
+        f"Instructions:\n{batch_prefix or ''}"
         )
+
 
         max_tokens = self.get_max_tokens()
         model_name = self._base_model_name
