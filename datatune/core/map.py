@@ -70,6 +70,7 @@ def llm_batch_inference(
         f"""Your response MUST be the entire input record as a valid Python dictionary in the format
          'index=<row_index>|{{key1: value1, key2: value2, ...}}'  with added keys of expected new fields if any.
         ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW.
+        ALWAYS END YOUR RESPONSE WITH '<endofrow>'.
         """
     )
 

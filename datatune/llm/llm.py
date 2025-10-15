@@ -74,19 +74,18 @@ class LLM:
 
         """
         batch_prefix = (
-            "You will be given multiple data rows to process. Each request will:\n"
-            "- have the format 'index=<row_index>|{<row_data>}' where <row_index> is the zero-based index of the row in the original input list.\n"
+            "You will be given requests to process. Each request will:\n"
+            "- have the format 'index=<index>|{prompt}' where <index> is the zero-based index of the prompt in the original input list.\n"
             "- End with '<endofrow>'\n\n"
-            "You MUST respond to each row in order. Each answer:\n"
-            "MUST BE OF THE FORMAT 'index=<row_index>|{response}<endofrow>' where <row_index> is the zero-based index of the row in the original input list.\n" \
-            "{response} must be enclosed in curly braces and strings should be enclosed in quotes.\n"
-            "- End with '<endofrow>'\n" \
-            "Always begin your response with 'index=<row_index>|' to indicate which row you are responding to without exception.\n"
-            "- Do NOT skip or omit any rows\n"
-            "Your entire response MUST include one answer per row. Respond strictly in the format described WITHOUT ANY OTHER TEXT, EXPLANATIONS OR BACKSTICKS\n" \
-            "IF DATA ROWS ARE NOT GIVEN IN DICTIONARY FORMAT RETURN THE ANSWER ONLY STARTING WITH index=<row_index>|"
+            "You MUST respond to each prompt in order. Each answer:\n"
+            "MUST BE OF THE FORMAT 'index=<index>|{answer}<endofrow>' where <index> is the zero-based index of the row in the original input list.\n" \
             "ALL RESPONSES MUST START WITH 'index='\n"
             "ALL RESPONSES MUST END WITH '<endofrow>'\n"
+            "{answer} MUST BE ENCLOSED IN CURLY BRACES and strings should be enclosed in quotes.\n"
+            "- End with '<endofrow>'\n" \
+            "Always begin your response with 'index=<index>|' to indicate which row you are responding to without exception.\n"
+            "- Do NOT skip or omit any rows\n"
+           
             f"Instructions:\n{batch_prefix or ''}"
         )
 
@@ -99,7 +98,7 @@ class LLM:
         nrows_per_api_call = []
         count = 0
         message = lambda x: [
-            {"role": "user", "content": f"{batch_prefix or ''}{x}{batch_suffix or ''}"}
+            {"role": "user", "content": f"{batch_prefix}{x}{batch_suffix or ''}"}
         ]
         prefix_suffix_tokens = token_counter(model_name, messages=message(""))
         total_ntokens = prefix_suffix_tokens
