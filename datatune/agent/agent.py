@@ -270,6 +270,39 @@ class Agent(ABC):
         except Exception as e:
             error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
             return error_msg
+    def _execute_plan(self, plan: List[Dict]):
+        self.runtime["step_num"] = 0
+        self.runtime["plan"] = plan
+        code = ''
+        for i,step in enumerate(plan):
+            self.runtime["i"] = i
+            self.runtime["step"] = step
+            try:
+                if step["type"] in ("dask","primitive"):
+                    template = self.TEMPLATE[step["type"]][step["operation"]].format(
+                        **step["params"]
+                    )
+                    code+='''logger.info(f"🔄 Executing step {i + 1}/{len(plan)}: {step['operation']}")\n'''
+                    code += template + "\n"
+                    code+= '''logger.info(f"✅ Step {i + 1}/{len(plan)}: {step['operation']} - executed successfully")\n'''
+                    code+= "step_num += 1\n"
+                else:
+                    raise ValueError(f"Unknown step type: {step['type']}")   
+            except Exception as e:
+                error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+                logger.error(f"Error in formatting step {i + 1}/{len(plan)}: {error_msg}")
+                return error_msg, i
+        try:
+            self.runtime.execute(code + "\n" + "df = dt.finalize(df)\n" + "df = df.compute()")
+            return None,len(plan)
+        
+        except Exception as e:
+                step_num = self.runtime["step_num"]
+                error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
+                logger.error(f"❌ Step {step_num}/{len(plan)} failed with error: {error_msg}")
+                return error_msg,step_num-1
+            
+
 
     def __init__(self, llm: LLM, verbose: bool = False):
         self.llm = llm
@@ -285,6 +318,7 @@ class Agent(ABC):
         runtime = self.runtime = Runtime()
         runtime["df"] = df
         runtime["llm"] = self.llm
+        runtime["logger"] = logger
         runtime.execute(
             "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
@@ -319,36 +353,20 @@ class Agent(ABC):
             logger.info(f"⚙️ Iteration {iteration} - Generating New Plan...")
             plan = self.get_plan(prompt, error_msg)
             logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
+            #time.sleep(100)
             logger.info(f"📝 Plan Generated - Executing Plan...")
 
-            for i, step in enumerate(plan):
-                logger.info(
-                    f"🔄 Executing step {i + 1}/{len(plan)}: {step['operation']}\n"
+                
+            error_msg,step_num = self._execute_plan(plan)
+            if error_msg:
+                error_msg = self.get_error_prompt(error_msg, plan[step_num])
+                logger.error(f"❌ Step {step_num+1}/{len(plan)} failed")
+                logger.debug(
+                    f"Step {step_num+1}/{len(plan)}\n{plan[step_num]} \nfailed with error: {error_msg}\n"
                 )
-                error_msg = self._execute_step(step)
-                if error_msg:
-                    error_msg = self.get_error_prompt(error_msg, step)
-                    logger.error(f"❌ Step {i + 1}/{len(plan)} failed")
-                    logger.debug(
-                        f"Step {i + 1}/{len(plan)}\n{step} \nfailed with error: {error_msg}\n"
-                    )
-                    self.history = []
-                    break
-                else:
-                    self.history.append(step)
-                    logger.info(
-                        f"✅ Step {i + 1}/{len(plan)}: {step['operation']} - executed successfully"
-                    )
-
-            if not self.history:
                 continue
             else:
-                break
-
-        try:
-            self.runtime.execute("df = dt.finalize(df)")
-            self.runtime.execute("df = df.compute()")
-        except Exception as e:
-            logger.error(f"Warning: Could not compute and finalize result: {e}")
+                logger.info("✅ Task completed successfully!")
+                break 
 
         return self.runtime["df"]
