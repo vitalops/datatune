@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 from litellm import get_max_tokens, token_counter
 from litellm import batch_completion
 from datatune.llm.model_rate_limits import model_rate_limits
-from datatune.logger import get_logger
+from datatune.logger import get_logger, Spinner
 
 logger = get_logger(__name__)
 
@@ -197,11 +197,19 @@ class LLM:
             """
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
-            logger.info(f"⏳ Waiting for responses...")
+            spinner = Spinner("⏳ Waiting for responses...")  # logs a static line
+            spinner.start()
+            start = time.time()
+
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )
-            logger.info(f"📬 Responses received")
+
+            # stop spinner
+            spinner.stop()
+
+            logger.info(f"📬 Responses received in {time.time() - start:.2f} seconds")
+
 
             for i, response in enumerate(responses):
                 if isinstance(response, Exception):

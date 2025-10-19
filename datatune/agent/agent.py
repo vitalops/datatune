@@ -11,6 +11,7 @@ import dask.dataframe as dd
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 from datatune.logger import get_logger
+from dask import delayed
 
 logger = get_logger(__name__)
 
@@ -282,9 +283,11 @@ class Agent(ABC):
                     template = self.TEMPLATE[step["type"]][step["operation"]].format(
                         **step["params"]
                     )
-                    code+='''logger.info(f"🔄 Executing step {i + 1}/{len(plan)}: {step['operation']}")\n'''
+                    msg = f"🔄 Executing step {i+1}/{len(plan)}: {step['operation']}\n"
+                    code+= f"logger.info({msg!r})\n"
                     code += template + "\n"
-                    code+= '''logger.info(f"✅ Step {i + 1}/{len(plan)}: {step['operation']} - executed successfully")\n'''
+                    msg = f"📍 Completed step {i+1}/{len(plan)}: {step['operation']}\n"
+                    code+= f"df = df.map_partitions(log_primitive, {msg!r}, meta=df._meta)\n"
                     code+= "step_num += 1\n"
                 else:
                     raise ValueError(f"Unknown step type: {step['type']}")   
@@ -312,6 +315,10 @@ class Agent(ABC):
             logger.setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
+   
+    def log_primitive(self, df: dd.DataFrame, message: str) -> dd.DataFrame:
+        logger.info(message)
+        return df
 
     def _set_df(self, df: dd.DataFrame):
         self.df = df
@@ -319,6 +326,7 @@ class Agent(ABC):
         runtime["df"] = df
         runtime["llm"] = self.llm
         runtime["logger"] = logger
+        runtime["log_primitive"] = self.log_primitive
         runtime.execute(
             "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
@@ -354,7 +362,7 @@ class Agent(ABC):
             plan = self.get_plan(prompt, error_msg)
             logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
             #time.sleep(100)
-            logger.info(f"📝 Plan Generated - Executing Plan...")
+            logger.info(f"📝 Plan Generated - Executing Plan...\n")
 
                 
             error_msg,step_num = self._execute_plan(plan)
@@ -366,7 +374,7 @@ class Agent(ABC):
                 )
                 continue
             else:
-                logger.info("✅ Task completed successfully!")
+                logger.info("🚀 Task completed successfully!")
                 break 
 
         return self.runtime["df"]

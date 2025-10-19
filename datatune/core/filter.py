@@ -66,7 +66,7 @@ def llm_batch_inference(
         f"DECISION:Your response MUST be a valid Python dictionary in the format: {{key1: value1, key2: value2, ...}} with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
         f"No explanations or additional text."
     )
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
+    df.loc[:, llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
     return df
 
 
@@ -119,7 +119,7 @@ def parse_filter_output_as_int(
         pd.DataFrame: DataFrame with added result column and updated error flags.
     """
     llm_output = df[llm_output_column].apply(parse_filter_output)
-    df[result_column] = -1
+    df.loc[:, result_column] = -1
     df.loc[llm_output == True, result_column] = 1
     df.loc[llm_output == False, result_column] = 0
     error_rows = df[result_column] == -1
