@@ -11,6 +11,7 @@ import dask.dataframe as dd
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 from datatune.logger import get_logger
+from dask import delayed
 
 logger = get_logger(__name__)
 
@@ -33,7 +34,7 @@ class Agent(ABC):
                 "df['{new_column}'] = df['{new_column}'].mask({condition2}, '{value2}')"
             ),
             # Row operations
-            "filter_rows": "df = df.query('{condition}')",
+            "select_rows": "df = df.loc[{condition}]",
             "drop_duplicates": "df = df.drop_duplicates(subset={columns})",
             "dropna": "df = df.dropna(subset={columns})",
             # Selection
@@ -106,7 +107,7 @@ class Agent(ABC):
         - conditional_column: create a column with conditional logic (default + masks)
 
         # Row operations
-        - filter_rows: keep rows that match a condition
+        - select_rows: keep rows that match a boolean condition (make sure columns used in conditions exist in schema)
         - drop_duplicates: remove duplicate rows
         - dropna: remove rows with missing values
 
@@ -187,7 +188,7 @@ class Agent(ABC):
         TASK: 1. create column a based on column x
               2. create column b based on column y
         should be combined into one step using map primitive. Numbered prompts that need primitives should be combined into fewer steps.
-
+        5. DECIDE whether subsequent steps can use Dask operations based on NEW COLUMNS that may have been created in previous steps.
         Generate the JSON plan for the following TASK:
 
         TASK:{goal}
@@ -270,6 +271,58 @@ class Agent(ABC):
         except Exception as e:
             error_msg = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
             return error_msg
+        
+    def _execute_plan(self, plan: List[Dict]):
+        """Execute a sequence of plan steps (Dask or primitive)."""
+
+        self.runtime["step_num"] = 0
+        self.runtime["plan"] = plan
+        code_lines = []
+
+        for i, step in enumerate(plan):
+            self.runtime["i"] = i
+            self.runtime["step"] = step
+
+            try:
+                step_type = step.get("type")
+                operation = step.get("operation")
+
+                if step_type not in ("dask", "primitive"):
+                    raise ValueError(f"Unknown step type: {step_type}")
+
+                # Build the operation code from template
+                template = self.TEMPLATE[step_type][operation].format(**step["params"])
+
+                # Log messages for progress tracking
+                start_msg = f"🔄 Executing step {i + 1}/{len(plan)}: {operation}"
+                end_msg = f"📍 Completed step {i + 1}/{len(plan)}: {operation}"
+
+                # Append logging and operation code
+                code_lines += [
+                    f"df = df.map_partitions(log_primitive, {start_msg!r}, meta=df._meta)",
+                    template,
+                    f"df = df.map_partitions(log_primitive, {end_msg!r}, meta=df._meta)",
+                    "step_num += 1",
+                ]
+
+            except Exception as e:
+                error_msg = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+                logger.error(f"⚠️ Error formatting step {i + 1}/{len(plan)}: {error_msg}")
+                return error_msg, i
+
+        # Final execution
+        try:
+            full_code = "\n".join(code_lines) + "\n" + "df = dt.finalize(df)\ndf = df.compute()"
+            self.runtime.execute(full_code)
+            return None, len(plan)
+
+        except Exception as e:
+            step_num = self.runtime.get("step_num", 0)
+            error_msg = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
+            logger.error(f"❌ Step {step_num}/{len(plan)} failed with error: {error_msg}")
+            return error_msg, step_num - 1
+
+            
 
     def __init__(self, llm: LLM, verbose: bool = False):
         self.llm = llm
@@ -279,12 +332,18 @@ class Agent(ABC):
             logger.setLevel(logging.DEBUG)
         else:
             logger.setLevel(logging.INFO)
+   
+    def log_primitive(self, df: dd.DataFrame, message: str) -> dd.DataFrame:
+        logger.info(message)
+        return df
 
     def _set_df(self, df: dd.DataFrame):
         self.df = df
         runtime = self.runtime = Runtime()
         runtime["df"] = df
         runtime["llm"] = self.llm
+        runtime["logger"] = logger
+        runtime["log_primitive"] = self.log_primitive
         runtime.execute(
             "import numpy as np\nimport pandas as pd\nimport dask.dataframe as dd\nimport datatune as dt\n"
         )
@@ -319,36 +378,18 @@ class Agent(ABC):
             logger.info(f"⚙️ Iteration {iteration} - Generating New Plan...")
             plan = self.get_plan(prompt, error_msg)
             logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
-            logger.info(f"📝 Plan Generated - Executing Plan...")
-
-            for i, step in enumerate(plan):
-                logger.info(
-                    f"🔄 Executing step {i + 1}/{len(plan)}: {step['operation']}\n"
+            #time.sleep(1200)
+            logger.info(f"📝 Plan Generated - Executing Plan...\n")
+            error_msg, step_num = self._execute_plan(plan)
+            if error_msg:
+                error_msg = self.get_error_prompt(error_msg, plan[step_num])
+                logger.error(f"❌ Step {step_num+1}/{len(plan)} failed")
+                logger.debug(
+                    f"Step {step_num+1}/{len(plan)}\n{plan[step_num]} \nfailed with error: {error_msg}\n"
                 )
-                error_msg = self._execute_step(step)
-                if error_msg:
-                    error_msg = self.get_error_prompt(error_msg, step)
-                    logger.error(f"❌ Step {i + 1}/{len(plan)} failed")
-                    logger.debug(
-                        f"Step {i + 1}/{len(plan)}\n{step} \nfailed with error: {error_msg}\n"
-                    )
-                    self.history = []
-                    break
-                else:
-                    self.history.append(step)
-                    logger.info(
-                        f"✅ Step {i + 1}/{len(plan)}: {step['operation']} - executed successfully"
-                    )
-
-            if not self.history:
                 continue
             else:
-                break
-
-        try:
-            self.runtime.execute("df = dt.finalize(df)")
-            self.runtime.execute("df = df.compute()")
-        except Exception as e:
-            logger.error(f"Warning: Could not compute and finalize result: {e}")
+                logger.info("🚀 Task completed successfully!")
+                break 
 
         return self.runtime["df"]
