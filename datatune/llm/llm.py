@@ -53,7 +53,7 @@ class LLM:
     def _create_batched_prompts(
         self,
         input_rows: List[str],
-        batch_prefix: str,
+        user_batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
     ) -> List[str]:
@@ -74,14 +74,41 @@ class LLM:
 
         """
         batch_prefix = (
-        "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
-        "Respond to each prompt in order.\n"
-        "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
-        "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n"
-        "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
-        "Always start with 'index=<index>|' and end with '<endofrow>'.\n"
-        f"Instructions:\n{batch_prefix or ''}"
+            "You will receive multiple prompts in the format:\n"
+            "index=<index>|{prompt}\n"
+            "Each prompt ends with '<endofrow>'.\n\n"
+
+            "You must reply to each prompt in the exact same order using this format:\n"
+            "index=<index>|{answer}<endofrow>\n\n"
+
+            "Formatting Rules (must always be followed):\n"
+            "1. Each response must begin with 'index=<index>|' and end with '<endofrow>'.\n"
+            "2. The {answer} must be a valid Python object (e.g., list, dict, string, number, tuple, bool, or None).\n"
+            "3. The entire Python object must be enclosed in curly braces `{}`.\n"
+            "4. All strings must use double quotes — not single quotes.\n"
+            "5. Do not include any markdown, explanations, or text outside the required format.\n"
+            "6. Return exactly one object per prompt.\n"
+            "7. If a prompt asks for a string, wrap it in quotes inside the curly braces.\n\n"
+
+            f"formatting rules:\n{user_batch_prefix}\n\n"
+
+            "Examples:\n"
+            "- If the prompt says 'return a Python list of names':\n"
+            "  index=0|{\"Alice\", \"Bob\", \"Charlie\"}<endofrow>\n"
+            "- If the prompt says 'return a Python dictionary':\n"
+            "  index=0|{{\"key1\": \"value1\", \"key2\": \"value2\"}}<endofrow>\n"
+            "- If the prompt says 'return a string':\n"
+            "  index=0|{{\"This is a string.\"}}<endofrow>\n"
+            "- If the prompt says 'return an integer':\n"
+            "  index=0|{42}<endofrow>\n"
+            "- If the prompt says 'return a boolean':\n"
+            "  index=0|{True}<endofrow>\n"
+            "- If the prompt says 'return a tuple':\n"
+            "  index=0|{(1, 2, 3)}<endofrow>\n\n"
+
+            "Strictly follow this schema. Never include extra text or formatting."
         )
+
 
 
         max_tokens = self.get_max_tokens()
