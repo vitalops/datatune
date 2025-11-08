@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 from litellm import get_max_tokens, token_counter
 from litellm import batch_completion
 from datatune.llm.model_rate_limits import model_rate_limits
-from datatune.logger import get_logger
+from datatune.logger import get_logger, Spinner
 
 logger = get_logger(__name__)
 
@@ -74,40 +74,26 @@ class LLM:
 
         """
         batch_prefix = (
-            "You will receive multiple prompts in the format:\n"
-            "index=<index>|{prompt}\n"
-            "Each prompt ends with '<endofrow>'.\n\n"
-
-            "You must reply to each prompt in the exact same order using this format:\n"
+            "Format:\n"
+            "Each input = index=<index>|{prompt}<endofrow>\n"
+            "Respond as:\n"
             "index=<index>|{answer}<endofrow>\n\n"
 
-            "Formatting Rules (must always be followed):\n"
-            "1. Each response must begin with 'index=<index>|' and end with '<endofrow>'.\n"
-            "2. The {answer} must be a valid Python object (e.g., list, dict, string, number, tuple, bool, or None).\n"
-            "3. The entire Python object must be enclosed in curly braces `{}`.\n"
-            "4. All strings must use double quotes — not single quotes.\n"
-            "5. Do not include any markdown, explanations, or text outside the required format.\n"
-            "6. Return exactly one object per prompt.\n"
-            "7. If a prompt asks for a string, wrap it in quotes inside the curly braces.\n\n"
+            "Rules:\n"
+            "- {answer} must be a valid Python literal (list, dict, string, int, float, bool, None, or tuple).\n"
+            "- Enclose the entire object in curly braces `{}`.\n"
+            "- Use double quotes for strings.\n"
+            "- No markdown, text, or commentary.\n"
+            "- One object per prompt only.\n\n"
 
-            f"formatting rules:\n{user_batch_prefix}\n\n"
+            f"Extra user rules:\n{user_batch_prefix}\n\n"
 
             "Examples:\n"
-            "- If the prompt says 'return a Python list of names':\n"
-            "  index=0|{\"Alice\", \"Bob\", \"Charlie\"}<endofrow>\n"
-            "- If the prompt says 'return a Python dictionary':\n"
-            "  index=0|{{\"key1\": \"value1\", \"key2\": \"value2\"}}<endofrow>\n"
-            "- If the prompt says 'return a string':\n"
-            "  index=0|{{\"This is a string.\"}}<endofrow>\n"
-            "- If the prompt says 'return an integer':\n"
-            "  index=0|{42}<endofrow>\n"
-            "- If the prompt says 'return a boolean':\n"
-            "  index=0|{True}<endofrow>\n"
-            "- If the prompt says 'return a tuple':\n"
-            "  index=0|{(1, 2, 3)}<endofrow>\n\n"
-
-            "Strictly follow this schema. Never include extra text or formatting."
+            "index=0|{[\"task1\", \"task2\"]}<endofrow>\n"
+            "index=1|{{\"a\": 1, \"b\": 2}}<endofrow>\n"
+            "index=2|{{\"A string.\"}}<endofrow>"
         )
+
 
 
 
@@ -218,11 +204,18 @@ class LLM:
             """
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
-            logger.info(f"⏳ Waiting for responses...")
+            spinner = Spinner("⏳ Waiting for responses...")  # logs a static line
+            spinner.start()
+            start = time.time()
+
             responses = batch_completion(
                 model=self.model_name, messages=messages, **self.kwargs
             )
-            logger.info(f"📬 Responses received")
+
+            # stop spinner
+            spinner.stop()
+
+            logger.info(f"📬 Responses received in {time.time() - start:.2f} seconds")
 
             for i, response in enumerate(responses):
                 if isinstance(response, Exception):
