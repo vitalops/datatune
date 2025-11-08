@@ -66,15 +66,14 @@ def llm_batch_inference(
     prompt = f"MAPPING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
 
     suffix = (
-        f"{os.linesep}{os.linesep}"
-        f"""Your response MUST be the entire input record as a valid Python dictionary in the format
-         'index=<row_index>|{{key1: value1, key2: value2, ...}}'  with added keys of expected new fields if any.
-        ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW.
-        ALWAYS END YOUR RESPONSE WITH '<endofrow>'.
-        """
+        "{os.linesep}{os.linesep}"
+        "Your response MUST be the entire input record as a valid Python dictionary in the format"
+        "'index=<row_index>|{{key1: value1, key2: value2, ...}}'  with added keys of expected new fields if any."
+         
+        "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW."
     )
 
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
+    df.loc[:, llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
     return df
 
 

@@ -53,7 +53,7 @@ class LLM:
     def _create_batched_prompts(
         self,
         input_rows: List[str],
-        batch_prefix: str,
+        user_batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
     ) -> List[str]:
@@ -73,15 +73,33 @@ class LLM:
             List[str]: A list of prompt batches, each within the token limit of the model.
 
         """
+        # user-supplied secondary prefix, e.g.
+
+
         batch_prefix = (
-        "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
-        "Respond to each prompt in order.\n"
-        "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
-        "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n"
-        "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
-        "Always start with 'index=<index>|' and end with '<endofrow>'.\n"
-        f"Instructions:\n{batch_prefix or ''}"
+            "You will be given multiple requests in the format:\n"
+            "index=<index>|{prompt}\n"
+            "Each request ends with '<endofrow>'.\n\n"
+            "Respond to each prompt in order.\n"
+            "Each response must follow this exact format:\n"
+            "index=<index>|{answer}<endofrow>\n\n"
+            "Rules:\n"
+            "- The {answer} must strictly follow the format requested by the prompt.\n"
+            "- DO NOT add explanations, markdown, or any text outside the required format.\n"
+            "- Always start with 'index=<index>|' and end with '<endofrow>'.\n" \
+            "- Always enclose strings in quotes"
+            "- The {answer} must be enclosed in curly braces `{}`.\n\n"
+            f"Additional formatting instructions from the user:\n{user_batch_prefix}\n\n"
+            "Example:\n"
+            "If the prompt says 'return a Python list', respond like this:\n"
+            "index=0|{['item1', 'item2']}<endofrow>\n"
+            "if prompt says 'return a Python dictionary', respond like this:\n"
+            "index=0|{{'key1': 'value1', 'key2': 'value2'}}<endofrow>\n"
+            "if the prompt says to 'return a astring', respond like this:\n"
+            "index=0|{{This is the string.}}<endofrow>\n" \
+            "Make sure to enclose strings in double quotes"
         )
+
 
 
         max_tokens = self.get_max_tokens()
@@ -210,16 +228,14 @@ class LLM:
                     ):
                         result = result.strip()
                         if result:
+                            print(result)
                             try:
                                 sep_idx = result.index("|")
                                 idx = int(result[result.index("index=") + 6 : sep_idx])
                                 result = result[sep_idx + 1 :]
                                 result = result.split("{", 1)[1]
                                 result = result.rsplit("}", 1)[0]
-                                result = "{" + result + "}"
                                 result = ast.literal_eval(result)
-                                if isinstance(result, set):
-                                    result = next(iter(result))
                             except:
                                 continue
                             if idx not in remaining:
