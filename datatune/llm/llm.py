@@ -74,24 +74,17 @@ class LLM:
 
         """
         batch_prefix = (
-            "Format:\n"
-            "Each input = index=<index>|{prompt}<endofrow>\n"
-            "Respond as:\n"
-            "index=<index>|{answer}<endofrow>\n\n"
-
-            "Rules:\n"
-            "- {answer} must be a valid Python literal (list, dict, string, int, float, bool, None, or tuple).\n"
-            "- Enclose the entire object in curly braces `{}`.\n"
-            "- Use double quotes for strings.\n"
-            "- No markdown, text, or commentary.\n"
-            "- One object per prompt only.\n\n"
-
-            f"Extra user rules:\n{user_batch_prefix}\n\n"
-
-            "Examples:\n"
-            "index=0|{[\"task1\", \"task2\"]}<endofrow>\n"
-            "index=1|{{\"a\": 1, \"b\": 2}}<endofrow>\n"
-            "index=2|{{\"A string.\"}}<endofrow>"
+        "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
+        "Respond to each prompt in order.\n"
+        "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
+        "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n" \
+        "{answer} must be any requested python literal (e.g. list, dict, string, integer)\n" \
+        "The requested python literal must be enclosed in curly braces {}.\n" \
+        "eg: for a list answer: index=0|{['item1', 'item2', 'item3']}<endofrow>\n" \
+        "eg: for a dict answer: index=1|{{'key1': 'value1', 'key2': 2}}<endofrow>\n" \
+        "eg: for a string answer: index=2|{\"This is a string answer\"}<endofrow>\n"
+        "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
+        f"Instructions:\n{user_batch_prefix or ''}"
         )
 
 
@@ -204,16 +197,20 @@ class LLM:
             """
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
-            spinner = Spinner("⏳ Waiting for responses...")  # logs a static line
+            spinner = Spinner("⏳ Waiting for responses...")
             spinner.start()
             start = time.time()
 
-            responses = batch_completion(
-                model=self.model_name, messages=messages, **self.kwargs
-            )
+            try:
+                responses = batch_completion(
+                    model=self.model_name, messages=messages, **self.kwargs
+                )
+            except KeyboardInterrupt:
+                logger.warning("⚠️ Aborting...")
+                raise  
+            finally:
+                spinner.stop()
 
-            # stop spinner
-            spinner.stop()
 
             logger.info(f"📬 Responses received in {time.time() - start:.2f} seconds")
 
@@ -236,10 +233,7 @@ class LLM:
                                 result = result[sep_idx + 1 :]
                                 result = result.split("{", 1)[1]
                                 result = result.rsplit("}", 1)[0]
-                                result = "{" + result + "}"
                                 result = ast.literal_eval(result)
-                                if isinstance(result, set):
-                                    result = next(iter(result))
                             except:
                                 continue
                             if idx not in remaining:
