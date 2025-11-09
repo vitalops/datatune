@@ -4,12 +4,27 @@ import time
 import sys
 
 
+class ColorFormatter(logging.Formatter):
+    COLORS = {
+        "DEBUG": "\033[37m",   # white
+        "INFO": "\033[36m",    # cyan
+        "WARNING": "\033[33m", # yellow
+        "ERROR": "\033[31m",   # red
+        "CRITICAL": "\033[41m",# red background
+    }
+    RESET = "\033[0m"
+
+    def format(self, record):
+        color = self.COLORS.get(record.levelname, self.RESET)
+        record.levelname = f"{color}{record.levelname}{self.RESET}"
+        return super().format(record)
+
 def get_logger(name: str = None):
     logger = logging.getLogger(name)
 
     if not logger.hasHandlers():
         handler = logging.StreamHandler()
-        formatter = logging.Formatter(
+        formatter = ColorFormatter(
             fmt="%(asctime)s | %(levelname)-8s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
