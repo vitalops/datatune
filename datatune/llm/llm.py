@@ -77,12 +77,13 @@ class LLM:
         "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
         "Respond to each prompt in order.\n"
         "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
-        "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n" \
         "{answer} must be any requested python literal (e.g. list, dict, string, integer)\n" \
-        "The requested python literal must be enclosed in curly braces {}.\n" \
-        "eg: for a list answer: index=0|{['item1', 'item2', 'item3']}<endofrow>\n" \
-        "eg: for a dict answer: index=1|{{'key1': 'value1', 'key2': 2}}<endofrow>\n" \
-        "eg: for a string answer: index=2|{\"This is a string answer\"}<endofrow>\n"
+        "eg: for a list answer: index=0|['item1', 'item2', 'item3']<endofrow>\n" \
+        "eg: for a dict answer: index=1|{'key1': 'value1', 'key2': 2}<endofrow>\n" \
+        "eg: for a string answer: index=2|\"This is a string answer\"<endofrow>\n" \
+        "Ensure that each response is a valid python literal.\n" \
+        "Ensure that strings are enclosed in double quotes.\n"
+        "STRINGS MUST BE ENCLOSED IN DOUBLE QUOTES. DO NOT OUTPUT BARE TEXT\n"
         "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
         f"Instructions:\n{user_batch_prefix or ''}"
         )
@@ -231,8 +232,6 @@ class LLM:
                                 sep_idx = result.index("|")
                                 idx = int(result[result.index("index=") + 6 : sep_idx])
                                 result = result[sep_idx + 1 :]
-                                result = result.split("{", 1)[1]
-                                result = result.rsplit("}", 1)[0]
                                 result = ast.literal_eval(result)
                             except:
                                 continue

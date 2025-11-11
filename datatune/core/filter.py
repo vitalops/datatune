@@ -63,9 +63,9 @@ def llm_batch_inference(
     prompt = f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
     suffix = (
         f"{os.linesep}{os.linesep}"
-        "DECISION:Your response MUST be the entire input record as  Python dictionary in the format: index=<row_index>|{{key1: value1, key2: value2, ...}}<endofrow> with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
+        "DECISION:Your response MUST be the entire input record as  Python dictionary in the format: index=<row_index>|{key1: value1, key2: value2, ...}<endofrow> with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
         "No explanations or additional text."
-        "ALWAYS STICK TO THE FORMAT index=<row_index>|{{key1: value1, key2: value2, ...}}<endofrow> with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
+        "ALWAYS STICK TO THE FORMAT index=<row_index>|{key1: value1, key2: value2, ...}<endofrow> with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
     )
     df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
     return df
