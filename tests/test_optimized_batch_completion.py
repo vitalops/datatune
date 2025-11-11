@@ -11,7 +11,7 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
         mock_batch_completion.return_value = [
             {
                 "choices": [
-                    {"message": {"content": "index=0|{'hello'}<endofrow>index=1|{'world'}<endofrow>"}}
+                    {"message": {"content": "index=0|'hello'<endofrow>index=1|'world'<endofrow>"}}
                 ]
             }
         ]
@@ -25,12 +25,12 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
         self.assertEqual(len(result), 2)
         self.assertEqual("hello", result[0])
         self.assertEqual("world", result[1])
-        self.assertTrue(all(isinstance(x, (str, Exception)) for x in result))
 
     @patch("datatune.llm.llm.batch_completion")
     def test_empty_input(self, mock_batch_completion):
         """Test that empty input returns an empty list."""
         llm = OpenAI()
+        mock_batch_completion.return_value = []
         result = llm([], optimized=True)
         self.assertEqual(result, [])
 
@@ -40,7 +40,7 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
             {"choices": [{"message": {"content": "index=0|{bad_format}<endofrow>index=1|{malformed}"}}]}
         ]
         good_response = [
-            {"choices": [{"message": {"content": "index=0|{'fixed'}<endofrow>index=1|{'fixed'}"}}]}
+            {"choices": [{"message": {"content": "index=0|'fixed'<endofrow>index=1|'fixed'<endofrow>"}}]}
         ]
 
         mock_batch_completion.side_effect = [bad_response, good_response]
