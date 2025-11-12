@@ -53,7 +53,7 @@ class LLM:
     def _create_batched_prompts(
         self,
         input_rows: List[str],
-        batch_prefix: str,
+        user_batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
     ) -> List[str]:
@@ -74,21 +74,22 @@ class LLM:
 
         """
         batch_prefix = (
-            "You will be given multiple data rows to process. Each request will:\n"
-            "- have the format 'index=<row_index>|{<row_data>}' where <row_index> is the zero-based index of the row in the original input list.\n"
-            "- End with '<endofrow>'\n\n"
-            "You MUST respond to each row in order. Each answer:\n"
-            "MUST BE OF THE FORMAT 'index=<row_index>|{response}<endofrow>' where <row_index> is the zero-based index of the row in the original input list.\n" \
-            "{response} must be enclosed in curly braces and strings should be enclosed in quotes.\n"
-            "- End with '<endofrow>'\n" \
-            "Always begin your response with 'index=<row_index>|' to indicate which row you are responding to without exception.\n"
-            "- Do NOT skip or omit any rows\n"
-            "Your entire response MUST include one answer per row. Respond strictly in the format described WITHOUT ANY OTHER TEXT, EXPLANATIONS OR BACKSTICKS\n" \
-            "IF DATA ROWS ARE NOT GIVEN IN DICTIONARY FORMAT RETURN THE ANSWER ONLY STARTING WITH index=<row_index>|"
-            "ALL RESPONSES MUST START WITH 'index='\n"
-            "ALL RESPONSES MUST END WITH '<endofrow>'\n"
-            f"Instructions:\n{batch_prefix or ''}"
+        "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
+        "Respond to each prompt in order.\n"
+        "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
+        "{answer} must be any requested python literal (e.g. list, dict, string, integer)\n" \
+        "eg: for a list answer: index=0|['item1', 'item2', 'item3']<endofrow>\n" \
+        "eg: for a dict answer: index=1|{'key1': 'value1', 'key2': 2}<endofrow>\n" \
+        "eg: for a string answer: index=2|\"This is a string answer\"<endofrow>\n" \
+        "Ensure that each response is a valid python literal.\n" \
+        "Ensure that strings are enclosed in double quotes.\n"
+        "STRINGS MUST BE ENCLOSED IN DOUBLE QUOTES. DO NOT OUTPUT BARE TEXT\n"
+        "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
+        f"Instructions:\n{user_batch_prefix or ''}"
         )
+
+
+
 
         max_tokens = self.get_max_tokens()
         model_name = self._base_model_name
@@ -99,7 +100,7 @@ class LLM:
         nrows_per_api_call = []
         count = 0
         message = lambda x: [
-            {"role": "user", "content": f"{batch_prefix or ''}{x}{batch_suffix or ''}"}
+            {"role": "user", "content": f"{batch_prefix}{x}{batch_suffix or ''}"}
         ]
         prefix_suffix_tokens = token_counter(model_name, messages=message(""))
         total_ntokens = prefix_suffix_tokens
@@ -197,19 +198,23 @@ class LLM:
             """
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
-            spinner = Spinner("⏳ Waiting for responses...")  # logs a static line
+            
+            spinner = Spinner("⏳ Waiting for responses...")
             spinner.start()
             start = time.time()
 
-            responses = batch_completion(
-                model=self.model_name, messages=messages, **self.kwargs
-            )
+            try:
+                responses = batch_completion(
+                    model=self.model_name, messages=messages, **self.kwargs
+                )
+            except KeyboardInterrupt:
+                logger.warning("⚠️ Aborting...")
+                raise  
+            finally:
+                spinner.stop()
 
-            # stop spinner
-            spinner.stop()
 
             logger.info(f"📬 Responses received in {time.time() - start:.2f} seconds")
-
 
             for i, response in enumerate(responses):
                 if isinstance(response, Exception):
@@ -228,12 +233,7 @@ class LLM:
                                 sep_idx = result.index("|")
                                 idx = int(result[result.index("index=") + 6 : sep_idx])
                                 result = result[sep_idx + 1 :]
-                                result = result.split("{", 1)[1]
-                                result = result.rsplit("}", 1)[0]
-                                result = "{" + result + "}"
                                 result = ast.literal_eval(result)
-                                if isinstance(result, set):
-                                    result = next(iter(result))
                             except:
                                 continue
                             if idx not in remaining:
