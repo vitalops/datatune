@@ -29,9 +29,15 @@ class Agent(ABC):
             "replace_values": "df['{column}'] = df['{column}'].replace({to_replace}, {value})",
             # Conditional column creation
             "conditional_column": (
-                "df['{new_column}'] = '{default}'\n"
-                "df['{new_column}'] = df['{new_column}'].mask({condition1}, '{value1}')\n"
-                "df['{new_column}'] = df['{new_column}'].mask({condition2}, '{value2}')"
+                "def _assign_{new_column}(df):\n"
+                "    conditions = [{conditions}]\n"
+                "    choices = [{choices}]\n"
+                "    df['{new_column}'] = np.select(conditions, choices, default={default})\n"
+                "    return df\n"
+                "\n"
+                "meta_dict = {{col: str(df[col].dtype) if str(df[col].dtype).startswith('string') else df[col].dtype for col in df.columns}}\n"
+                "meta_dict['{new_column}'] = 'object'\n"
+                "df = df.map_partitions(_assign_{new_column}, meta=meta_dict)"
             ),
             # Row operations
             "select_rows": "df = df.loc[{condition}]",
@@ -104,7 +110,7 @@ class Agent(ABC):
         - astype_column: change a column’s data type
         - fillna: fill missing values in a column
         - replace_values: replace values in a column
-        - conditional_column: create a column with conditional logic (default + masks)
+        - conditional_column: create a column based on multiple conditional expressions using np.select (default + conditions). ALWAYS ENCLOSE CONDITIONS WITH APPROPRIATE PARENTHESES.
 
         # Row operations
         - select_rows: keep rows that match a boolean condition (make sure columns used in conditions exist in schema)
@@ -169,11 +175,9 @@ class Agent(ABC):
             "operation": "conditional_column",
             "params": {{
                 "new_column": "sales_category",
-                "default": "High",
-                "condition1": "df['sales_amount'] < 1000",
-                "value1": "Low",
-                "condition2": "(df['sales_amount'] >= 1000) & (df['sales_amount'] < 5000)",
-                "value2": "Medium"
+                "default": "'High'",
+                "conditions": "(df['Gross Amount'] < 1000), (df['Gross Amount'] >= 1000) & (df['Gross Amount'] < 5000)",
+                "choices":"'low','Medium','High'"
             }}
         }}
         ]
@@ -189,6 +193,8 @@ class Agent(ABC):
               2. create column b based on column y
         should be combined into one step using map primitive. Numbered prompts that need primitives should be combined into fewer steps.
         5. DECIDE whether subsequent steps can use Dask operations based on NEW COLUMNS that may have been created in previous steps.
+        6. CONDITIONAL COLUMN: When creating conditional columns, ALWAYS use valid conditions with appropriate parentheses.
+
         Generate the JSON plan for the following TASK:
 
         TASK:{goal}
@@ -275,52 +281,53 @@ class Agent(ABC):
     def _execute_plan(self, plan: List[Dict]):
         """Execute a sequence of plan steps (Dask or primitive)."""
 
-        self.runtime["step_num"] = 0
-        self.runtime["plan"] = plan
+        self._set_df(self.df)
+        self.runtime.update({"step_num": 0, "plan": plan})
         code_lines = []
+        n_steps = len(plan)
 
-        for i, step in enumerate(plan):
-            self.runtime["i"] = i
-            self.runtime["step"] = step
-
+        for i, step in enumerate(plan, start=1):
             try:
-                step_type = step.get("type")
-                operation = step.get("operation")
+                step_type = step["type"]
+                operation = step["operation"]
+                params = step["params"]
 
                 if step_type not in ("dask", "primitive"):
-                    raise ValueError(f"Unknown step type: {step_type}")
+                    raise ValueError(f"Invalid step type '{step_type}'")
 
-                # Build the operation code from template
-                template = self.TEMPLATE[step_type][operation].format(**step["params"])
+                template = self.TEMPLATE[step_type][operation].format(**params)
 
-                # Log messages for progress tracking
-                start_msg = f"🔄 Executing step {i + 1}/{len(plan)}: {operation}"
-                end_msg = f"📍 Completed step {i + 1}/{len(plan)}: {operation}"
+                start_msg = f"🔄 Executing step {i}/{n_steps}: {operation}"
+                end_msg = f"📍 Completed step {i}/{n_steps}: {operation}\n"
 
-                # Append logging and operation code
                 code_lines += [
                     f"df = df.map_partitions(log_primitive, {start_msg!r}, meta=df._meta)",
-                    template,
-                    f"df = df.map_partitions(log_primitive, {end_msg!r}, meta=df._meta)",
                     "step_num += 1",
+                    template,
+                    f"df = df.map_partitions(log_primitive, {end_msg!r}, meta=df._meta)"
                 ]
 
             except Exception as e:
-                error_msg = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
-                logger.error(f"⚠️ Error formatting step {i + 1}/{len(plan)}: {error_msg}")
-                return error_msg, i
+                logger.error(f"⚠️ Step {i}/{n_steps} formatting error: {e}")
+                return str(e), i
 
         # Final execution
         try:
-            full_code = "\n".join(code_lines) + "\n" + "df = dt.finalize(df)\ndf = df.compute()"
+            full_code = (
+                "\n".join(code_lines)
+                + "\n\n"
+                + "df = dt.finalize(df)\n"
+                "df = df.compute()"
+            )
+            print(full_code)
+
             self.runtime.execute(full_code)
-            return None, len(plan)
+            return None, n_steps
 
         except Exception as e:
-            step_num = self.runtime.get("step_num", 0)
-            error_msg = f"{type(e).__name__}: {e}\n{traceback.format_exc()}"
-            logger.error(f"❌ Step {step_num}/{len(plan)} failed with error: {error_msg}")
-            return error_msg, step_num - 1
+            step_num = self.runtime["step_num"]
+            logger.error(f"❌ Step {step_num}/{n_steps} failed with error: {e}")
+            return str(e), step_num - 1
 
             
 
@@ -381,6 +388,8 @@ class Agent(ABC):
             #time.sleep(1200)
             logger.info(f"📝 Plan Generated - Executing Plan...\n")
             error_msg, step_num = self._execute_plan(plan)
+            if iteration>1:
+                self._set_df(df)
             if error_msg:
                 error_msg = self.get_error_prompt(error_msg, plan[step_num])
                 logger.error(f"❌ Step {step_num+1}/{len(plan)} failed")
