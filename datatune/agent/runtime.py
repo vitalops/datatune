@@ -18,3 +18,10 @@ class Runtime:
 
     def get(self, key: str, default=None):
         return self.namespace.get(key, default)
+    
+    def update(self, mapping: dict):
+        """Update multiple runtime variables at once."""
+        self.namespace.update(mapping)
+
+    
+
