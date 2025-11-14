@@ -1,7 +1,6 @@
 import json
 import logging
 import textwrap
-import time
 import traceback
 from abc import ABC
 from typing import Any, Dict, List, Optional
@@ -11,7 +10,6 @@ import dask.dataframe as dd
 from datatune.agent.runtime import Runtime
 from datatune.llm.llm import LLM
 from datatune.logger import get_logger
-from dask import delayed
 
 logger = get_logger(__name__)
 
@@ -110,7 +108,7 @@ class Agent(ABC):
         - astype_column: change a column’s data type
         - fillna: fill missing values in a column
         - replace_values: replace values in a column
-        - conditional_column: create a column based on multiple conditional expressions using np.select (default + conditions). ALWAYS ENCLOSE CONDITIONS WITH APPROPRIATE PARENTHESES.
+        - conditional_column: create a column based on multiple conditional expressions using np.select (default + conditions).
 
         # Row operations
         - select_rows: keep rows that match a boolean condition (make sure columns used in conditions exist in schema)
@@ -192,9 +190,7 @@ class Agent(ABC):
         TASK: 1. create column a based on column x
               2. create column b based on column y
         should be combined into one step using map primitive. Numbered prompts that need primitives should be combined into fewer steps.
-        5. DECIDE whether subsequent steps can use Dask operations based on NEW COLUMNS that may have been created in previous steps.
-        6. CONDITIONAL COLUMN: When creating conditional columns, ALWAYS use valid conditions with appropriate parentheses.
-
+        5. DECIDE whether subsequent steps can use Dask operations based on NEW COLUMNS that may have been created in previous steps.IF POSSIBLE PREFER DASK OPERATIONS OVER PRIMITIVES FOR SUBSEQUENT STEPS.
         Generate the JSON plan for the following TASK:
 
         TASK:{goal}
@@ -385,11 +381,8 @@ class Agent(ABC):
             logger.info(f"⚙️ Iteration {iteration} - Generating New Plan...")
             plan = self.get_plan(prompt, error_msg)
             logger.debug(f"📝 Generated Plan:\n{json.dumps(plan, indent=2)}\n")
-            #time.sleep(1200)
             logger.info(f"📝 Plan Generated - Executing Plan...\n")
             error_msg, step_num = self._execute_plan(plan)
-            if iteration>1:
-                self._set_df(df)
             if error_msg:
                 error_msg = self.get_error_prompt(error_msg, plan[step_num])
                 logger.error(f"❌ Step {step_num+1}/{len(plan)} failed")
