@@ -198,6 +198,7 @@ class LLM:
             """
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
+            
             spinner = Spinner("⏳ Waiting for responses...")
             spinner.start()
             start = time.time()
