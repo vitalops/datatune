@@ -129,7 +129,7 @@ class LLM:
             batch_ranges.append(len(input_rows))
             nrows_per_api_call.append(count)
             
-        logger.info(f"📦 Prompts have been batched: {nrows_per_api_call}")
+        logger.info(f"📦 Prompts have been batched: {nrows_per_api_call[0]} rows per batch")
         logger.info(f"📝 Total rows to process: {sum(nrows_per_api_call)}")
         logger.info(f"📤 Number of batches to send: {len(nrows_per_api_call)}\n")
 
@@ -198,6 +198,7 @@ class LLM:
             """
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
+            
             spinner = Spinner("⏳ Waiting for responses...")
             spinner.start()
             start = time.time()
