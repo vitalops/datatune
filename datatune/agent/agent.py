@@ -315,7 +315,6 @@ class Agent(ABC):
                 + "df = dt.finalize(df)\n"
                 "df = df.compute()"
             )
-            print(full_code)
 
             self.runtime.execute(full_code)
             return None, n_steps
