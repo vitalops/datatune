@@ -4,6 +4,7 @@ from unittest.mock import patch
 from datatune.llm.llm import OpenAI
 import itertools
 
+
 class TestOptimizedBatchCompletion(unittest.TestCase):
     @patch("datatune.llm.llm.batch_completion")
     def test_cleaning_of_llm_output(self, mock_batch_completion):
@@ -11,17 +12,18 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
         mock_batch_completion.return_value = [
             {
                 "choices": [
-                    {"message": {"content": "index=0|{'hello'}<endofrow>index=1|{'world'}<endofrow>"}}
+                    {
+                        "message": {
+                            "content": "index=0|{'hello'}<endofrow>index=1|{'world'}<endofrow>"
+                        }
+                    }
                 ]
             }
         ]
 
         llm = OpenAI()
-        
-        result = llm(
-            ["row1", "row2"],
-            optimized=True
-        )
+
+        result = llm(["row1", "row2"], optimized=True)
         self.assertEqual(len(result), 2)
         self.assertEqual("hello", result[0])
         self.assertEqual("world", result[1])
@@ -37,10 +39,26 @@ class TestOptimizedBatchCompletion(unittest.TestCase):
     @patch("datatune.llm.llm.batch_completion")
     def test_retry_succeeds(self, mock_batch_completion):
         bad_response = [
-            {"choices": [{"message": {"content": "index=0|{bad_format}<endofrow>index=1|{malformed}"}}]}
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "index=0|{bad_format}<endofrow>index=1|{malformed}"
+                        }
+                    }
+                ]
+            }
         ]
         good_response = [
-            {"choices": [{"message": {"content": "index=0|{'fixed'}<endofrow>index=1|{'fixed'}"}}]}
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": "index=0|{'fixed'}<endofrow>index=1|{'fixed'}"
+                        }
+                    }
+                ]
+            }
         ]
 
         mock_batch_completion.side_effect = [bad_response, good_response]

@@ -74,15 +74,14 @@ class LLM:
 
         """
         batch_prefix = (
-        "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
-        "Respond to each prompt in order.\n"
-        "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
-        "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n"
-        "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
-        "Always start with 'index=<index>|' and end with '<endofrow>'.\n"
-        f"Instructions:\n{batch_prefix or ''}"
+            "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
+            "Respond to each prompt in order.\n"
+            "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
+            "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n"
+            "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
+            "Always start with 'index=<index>|' and end with '<endofrow>'.\n"
+            f"Instructions:\n{batch_prefix or ''}"
         )
-
 
         max_tokens = self.get_max_tokens()
         model_name = self._base_model_name
@@ -121,7 +120,7 @@ class LLM:
             batched_prompts.append(message(batch)[0]["content"])
             batch_ranges.append(len(input_rows))
             nrows_per_api_call.append(count)
-            
+
         logger.info(f"📦 Prompts have been batched: {nrows_per_api_call}")
         logger.info(f"📝 Total rows to process: {sum(nrows_per_api_call)}")
         logger.info(f"📤 Number of batches to send: {len(nrows_per_api_call)}\n")
@@ -130,7 +129,6 @@ class LLM:
 
     def _batch_completion(self, prompts: List[str]) -> List[Union[str, Exception]]:
         messages = [[{"role": "user", "content": prompt}] for prompt in prompts]
-        
 
         responses = batch_completion(
             model=self.model_name, messages=messages, **self.kwargs
@@ -144,33 +142,33 @@ class LLM:
                 ret.append(response["choices"][0]["message"]["content"])
 
         return ret
-        
+
     def optimized_batch_completion(
         self,
         input_rows: List[str],
         batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
-        max_retries: int
+        max_retries: int,
     ) -> List[Union[str, Exception]]:
         """
-    Executes completions on batched input prompts without trigerring RateLimitErrors and retries failed requests
-    by associating responses with original inputs via indexing.
+        Executes completions on batched input prompts without trigerring RateLimitErrors and retries failed requests
+        by associating responses with original inputs via indexing.
 
-    Adds an "index" key to each row to enable correct mapping of outputs.
-    Responses are split using `<endofrow>` delimiters and parsed as Python dictionaries. Outputs are
-    returned in the order of the original input rows.
+        Adds an "index" key to each row to enable correct mapping of outputs.
+        Responses are split using `<endofrow>` delimiters and parsed as Python dictionaries. Outputs are
+        returned in the order of the original input rows.
 
 
-    Args:
-        input_rows (List[str]): List of input rows
-        batch_prefix (str): A shared prefix prepended to each batch.
-        prompt_per_row (str): Prompt to transform the input row.
-        batch_suffix (str): A shared suffix appended to each batch.
-        max_retries (int): Maximum number of retries for failed requests
-    Returns:
-        List[Union[str, Exception]]: A list containing the parsed LLM responses.
-    """
+        Args:
+            input_rows (List[str]): List of input rows
+            batch_prefix (str): A shared prefix prepended to each batch.
+            prompt_per_row (str): Prompt to transform the input row.
+            batch_suffix (str): A shared suffix appended to each batch.
+            max_retries (int): Maximum number of retries for failed requests
+        Returns:
+            List[Union[str, Exception]]: A list containing the parsed LLM responses.
+        """
         input_rows = list(input_rows)
         input_rows = [f"index={i}|{row}" for i, row in enumerate(input_rows)]
 
@@ -235,8 +233,10 @@ class LLM:
             start = 0
             retries += 1
             messages = []
-            if retries>0:
-                logger.info(f"🔄 Retrying failed rows - retry #({retries}/{max_retries})\n")
+            if retries > 0:
+                logger.info(
+                    f"🔄 Retrying failed rows - retry #({retries}/{max_retries})\n"
+                )
 
             batched_prompts, batch_ranges = self._create_batched_prompts(
                 remaining_prompts,
@@ -258,22 +258,30 @@ class LLM:
                     time.sleep(max(0, 61 - (t2 - t1)))
                     messages = [message]
                     ntokens = curr_ntokens
-         
+
             if messages:
                 _send(messages, batch_ranges[start:])
-                
+
         for i in remaining:
             ret[i] = Exception("FAILED_AFTER_MAX_RETRIES")
         logger.info(f"✅ Processed {len(ret)} rows\n")
         return ret
 
     def __call__(
-        self, prompt: Union[str, List[str]], batch_prefix: str=None,prompt_per_row: str=None, batch_suffix: str=None, max_retries: int = 5, optimized: bool = False
+        self,
+        prompt: Union[str, List[str]],
+        batch_prefix: str = None,
+        prompt_per_row: str = None,
+        batch_suffix: str = None,
+        max_retries: int = 5,
+        optimized: bool = False,
     ) -> Union[str, List[str]]:
         if isinstance(prompt, str):
             return self._completion(prompt)
         if optimized:
-            return self.optimized_batch_completion(prompt, batch_prefix, prompt_per_row, batch_suffix, max_retries)
+            return self.optimized_batch_completion(
+                prompt, batch_prefix, prompt_per_row, batch_suffix, max_retries
+            )
         return self._batch_completion(prompt)
 
 
@@ -289,7 +297,9 @@ class Ollama(LLM):
 
 
 class OpenAI(LLM):
-    def __init__(self, model_name: str = "gpt-3.5-turbo", api_key: Optional[str] = None, **kwargs):
+    def __init__(
+        self, model_name: str = "gpt-3.5-turbo", api_key: Optional[str] = None, **kwargs
+    ):
         kwargs.update({"api_key": api_key})
         super().__init__(model_name=f"openai/{model_name}", **kwargs)
 
