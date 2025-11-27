@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 from litellm import get_max_tokens, token_counter
 from litellm import batch_completion
 from datatune.llm.model_rate_limits import model_rate_limits
-from datatune.logger import get_logger
+from datatune.logger import get_logger, Spinner
 
 logger = get_logger(__name__)
 
@@ -53,7 +53,7 @@ class LLM:
     def _create_batched_prompts(
         self,
         input_rows: List[str],
-        batch_prefix: str,
+        user_batch_prefix: str,
         prompt_per_row: str,
         batch_suffix: str,
     ) -> List[str]:
@@ -74,14 +74,22 @@ class LLM:
 
         """
         batch_prefix = (
-            "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
-            "Respond to each prompt in order.\n"
-            "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
-            "{answer} MUST BE ENCLOSED IN CURLY BRACES with strings in quotes.\n"
-            "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
-            "Always start with 'index=<index>|' and end with '<endofrow>'.\n"
-            f"Instructions:\n{batch_prefix or ''}"
+        "You will be given requests in the format 'index=<index>|{prompt}'. Each request ends with '<endofrow>'.\n"
+        "Respond to each prompt in order.\n"
+        "Each answer must be formatted exactly as 'index=<index>|{answer}<endofrow>'.\n"
+        "{answer} must be any requested python literal (e.g. list, dict, string, integer)\n" \
+        "eg: for a list answer: index=0|['item1', 'item2', 'item3']<endofrow>\n" \
+        "eg: for a dict answer: index=1|{'key1': 'value1', 'key2': 2}<endofrow>\n" \
+        "eg: for a string answer: index=2|\"This is a string answer\"<endofrow>\n" \
+        "Ensure that each response is a valid python literal.\n" \
+        "Ensure that strings are enclosed in double quotes.\n"
+        "STRINGS MUST BE ENCLOSED IN DOUBLE QUOTES. DO NOT OUTPUT BARE TEXT\n"
+        "DO NOT skip or omit any rows. DO NOT add explanations, backticks, or extra text.\n"
+        f"Instructions:\n{user_batch_prefix or ''}"
         )
+
+
+
 
         max_tokens = self.get_max_tokens()
         model_name = self._base_model_name
@@ -189,11 +197,22 @@ class LLM:
             """
 
             logger.info(f"📨 {len(messages)} Batches sent\n")
-            logger.info(f"⏳ Waiting for responses...")
-            responses = batch_completion(
-                model=self.model_name, messages=messages, **self.kwargs
-            )
-            logger.info(f"📬 Responses received")
+            spinner = Spinner("⏳ Waiting for responses...")
+            spinner.start()
+            start = time.time()
+
+            try:
+                responses = batch_completion(
+                    model=self.model_name, messages=messages, **self.kwargs
+                )
+            except KeyboardInterrupt:
+                logger.warning("⚠️ Aborting...")
+                raise  
+            finally:
+                spinner.stop()
+
+
+            logger.info(f"📬 Responses received in {time.time() - start:.2f} seconds")
 
             for i, response in enumerate(responses):
                 if isinstance(response, Exception):
@@ -212,12 +231,7 @@ class LLM:
                                 sep_idx = result.index("|")
                                 idx = int(result[result.index("index=") + 6 : sep_idx])
                                 result = result[sep_idx + 1 :]
-                                result = result.split("{", 1)[1]
-                                result = result.rsplit("}", 1)[0]
-                                result = "{" + result + "}"
                                 result = ast.literal_eval(result)
-                                if isinstance(result, set):
-                                    result = next(iter(result))
                             except:
                                 continue
                             if idx not in remaining:
