@@ -75,7 +75,9 @@ def llm_batch_inference(
         "'index=<row_index>|{key1: None, key2: value2, ...}'"
     )
 
-    df[llm_output_column] = llm(df[serialized_input_column], prefix, prompt, suffix, optimized=True)
+    df[llm_output_column] = llm(
+        df[serialized_input_column], prefix, prompt, suffix, optimized=True
+    )
     return df
 
 
