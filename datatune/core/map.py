@@ -70,7 +70,9 @@ def llm_batch_inference(
         "Your response MUST be the entire input record as a valid Python dictionary in the format"
         "'index=<row_index>|{key1: value1, key2: value2, ...}'  with added keys of expected new fields if any."
          
-        "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW."
+        "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW." \
+        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None" \
+        "'index=<row_index>|{key1: None, key2: value2, ...}'"
     )
 
     df[llm_output_column] = llm(
