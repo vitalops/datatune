@@ -256,10 +256,9 @@ df = agent.do(prompt, df)
 
 ##### 🏁 Finalizing Agent Results
 
-After the agent has performed its tasks, finalize the dataframe to apply clean-up and remove intermediate metadata:
+After the agent has performed its tasks, convert to csv:
 ```
-result = dt.finalize(df)
-result.compute().to_csv("output.csv", index=False)
+df.to_csv("output.csv", index=False)
 ```
 
 Agents make Datatune ideal for non-technical users, rapid prototyping, and intelligent data workflows — just describe what you want, and let the agent do the rest.
