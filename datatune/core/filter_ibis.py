@@ -6,8 +6,9 @@ from ibis.expr.types import Table
 import pyarrow as pa
 import ast
 import json
+import traceback
 
-def add_serialized_col(table, target_col:str="serialized_input_column", input_fields: Optional[List[str]] = None):
+def add_serialized_col(table, target_col:str, input_fields: Optional[List[str]] = None):
     columns_to_serialize = {
         name: table[name] 
         for name in table.columns 
@@ -45,41 +46,51 @@ def llm_batch_inference(
         def run_llm_batch(arrow_array: str) -> str:
             input_list = arrow_array.to_pylist()
             results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
-            
-            cleaned_results = []
+
+            out = []
             for res in results:
                 try:
-                    py_dict = ast.literal_eval(str(res).strip())
-                    cleaned_results.append(json.dumps(py_dict))
+                    d = ast.literal_eval(str(res).strip())
+                    
+                    if d:
+                        last_key = list(d.keys())[-1]
+                        flag = d[last_key]
+                        out.append("true" if str(flag).lower() == "true" else "false")
+                    else:
+                        out.append("false")
                 except Exception:
-                    cleaned_results.append("{}")
-            
-            return pa.array(cleaned_results)
+                    out.append("false")
+
+            return pa.array(out)
+
     else:
         @ibis.udf.scalar.pandas
         def run_llm_batch(series: pd.Series) -> pd.Series:
             input_list = series.tolist()
             results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
-            
-            cleaned = []
+
+            out = []
             for res in results:
                 try:
-                    cleaned.append(json.dumps(ast.literal_eval(str(res).strip())))
-                except:
-                    cleaned.append("{}")
-            return pd.Series(cleaned)
+                    d = ast.literal_eval(str(res).strip())
+                    if d:
+                        last_key = list(d.keys())[-1]
+                        flag = d[last_key]
+                        out.append("true" if str(flag).lower() == "true" else "false")
+                    else:
+                        out.append("false")
+                except Exception:
+                    out.append("false")
+
+            return pd.Series(out)
+
 
     return table.mutate(**{output_col: run_llm_batch(table[input_col])})
 
-def apply_llm_filter(table, llm_output_col: str):
+def apply_llm_filter(table, llm_output_col):
+    is_true = table[llm_output_col].cast("string").lower() == "true"
+    return table.filter(is_true.fill_null(False))
 
-    raw_filter_val = table[llm_output_col].cast("json")["__filter__"]
-
-    is_true = raw_filter_val.cast("string").lower() == "true"
-    
-    table = table.filter(is_true.fill_null(False))
-
-    return table
 
 class filter_Ibis:
     """
@@ -93,6 +104,8 @@ class filter_Ibis:
     ):
         self.prompt = prompt
         self.input_fields = input_fields or []
+        self.llm_output_column = "FILTER_LLM_OUTPUT__DATATUNE__"
+        self.serialized_input_column = "FILTER_SERIALIZED_INPUT__DATATUNE__"
 
     def __call__(self, llm: Callable, table: Table) -> Table:
 
@@ -100,24 +113,30 @@ class filter_Ibis:
 
         table = add_serialized_col(
             table, 
-            target_col="serialized_input_column", 
+            target_col=self.serialized_input_column, 
             input_fields=self.input_fields
         )
 
         table = llm_batch_inference(
             table,
             llm=self.llm,
-            input_col="serialized_input_column",
-            output_col="llm_output_column",
+            input_col=self.serialized_input_column,
+            output_col=self.llm_output_column,
             prompt=self.prompt,
         )
 
         table = apply_llm_filter(
             table,
-            llm_output_col="llm_output_column"
+            llm_output_col=self.llm_output_column
         )
-
-        final_cols = [c for c in table.columns if c not in ["serialized_input_column", "llm_output_column"]]
-        table = table.select(*final_cols)
+        table = table.select(
+    *[
+        c for c in table.schema().names
+        if c not in {
+            self.llm_output_column,
+            self.serialized_input_column,
+        }
+    ]
+)
 
         return table

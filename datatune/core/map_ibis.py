@@ -7,7 +7,7 @@ import pyarrow as pa
 import ast
 import json
 
-def add_serialized_col(table, target_col:str="serialized_input_column", input_fields: Optional[List[str]] = None):
+def add_serialized_col(table, target_col:str, input_fields: Optional[List[str]] = None):
     columns_to_serialize = {
         name: table[name] 
         for name in table.columns 
@@ -24,8 +24,13 @@ def llm_batch_inference(
     input_col: str, 
     output_col: str,  
     prompt: str,
-    expected_new_fields: List[str] = []
+    expected_new_fields: list[str] = []
 ):
+    import ast, json, os
+    import pandas as pd
+    import pyarrow as pa
+    import ibis
+
     prefix = (
         f"Map and transform the input according to the mapping criteria below.{os.linesep}"
         f"Replace or Create new fields or values as per the prompt. "
@@ -38,38 +43,47 @@ def llm_batch_inference(
         "'index=<row_index>|{key1: value1, key2: value2, ...}'"
     )
 
+    # Row-level cache: stores JSON strings keyed by row input
+    llm_cache: dict[str, str] = {}
+
+    def run_llm_batch(input_list: list) -> list[str]:
+        # Collect rows that haven't been cached yet
+        to_call = []
+        indices = []
+        for i, val in enumerate(input_list):
+            key = str(val)
+            if key not in llm_cache:
+                to_call.append(val)
+                indices.append(i)
+
+        # Call LLM in one batch for uncached rows
+        if to_call:
+            results = llm(to_call, prefix, mapping_prompt, suffix, optimized=True)
+            for key_val, res in zip(to_call, results):
+                try:
+                    py_dict = ast.literal_eval(str(res).strip())
+                    llm_cache[str(key_val)] = json.dumps(py_dict)
+                except Exception:
+                    llm_cache[str(key_val)] = "{}"
+
+        # Return cached results for all rows
+        return [llm_cache[str(val)] for val in input_list]
+
     backend_name = ibis.get_backend(table).name
 
     if backend_name == "duckdb":
         @ibis.udf.scalar.pyarrow
-        def run_llm_batch(arrow_array: str) -> str:
+        def run_llm_batch_udf(arrow_array: str) -> str:
             input_list = arrow_array.to_pylist()
-            results = llm(input_list, prefix, mapping_prompt, suffix, optimized=True)
-            
-            cleaned_results = []
-            for res in results:
-                try:
-                    py_dict = ast.literal_eval(str(res).strip())
-                    cleaned_results.append(json.dumps(py_dict))
-                except Exception:
-                    cleaned_results.append("{}")
-            
-            return pa.array(cleaned_results)
+            return pa.array(run_llm_batch(input_list))
     else:
         @ibis.udf.scalar.pandas
-        def run_llm_batch(series: pd.Series) -> pd.Series:
-            input_list = series.tolist()
-            results = llm(input_list, prefix, mapping_prompt, suffix, optimized=True)
-            
-            cleaned = []
-            for res in results:
-                try:
-                    cleaned.append(json.dumps(ast.literal_eval(str(res).strip())))
-                except:
-                    cleaned.append("{}")
-            return pd.Series(cleaned)
+        def run_llm_batch_udf(series: pd.Series) -> pd.Series:
+            return pd.Series(run_llm_batch(series.tolist()))
 
-    return table.mutate(**{output_col: run_llm_batch(table[input_col])})
+    return table.mutate(**{output_col: run_llm_batch_udf(table[input_col])})
+
+
 
 def apply_llm_updates(table: Table, llm_output_col: str, output_fields: list) -> Table:
     all_targets = set(table.columns) | set(output_fields)
@@ -106,6 +120,9 @@ class map_Ibis:
         self.prompt = prompt
         self.input_fields = input_fields or []
         self.output_fields = output_fields or []
+        self.llm_output_column = "MAP_LLM_OUTPUT__DATATUNE__"
+        self.serialized_input_column = "MAP_SERIALIZED_INPUT__DATATUNE__"
+
 
     def __call__(self, llm: Callable, table: Table) -> Table:
 
@@ -113,29 +130,34 @@ class map_Ibis:
 
         table = add_serialized_col(
             table, 
-            target_col="serialized_input_column", 
+            target_col=self.serialized_input_column, 
             input_fields=self.input_fields
         )
 
         table = llm_batch_inference(
             table,
             llm=self.llm,
-            input_col="serialized_input_column",
-            output_col="llm_output_column",
+            input_col=self.serialized_input_column,
+            output_col=self.llm_output_column,
             prompt=self.prompt,
             expected_new_fields=self.output_fields
         )
 
         table = apply_llm_updates(
             table,
-            llm_output_col="llm_output_column",
+            llm_output_col=self.llm_output_column,
             output_fields=self.output_fields
         )
 
-        existing_cols = [c for c in table.columns 
-                         if c not in self.output_fields 
-                         and c not in ["serialized_input_column", "llm_output_column"]]
-        
-        table = table.select(*existing_cols, *self.output_fields)
+        table = table.select(
+    *[
+        c for c in table.schema().names
+        if c not in {
+            self.llm_output_column,
+            self.serialized_input_column,
+        }
+    ]
+)
+
 
         return table
