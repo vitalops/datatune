@@ -8,16 +8,23 @@ import ast
 import json
 import traceback
 
-def add_serialized_col(table, target_col:str, input_fields: Optional[List[str]] = None):
-    columns_to_serialize = {
-        name: table[name] 
-        for name in table.columns 
-        if name != target_col and (input_fields is None or name in input_fields)
-    }
-    serialized_expr = ibis.struct(columns_to_serialize).cast("json").cast("string")
-    table = table.mutate(**{target_col: serialized_expr})
+import ibis
 
-    return table
+def add_serialized_col(table, target_col: str, input_fields: Optional[List[str]] = []):
+    cols = [
+        name for name in table.columns 
+        if name != target_col and (not input_fields or name in input_fields)
+    ]
+    
+    parts = []
+    for i, name in enumerate(cols):
+        part = ibis.literal(f'"{name}": ') + table[name].cast("string")
+        parts.append(part)
+    
+    inner_string = ibis.literal(", ").join(parts)
+    json_string_expr = ibis.literal("{") + inner_string + ibis.literal("}")
+    
+    return table.mutate(**{target_col: json_string_expr})
 
 def llm_batch_inference(
     table,
@@ -40,8 +47,9 @@ def llm_batch_inference(
     )
 
     backend_name = ibis.get_backend(table).name
+    print(f"Backend detected: {backend_name}")
 
-    if backend_name == "duckdb":
+    if backend_name in ["duckdb","datafusion"]:
         @ibis.udf.scalar.pyarrow
         def run_llm_batch(arrow_array: str) -> str:
             input_list = arrow_array.to_pylist()
@@ -65,7 +73,7 @@ def llm_batch_inference(
 
     else:
         @ibis.udf.scalar.pandas
-        def run_llm_batch(series: pd.Series) -> pd.Series:
+        def run_llm_batch(series: str) -> str:
             input_list = series.tolist()
             results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
 
