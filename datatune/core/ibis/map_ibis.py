@@ -34,51 +34,52 @@ def llm_batch_inference(
 ):
     prefix = (
         f"Map and transform the input according to the mapping criteria below.{os.linesep}"
-        f"Replace or Create new fields or values as per the prompt. "
-        f"{f'Expected new fields: {expected_new_fields}.' if expected_new_fields else ''}"
+        f""" Replace or Create new fields or values as per the prompt.
+        {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
+        """
     )
     mapping_prompt = f"MAPPING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
+
     suffix = (
         f"{os.linesep}{os.linesep}"
-        "Your response MUST be the entire input record as a valid Python dictionary in the format "
-        "'index=<row_index>|{key1: value1, key2: value2, ...}'"
+        "Your response MUST be the entire input record as a valid Python dictionary in the format"
+        "'index=<row_index>|{key1: value1, key2: value2, ...}'  with added keys of expected new fields if any."
+         
+        "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW." \
+        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None" \
+        "'index=<row_index>|{key1: None, key2: value2, ...}'"
     )
 
-    llm_cache: dict[str, str] = {}
+    indexed_table = table.mutate(_ROW_ID_=ibis.row_number().cast("int64"))
 
-    def run_llm_batch(input_list: list) -> list[str]:
-        to_call = []
-        indices = []
-        for i, val in enumerate(input_list):
-            key = str(val)
-            if key not in llm_cache:
-                to_call.append(val)
-                indices.append(i)
+    local_data = indexed_table.select("_ROW_ID_", input_col).execute()
+    
+    input_list = local_data[input_col].tolist()
+    
+    raw_results = llm(input_list, prefix, mapping_prompt, suffix, optimized=True)
+    
+    processed_results = []
+    for res in raw_results:
+        try:
+            py_dict = ast.literal_eval(str(res).strip())
+            processed_results.append(json.dumps(py_dict))
+        except Exception:
+            processed_results.append("{}")
 
-        if to_call:
-            results = llm(to_call, prefix, mapping_prompt, suffix, optimized=True)
-            for key_val, res in zip(to_call, results):
-                try:
-                    py_dict = ast.literal_eval(str(res).strip())
-                    llm_cache[str(key_val)] = json.dumps(py_dict)
-                except Exception:
-                    llm_cache[str(key_val)] = "{}"
+    mapping_df = pd.DataFrame({
+        "_ROW_ID_": local_data["_ROW_ID_"].values, 
+        output_col: processed_results
+    })
+    mapping_table = ibis.memtable(mapping_df)
 
-        return [llm_cache[str(val)] for val in input_list]
-
-    backend_name = ibis.get_backend(table).name
-    print(f"Backend detected: {backend_name}")
-    if backend_name in ["duckdb","datafusion"]:
-        @ibis.udf.scalar.pyarrow
-        def run_llm_batch_udf(arrow_array: str) -> str:
-            input_list = arrow_array.to_pylist()
-            return pa.array(run_llm_batch(input_list))
-    else:
-        @ibis.udf.scalar.pandas
-        def run_llm_batch_udf(series: str) ->str:
-            return pd.Series(run_llm_batch(series.tolist()))
-
-    return table.mutate(**{output_col: run_llm_batch_udf(table[input_col])})
+    joined = indexed_table.join(
+        mapping_table, 
+        indexed_table["_ROW_ID_"] == mapping_table["_ROW_ID_"]
+    )
+    
+    final_cols = list(table.columns) + [output_col]
+    
+    return joined.select(final_cols)
 
 
 
@@ -149,6 +150,8 @@ class map_Ibis:
         if c not in {
             self.llm_output_column,
             self.serialized_input_column,
+            "ROW_ID_",
+            "_ROW_ID__right"
         }
     ]
 )

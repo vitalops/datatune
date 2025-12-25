@@ -30,7 +30,7 @@ def llm_batch_inference(
     table,
     llm: Callable, 
     input_col: str, 
-    output_col: str,  
+    output_col: str,   
     prompt: str,
 ):
     prefix = (
@@ -46,58 +46,44 @@ def llm_batch_inference(
         "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None"
     )
 
-    backend_name = ibis.get_backend(table).name
-    print(f"Backend detected: {backend_name}")
+    indexed_table = table.mutate(_ROW_ID_=ibis.row_number().cast("int64"))
 
-    if backend_name in ["duckdb","datafusion"]:
-        @ibis.udf.scalar.pyarrow
-        def run_llm_batch(arrow_array: str) -> str:
-            input_list = arrow_array.to_pylist()
-            results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
+    local_data = indexed_table.select("_ROW_ID_", input_col).execute()
+    
+    input_list = local_data[input_col].tolist()
+    
+    results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
 
-            out = []
-            for res in results:
-                try:
-                    d = ast.literal_eval(str(res).strip())
-                    
-                    if d:
-                        last_key = list(d.keys())[-1]
-                        flag = d[last_key]
-                        out.append("true" if str(flag).lower() == "true" else "false")
-                    else:
-                        out.append("false")
-                except Exception:
-                    out.append("false")
+    out_bools = []
+    for res in results:
+        try:
+            d = ast.literal_eval(str(res).strip())
+            if d:
+                last_key = list(d.keys())[-1]
+                flag = d[last_key]
+                out_bools.append(True if str(flag).lower() == "true" else False)
+            else:
+                out_bools.append(False)
+        except Exception:
+            out_bools.append(False)
 
-            return pa.array(out)
+    filter_df = pd.DataFrame({
+        "_ROW_ID_": local_data["_ROW_ID_"].values,
+        output_col: out_bools
+    })
+    filter_memtable = ibis.memtable(filter_df)
 
-    else:
-        @ibis.udf.scalar.pandas
-        def run_llm_batch(series: str) -> str:
-            input_list = series.tolist()
-            results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
-
-            out = []
-            for res in results:
-                try:
-                    d = ast.literal_eval(str(res).strip())
-                    if d:
-                        last_key = list(d.keys())[-1]
-                        flag = d[last_key]
-                        out.append("true" if str(flag).lower() == "true" else "false")
-                    else:
-                        out.append("false")
-                except Exception:
-                    out.append("false")
-
-            return pd.Series(out)
-
-
-    return table.mutate(**{output_col: run_llm_batch(table[input_col])})
+    joined = indexed_table.join(
+        filter_memtable, 
+        indexed_table["_ROW_ID_"] == filter_memtable["_ROW_ID_"]
+    )
+    
+    final_cols = list(table.columns) + [output_col]
+    
+    return joined.select(final_cols)
 
 def apply_llm_filter(table, llm_output_col):
-    is_true = table[llm_output_col].cast("string").lower() == "true"
-    return table.filter(is_true.fill_null(False))
+    return table.filter(table[llm_output_col].fill_null(False))
 
 
 class filter_Ibis:
@@ -124,6 +110,7 @@ class filter_Ibis:
             target_col=self.serialized_input_column, 
             input_fields=self.input_fields
         )
+        table = ibis.memtable(table.execute())
 
         table = llm_batch_inference(
             table,
@@ -143,6 +130,8 @@ class filter_Ibis:
         if c not in {
             self.llm_output_column,
             self.serialized_input_column,
+             "ROW_ID_",
+            "_ROW_ID__right"
         }
     ]
 )
