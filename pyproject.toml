@@ -17,7 +17,8 @@ dependencies = [
     "numpy",
     "litellm",
     "dask[dataframe]",
-    "pandas"
+    "pandas",
+    "ibis"
     
 ]
 
