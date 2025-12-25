@@ -3,12 +3,7 @@ import ibis
 import pandas as pd
 from typing import Callable, List, Optional
 from ibis.expr.types import Table
-import pyarrow as pa
 import ast
-import json
-import traceback
-
-import ibis
 
 def add_serialized_col(table, target_col: str, input_fields: Optional[List[str]] = []):
     cols = [
