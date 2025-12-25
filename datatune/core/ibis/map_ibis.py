@@ -2,7 +2,7 @@ import os
 import ibis
 import pandas as pd
 from typing import Callable, List, Optional
-from ibis.expr.types import Table
+from ibis import Table
 import ast
 import json
 
