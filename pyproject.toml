@@ -17,9 +17,12 @@ dependencies = [
     "numpy",
     "litellm",
     "dask[dataframe]",
-    "pandas",
-    "ibis-framework"
+    "pandas"
     
+]
+[project.optional-dependencies]
+ibis = [
+    "ibis-framework",
 ]
 
 [project.urls]

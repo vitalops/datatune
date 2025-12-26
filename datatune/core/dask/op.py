@@ -4,7 +4,7 @@ from typing import Callable, Optional, Union
 import dask.dataframe as dd
 import pandas as pd
 
-from datatune.core.constants import DELETED_COLUMN, ERRORED_COLUMN
+from datatune.core.dask.constants import DELETED_COLUMN, ERRORED_COLUMN
 
 # Counter for generating unique class instance names
 cls_counts = defaultdict(int)

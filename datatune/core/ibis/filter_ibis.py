@@ -81,7 +81,7 @@ def apply_llm_filter(table, llm_output_col):
     return table.filter(table[llm_output_col].fill_null(False))
 
 
-class filter_Ibis:
+class _filter_ibis:
     """
     Class to handle filtering operations using Ibis tables.
     """

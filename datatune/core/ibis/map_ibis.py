@@ -98,7 +98,7 @@ def apply_llm_updates(table, llm_output_col: str, output_fields: list) -> Table:
     return table.mutate(**updates)
 
 
-class map_Ibis:
+class _map_ibis:
     """
     Class to handle mapping operations using Ibis tables.
     """
