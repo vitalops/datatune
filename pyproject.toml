@@ -20,6 +20,15 @@ dependencies = [
     "pandas"
     
 ]
+[project.optional-dependencies]
+ibis = [
+    "ibis-framework[duckdb]",
+]
+test = [
+    "ibis-framework[duckdb]",
+    "ibis-framework[datafusion]",
+    "ibis-framework[sqlite]",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/vitalops/datatune"

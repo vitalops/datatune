@@ -19,8 +19,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install .
+          pip install .[ibis,test]
 
       - name: Run unittest file
         run: |
           python -m unittest tests/test_optimized_batch_completion.py
+          
+      - name: Run Ibis backend tests
+        run: |
+          pip install pytest
+          pytest tests/test_ibis_core.py    
