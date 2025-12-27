@@ -265,7 +265,7 @@ result.compute().to_csv("output.csv", index=False)
 Agents make Datatune ideal for non-technical users, rapid prototyping, and intelligent data workflows — just describe what you want, and let the agent do the rest.
 
 ### 🧩 Data Compatibility
-
+#### Dask
 Datatune leverages Dask DataFrames to enable scalable processing across large datasets. This approach allows you to:
 
 - Process data larger than context length of LLMs
@@ -277,7 +277,41 @@ If you're working with pandas DataFrames, convert them with a simple:
 import dask.dataframe as dd
 dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
 ```
+#### Ibis
+With Ibis, Datatune can operate on a variety of backends (e.g., DuckDB, Postgres, DataFusion) :
 
+- Easily switch between backends
+
+##### **DuckDB**
+```python
+con = ibis.duckdb.connect("test.duckdb")
+people_view = con.read_csv(
+    "tests/test_data/organizations-15.csv",
+    table_name="organizations"
+)
+con.create_table(
+    "organizations",
+    people_view,
+    overwrite=True
+)
+table = con.table("organizations")
+```
+Transform Ibis tables using DataTune
+```python
+mapped = dt.map(
+    prompt = "Extract Sub-Category from industry column.",
+    output_fields=["Sub-Category"],       # input fields to be used for mapping
+    input_fields=["Industry"]
+)(llm, table)                             # pass your ibis table
+
+# Now pass the mapped Ibis table expression to filter
+filtered = dt.filter(
+    prompt = "Keep only countries in Asia.",
+    input_fields=["Country"] 
+)(llm, mapped)
+
+result = filtered.execute()    # Compute to pandas df
+```
 ### 📁 Examples
 Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 

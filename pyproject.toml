@@ -22,7 +22,7 @@ dependencies = [
 ]
 [project.optional-dependencies]
 ibis = [
-    "ibis-framework",
+    "ibis-framework[duckdb]",
 ]
 test = [
     "ibis-framework[duckdb]",

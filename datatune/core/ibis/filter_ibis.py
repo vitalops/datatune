@@ -4,6 +4,9 @@ import pandas as pd
 from typing import Callable, List, Optional
 from ibis import Table
 import ast
+from datatune.logger import get_logger
+
+logger = get_logger(__name__)
 
 def add_serialized_col(table, target_col: str, input_fields: Optional[List[str]] = []):
     cols = [
@@ -99,6 +102,16 @@ class _filter_ibis:
     def __call__(self, llm: Callable, table: Table) -> Table:
 
         self.llm = llm
+        if self.input_fields:
+            missing = [f for f in self.input_fields if f not in table.columns]
+        if missing:
+            error_msg = (
+                f"[datatune] Schema mismatch: The following input_fields were not found: {missing}. "
+                f"Available columns: {list(table.columns)}"
+            )
+            logger.error(error_msg)
+            
+            raise ValueError(error_msg)
 
         table = add_serialized_col(
             table, 
