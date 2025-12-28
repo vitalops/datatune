@@ -1,7 +1,9 @@
+
 def _is_ibis_table(obj):
     try:
         import ibis
-        return isinstance(obj, ibis.Table)
+        from .ibis.lazy_pipeline import LazyTable
+        return isinstance(obj, (ibis.Table,LazyTable))
     except ImportError:
         return False
     
@@ -24,11 +26,14 @@ def map(*, prompt, output_fields, input_fields=None):
             )(llm, data)
         elif _is_ibis_table(data):
             from .ibis.map_ibis import _map_ibis
-            return _map_ibis(
+            from .ibis.lazy_pipeline import LazyTable, MapNode
+            map_obj = _map_ibis(
                 prompt=prompt,
                 output_fields=output_fields,
                 input_fields=input_fields,
-            )(llm, data)
+            )
+            map_obj.llm = llm
+            return LazyTable(MapNode(map_obj, data))
 
         raise TypeError(f"Unsupported data type: {type(data)}")
 
