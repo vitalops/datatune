@@ -124,14 +124,14 @@ class _map_ibis:
         self.llm = llm
         if self.input_fields:
             missing = [f for f in self.input_fields if f not in table.columns]
-        if missing:
-            error_msg = (
-                f"[datatune] Schema mismatch: The following input_fields were not found: {missing}. "
-                f"Available columns: {list(table.columns)}"
-            )
-            logger.error(error_msg)
+            if missing:
+                error_msg = (
+                    f"[datatune] Schema mismatch: The following input_fields were not found: {missing}. "
+                    f"Available columns: {list(table.columns)}"
+                )
+                logger.error(error_msg)
             
-            raise ValueError(error_msg)
+                raise ValueError(error_msg)
 
 
         table = add_serialized_col(
