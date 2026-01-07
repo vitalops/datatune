@@ -86,6 +86,7 @@ class SemanticDeduplicator:
             clusters.append(group)
         cluster_candidates = [c for c in clusters if len(c) > 1]
         print(cluster_candidates)
+        #print(len(cluster_candidates[0]))
         return cluster_candidates
     
     def _llm_evaluation(self, clusters, input_rows, llm):
@@ -95,7 +96,7 @@ class SemanticDeduplicator:
             "- Consider ONLY the records inside that cluster."
             "- Decide whether any records are duplicates."
             "- If duplicates exist, choose ONE canonical record."
-            """- If no duplicates exist, say "NO_DUPLICATES". must be enclosed in double quotes"""
+            """- If no duplicates exist, output a STRING "NO_DUPLICATES" enclosed in double quotes."""
             "Output exactly ONE JSON object PER CLUSTER."
             "Do not reference other clusters."
         )
@@ -108,8 +109,7 @@ class SemanticDeduplicator:
 "canonical_id": <int>,
 "duplicate_ids": [<int>, ...]
 }
-- If no duplicates exist, output exactly:
-"NO_DUPLICATES"
+- If no duplicates exist, output exactly a string "NO_DUPLICATES" enclosed in double quio.
 
 Do not add explanations.
 Do not reference other clusters.
@@ -144,6 +144,8 @@ Do not reference other clusters.
             output = output.strip()
 
             if output == "NO_DUPLICATES":
+                continue
+            elif isinstance(output, set):
                 continue
 
             try:
