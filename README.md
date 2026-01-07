@@ -6,7 +6,7 @@
 [![Docs](https://img.shields.io/badge/docs-docs.datatune.ai-blue)](https://docs.datatune.ai)
 [![Discord](https://img.shields.io/badge/Discord-7289da?logo=discord&logoColor=white)](https://discord.gg/3RKA5AryQX)
 
-Perform transformations on your data with natural language using LLMs
+Perform transformations with row-level understanding of data using LLMS.
 
 ## Installation
 
