@@ -28,6 +28,7 @@ def input_as_string(
         pd.DataFrame: DataFrame with the added serialized input column.
     """
     df_inputs = df[input_fields] if input_fields else df
+    df_inputs = df_inputs.where(df_inputs.notna(), None)
     df[serialized_input_column] = [
         str(row.to_dict()) for _, row in df_inputs.iterrows()
     ]
@@ -72,7 +73,7 @@ def llm_batch_inference(
         "'index=<row_index>|{key1: value1, key2: value2, ...}'  with added keys of expected new fields if any."
          
         "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW." \
-        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None" \
+        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO null" \
         "'index=<row_index>|{key1: None, key2: value2, ...}'"
     )
     input_series = df[serialized_input_column]

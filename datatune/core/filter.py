@@ -12,7 +12,7 @@ def _is_dask_df(obj):
     except ImportError:
         return False
 
-def filter(*, prompt, input_fields=None):
+def filter(*, prompt, input_fields=None, merge_data=None):
     def apply(llm, data):
 
         if _is_dask_df(data):
@@ -20,6 +20,7 @@ def filter(*, prompt, input_fields=None):
             return _filter_dask(
                 prompt=prompt,
                 input_fields=input_fields,
+                merge_data=merge_data
             )(llm, data)
         elif _is_ibis_table(data):
             from .ibis.filter_ibis import _filter_ibis

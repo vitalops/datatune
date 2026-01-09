@@ -24,6 +24,8 @@ def input_as_string(
     Returns:
         pd.DataFrame: DataFrame with the added serialized input column.
     """
+    df = df.astype(object).where(df.notna(), None)
+
     df[serialized_input_column] = [
         str(row.to_dict()) for _, row in df.iterrows()
     ]
@@ -45,6 +47,7 @@ class SemanticDeduplicator:
         self.ef_search = ef_search
 
     def _embed_and_cluster(self, input_rows: List[str]):
+        print(input_rows)
         dicts = [ast.literal_eval(row) for row in input_rows]
 
         def dict_to_text(d):
@@ -102,18 +105,18 @@ class SemanticDeduplicator:
         )
 
         batch_suffix = """For EACH cluster above:
-- Produce exactly ONE output.
-- Output MUST correspond to the cluster in the same order.
-- If duplicates exist, output valid JSON:
-{
-"canonical_id": <int>,
-"duplicate_ids": [<int>, ...]
-}
-- If no duplicates exist, output exactly a string "NO_DUPLICATES" enclosed in double quio.
+            - Produce exactly ONE output.
+            - Output MUST correspond to the cluster in the same order.
+            - If duplicates exist, output valid JSON:
+            {
+            "canonical_id": <int>,
+            "duplicate_ids": [<int>, ...]
+            }
+            - If no duplicates exist, output exactly a string "NO_DUPLICATES" enclosed in double quio.
 
-Do not add explanations.
-Do not reference other clusters.
-"""
+            Do not add explanations.
+            Do not reference other clusters.
+        """
 
         def cluster_to_string(cluster_id, cluster):
             lines = [f"CLUSTER {cluster_id} START"]

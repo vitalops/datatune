@@ -39,6 +39,7 @@ def llm_batch_inference(
     llm_output_column: str,
     prompt: str,
     serialized_input_column: str,
+    merge_data: List[dict],
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -68,9 +69,32 @@ def llm_batch_inference(
         "ALWAYS STICK TO THE FORMAT index=<row_index>|{key1: value1, key2: value2, ...}<endofrow> with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it.\n"
         "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None"
     )
-    df[llm_output_column] = llm(
-        df[serialized_input_column], prefix, prompt, suffix, optimized=True
+    input_series = df[serialized_input_column]
+
+    dup_to_canon = {
+        dup: c["canonical_id"]
+        for c in merge_data
+        for dup in c["duplicate_ids"]
+    }
+
+    canonical_idx = input_series.index.difference(dup_to_canon.keys())
+
+
+    canonical_input = input_series.loc[canonical_idx]
+
+    llm_out = llm(
+        canonical_input,
+        prefix,
+        prompt,
+        suffix,
+        optimized=True
     )
+
+    df.loc[canonical_idx, llm_output_column] = llm_out
+
+    for dup, canon in dup_to_canon.items():
+        df.loc[dup, llm_output_column] = df.loc[canon, llm_output_column]
+
     return df
 
 
@@ -191,6 +215,7 @@ class _filter_dask(Op):
     def __init__(
         self,
         prompt: str,
+        merge_data: List[dict] = None,
         input_fields: Optional[List] = None,
         name: Optional[str] = None,
         on_error: str = "keep",
@@ -198,6 +223,7 @@ class _filter_dask(Op):
         super().__init__(name=name)
         self.prompt = prompt
         self.input_fields = input_fields
+        self.merge_data = merge_data or []
         self.serialized_input_column = f"{self.name}_SERIALIZED_INPUT__DATATUNE__"
         self.prompt_column = f"{self.name}_FILTER_PROMPT__DATATUNE__"
         self.llm_output_column = f"{self.name}_LLM_OUTPUT__DATATUNE__"
@@ -240,6 +266,7 @@ class _filter_dask(Op):
                 self.llm_output_column,
                 self.prompt,
                 self.serialized_input_column,
+                self.merge_data,
             ),
             meta=meta_dict,
         )
