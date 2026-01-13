@@ -8,6 +8,8 @@
 
 Transform your data using natural language. Datatune uses LLMs to understand and transform data at the row level - no complex code required.
 
+![How it works](https://raw.githubusercontent.com/vitalops/datatune/main/how%20it%20works.png)
+
 ## Installation
 
 ```bash
