@@ -8,6 +8,9 @@
 
 Scalable Data Transformations with row-level intelligence.
 
+
+## How It Works
+
 ![How it works](https://raw.githubusercontent.com/vitalops/datatune/main/how%20it%20works.png)
 
 ## Installation
