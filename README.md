@@ -42,6 +42,27 @@ result = dt.finalize(filtered)
 result.compute().to_csv("electronics_products.csv")
 ```
 
+## 🤖 Agents - Even Simpler
+
+Let AI automatically figure out the transformation steps for you:
+
+```python
+import datatune as dt
+from datatune.llm.llm import OpenAI
+
+llm = OpenAI(model_name="gpt-3.5-turbo")
+agent = dt.Agent(llm)
+
+# Just describe what you want - the agent handles map, filter, and more
+df = agent.do("Add ProfitMargin column and keep only African organizations", df)
+result = dt.finalize(df)
+```
+
+The agent automatically:
+- Determines which operations to use (map, filter, etc.)
+- Chains multiple transformations
+- Handles complex multi-step tasks from a single prompt
+
 ## Supported LLMs
 
 ```python
