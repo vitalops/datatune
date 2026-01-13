@@ -6,7 +6,7 @@
 [![Docs](https://img.shields.io/badge/docs-docs.datatune.ai-blue)](https://docs.datatune.ai)
 [![Discord](https://img.shields.io/badge/Discord-7289da?logo=discord&logoColor=white)](https://discord.gg/3RKA5AryQX)
 
-Transform your data using natural language. Datatune uses LLMs to understand and transform data at the row level - no complex code required.
+Scalable Data Transformations with row-level intelligence.
 
 ![How it works](https://raw.githubusercontent.com/vitalops/datatune/main/how%20it%20works.png)
 
