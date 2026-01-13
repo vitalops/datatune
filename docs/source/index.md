@@ -122,20 +122,6 @@ df = agent.do(prompt,df)
 ```
 
 
-### Data Compatibility
-
-Datatune leverages Dask DataFrames to enable scalable processing across large datasets. This approach allows you to:
-
-- Process data larger than context length of LLMs
-- Execute parallel computations efficiently
-
-If you're working with pandas DataFrames, convert them with a simple:
-
-```python
-import dask.dataframe as dd
-dask_df = dd.from_pandas(pandas_df, npartitions=4)  # adjust partitions based on your data size
-```
-
 ### Examples
 Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 
@@ -145,12 +131,13 @@ Check out [examples](https://github.com/vitalops/datatune/tree/main/examples)
 :maxdepth: 2
 :caption: Contents:
 
-
+DataLoaders.md
 Filter.md
 Map.md
 Op.md
 LLM.md
 Agent.md
+build/html/_sources/DataLoaders.md
 build/html/_sources/Filter.md
 build/html/_sources/Map.md
 build/html/_sources/Op.md
