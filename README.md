@@ -8,6 +8,8 @@
 
 Scalable Data Transformations with row-level intelligence.
 
+Datatune is not just another Text to SQL tool. With datatune, LLMs and Agents can have full access to your data, and apply semantic intelligence in every record.
+
 
 ## How It Works
 
