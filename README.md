@@ -69,7 +69,7 @@ The agent automatically:
 - Determines which operations to use (map, filter, etc.)
 - Chains multiple transformations
 - Handles complex multi-step tasks from a single prompt
-- Executes Python code along with row-level primitives (Map, Filter, etc)
+- Generates and executes Python code along with row-level primitives (Map, Filter, etc) if required. 
 
 ## Supported LLMs
 
