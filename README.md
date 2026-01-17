@@ -13,6 +13,9 @@ Datatune is not just another Text to SQL tool. With datatune, LLMs and Agents ca
 
 ## How It Works
 
+[Click here to understand how Datatune works](https://blog.datatune.ai/how-to-make-llms-work-on-large-amounts-of-data)
+
+
 ![How it works](https://raw.githubusercontent.com/vitalops/datatune/main/how%20it%20works.png)
 
 ## Installation
