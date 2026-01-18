@@ -18,6 +18,7 @@ dependencies = [
     "litellm",
     "dask[dataframe]",
     "pandas"
+    "faiss-cpu",
     
 ]
 [project.optional-dependencies]
