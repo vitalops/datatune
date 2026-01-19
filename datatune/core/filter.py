@@ -1,7 +1,8 @@
 def _is_ibis_table(obj):
     try:
         import ibis
-        return isinstance(obj, ibis.Table)
+        from .ibis.lazy_pipeline import LazyTable
+        return isinstance(obj, (ibis.Table, LazyTable))
     except ImportError:
         return False
     
@@ -23,10 +24,18 @@ def filter(*, prompt, input_fields=None):
             )(llm, data)
         elif _is_ibis_table(data):
             from .ibis.filter_ibis import _filter_ibis
-            return _filter_ibis(
+            from .ibis.lazy_pipeline import LazyTable, FilterNode
+
+            filter_obj = _filter_ibis(
                 prompt=prompt,
-                input_fields=input_fields,
-            )(llm, data)
+                input_fields=input_fields
+            )
+            filter_obj.llm = llm
+
+            if not isinstance(data, LazyTable):
+                data = LazyTable(data)
+
+            return LazyTable(FilterNode(filter_obj, data))
         raise TypeError(f"Unsupported data type: {type(data)}")
 
     return apply
