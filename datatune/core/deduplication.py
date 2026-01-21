@@ -10,6 +10,7 @@ import pandas as pd
 import dask.dataframe as dd
 import dask
 import os
+from .registry import register_action
 
 logger = get_logger(__name__)
 def input_as_string(
@@ -33,8 +34,9 @@ def input_as_string(
         str(row.to_dict()) for _, row in df.iterrows()
     ]
     return df
-class SemanticDeduplicator:
     
+@register_action("dedup")   
+class SemanticDeduplicator():
     def __init__(
     self,
     embedding_model: str = "text-embedding-3-small",
@@ -186,7 +188,7 @@ class SemanticDeduplicator:
             glob.glob(os.path.join(embedding_dir, "embeddings_part_*.npy"))
         )
 
-        faiss_id_cursor = 0  # global FAISS ID counter
+        faiss_id_cursor = 0 
 
         for emb_path in emb_files:
             X = np.load(emb_path, mmap_mode="r")
@@ -224,75 +226,6 @@ class SemanticDeduplicator:
 
         return clusters
 
-
-    def _cluster(self, X: np.ndarray):
-        """
-        X: np.ndarray [N, dim], ALREADY L2-normalized
-        Returns: List[List[int]] where each sublist contains indices
-                of semantically similar rows (high precision).
-        """
-
-        dim = X.shape[1]
-
-        index = faiss.IndexHNSWFlat(
-            dim, self.hnsw_m, faiss.METRIC_INNER_PRODUCT
-        )
-        index.hnsw.efSearch = self.ef_search
-        index.hnsw.efConstruction = 200
-
-        # X is already normalized
-        index.add(X)
-
-        D, I = index.search(X, self.top_k)
-
-        clusters = []
-        visited = set()
-
-        for i in range(len(X)):
-            if i in visited:
-                continue
-
-            group = []
-
-            for score, j in zip(D[i], I[i]):
-                if j == i:
-                    continue
-                if score >= self.sim_threshold and j not in visited:
-                    group.append(j)
-                    visited.add(j)
-
-            if group:
-                group.append(i)
-                visited.add(i)
-                clusters.append(group)
-
-        return clusters
-
-
-
-    # def embed_column_to_disk(
-    #     self,
-    #     df,
-    #     column: str,
-    #     output_dir: str,
-    # ):
-    #     os.makedirs(output_dir, exist_ok=True)
-
-    #     delayed_tasks = []
-
-    #     for pid in range(df.npartitions):
-    #         part = df[column].get_partition(pid)
-
-    #         task = dask.delayed(self._embed_and_write_partition)(
-    #             part.compute(),   # ONLY this partition
-    #             pid,
-    #             output_dir,
-    #         )
-
-    #         delayed_tasks.append(task)
-
-    #     dask.compute(*delayed_tasks)
-
     def _llm_evaluation(self, clusters, df_column, llm):
         """
         clusters: List[List[int]] of row indices
@@ -323,33 +256,17 @@ class SemanticDeduplicator:
             Do not add explanations.
             Do not reference other clusters.
         """
-
-        # def cluster_to_string(cluster_id, cluster):
-        #     # Fetch only the rows needed for this cluster
-        #     input_rows = df_column.loc[cluster].compute().tolist()
-        #     lines = [f"CLUSTER {cluster_id} START"]
-        #     for idx, row in zip(cluster, input_rows):
-        #         lines.append(f"ID {idx}: {row}")
-        #     lines.append(f"CLUSTER {cluster_id} END")
-        #     return "\n".join(lines)
-
-    # Build a mapping: partition -> cluster rows
         from collections import defaultdict
         all_needed_indices = set(idx for cluster in clusters for idx in cluster)
-        cluster_rows = defaultdict(list)  # cluster_id -> list of (row_idx, text)
-
-        # ---------- scan partition by partition ----------
+        cluster_rows = defaultdict(list) 
         for pid in range(df_column.npartitions):
             part = df_column.get_partition(pid).compute()
-            # only keep rows that are actually needed
             needed_in_partition = all_needed_indices.intersection(part.index)
             for row_idx in needed_in_partition:
                 for cluster_id, cluster in enumerate(clusters):
                     if row_idx in cluster:
                         cluster_rows[cluster_id].append((row_idx, part.loc[row_idx]))
-                        break  # each row belongs to exactly one cluster
-
-        # ---------- build cluster strings in correct order ----------
+                        break 
         llm_inputs = []
         for cluster_id, cluster in enumerate(clusters):
             lines = [f"CLUSTER {cluster_id} START"]
@@ -360,7 +277,6 @@ class SemanticDeduplicator:
             lines.append(f"CLUSTER {cluster_id} END")
             llm_inputs.append("\n".join(lines))
 
-        # ---------- send to LLM ----------
         logger.info("Sending %d clusters to LLM for evaluation...", len(llm_inputs))
         llm_outputs = llm(
             llm_inputs,
@@ -440,8 +356,6 @@ class SemanticDeduplicator:
         top_k=20,
         sim_threshold=0.92,
     )
-        print("Found clusters:", clusters)
-        print(len(clusters))
         llm_outputs = self._llm_evaluation(
             clusters, df["serialized_input_column"], llm
         )
