@@ -10,7 +10,7 @@ import pandas as pd
 import dask.dataframe as dd
 import dask
 import os
-from .registry import register_action
+from .reduce import register_action
 
 logger = get_logger(__name__)
 def input_as_string(
@@ -39,17 +39,20 @@ def input_as_string(
 class SemanticDeduplicator():
     def __init__(
     self,
+    llm:Callable,
     embedding_model: str = "text-embedding-3-small",
     sim_threshold: float = 0.90,
     top_k: int = 50,
     hnsw_m: int = 32,
     ef_search: int = 64,
+    
 ):
         self.embedding_model = embedding_model
         self.sim_threshold = sim_threshold
         self.top_k = top_k
         self.hnsw_m = hnsw_m
         self.ef_search = ef_search
+        self.llm = llm
 
 
     def _embed_and_write_partition(
@@ -226,7 +229,7 @@ class SemanticDeduplicator():
 
         return clusters
 
-    def _llm_evaluation(self, clusters, df_column, llm):
+    def _llm_evaluation(self, clusters, df_column):
         """
         clusters: List[List[int]] of row indices
         df_column: Dask Series (the serialized_input_column)
@@ -278,7 +281,7 @@ class SemanticDeduplicator():
             llm_inputs.append("\n".join(lines))
 
         logger.info("Sending %d clusters to LLM for evaluation...", len(llm_inputs))
-        llm_outputs = llm(
+        llm_outputs = self.llm(
             llm_inputs,
             batch_prefix=batch_prefix,
             prompt_per_row="",
@@ -328,7 +331,7 @@ class SemanticDeduplicator():
 
         return merges
     
-    def __call__(self, df:dd.DataFrame, llm: Callable):
+    def __call__(self, df:dd.DataFrame):
         df = df.reset_index(drop=True)
 
         df = df.map_partitions(
@@ -357,7 +360,7 @@ class SemanticDeduplicator():
         sim_threshold=0.92,
     )
         llm_outputs = self._llm_evaluation(
-            clusters, df["serialized_input_column"], llm
+            clusters, df["serialized_input_column"]
         )
 
         merges = self._parse_llm_outputs(
