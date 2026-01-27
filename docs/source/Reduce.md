@@ -121,4 +121,9 @@ Higher values improve search accuracy at the cost of latency.
 Default: `64`
 
 ---
+**return_df** (bool, optional)
+
+When True reduce returns the deduped dataframe rather than clusters
+
+Default: `False`
 
