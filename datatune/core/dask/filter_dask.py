@@ -39,7 +39,7 @@ def llm_batch_inference(
     llm_output_column: str,
     prompt: str,
     serialized_input_column: str,
-    merge_data: List[dict],
+    clusters: List[dict],
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -73,7 +73,7 @@ def llm_batch_inference(
 
     dup_to_canon = {
         dup: c["canonical_id"]
-        for c in merge_data
+        for c in clusters
         for dup in c["duplicate_ids"]
     }
 
@@ -215,7 +215,7 @@ class _filter_dask(Op):
     def __init__(
         self,
         prompt: str,
-        merge_data: List[dict] = None,
+        clusters: List[dict] = None,
         input_fields: Optional[List] = None,
         name: Optional[str] = None,
         on_error: str = "keep",
@@ -223,7 +223,7 @@ class _filter_dask(Op):
         super().__init__(name=name)
         self.prompt = prompt
         self.input_fields = input_fields
-        self.merge_data = merge_data or []
+        self.clusters = clusters or []
         self.serialized_input_column = f"{self.name}_SERIALIZED_INPUT__DATATUNE__"
         self.prompt_column = f"{self.name}_FILTER_PROMPT__DATATUNE__"
         self.llm_output_column = f"{self.name}_LLM_OUTPUT__DATATUNE__"
@@ -266,7 +266,7 @@ class _filter_dask(Op):
                 self.llm_output_column,
                 self.prompt,
                 self.serialized_input_column,
-                self.merge_data,
+                self.clusters,
             ),
             meta=meta_dict,
         )

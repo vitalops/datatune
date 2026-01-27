@@ -45,6 +45,7 @@ class SemanticDeduplicator():
     top_k: int = 50,
     hnsw_m: int = 32,
     ef_search: int = 64,
+    return_df: bool = False,
     
 ):
         self.embedding_model = embedding_model
@@ -53,6 +54,7 @@ class SemanticDeduplicator():
         self.hnsw_m = hnsw_m
         self.ef_search = ef_search
         self.llm = llm
+        self.return_df = return_df
 
 
     def _embed_and_write_partition(
@@ -61,9 +63,7 @@ class SemanticDeduplicator():
         partition_id: int,
         output_dir: str,
     ):
-        print("running2")
         pdf = part
-        print(type(pdf))
 
         if pdf.empty:
             print("empty partition")
@@ -116,7 +116,6 @@ class SemanticDeduplicator():
 
 
     def embed_column_to_disk(self, df, column, output_dir):
-        print("running")
         os.makedirs(output_dir, exist_ok=True)
 
         tasks = []
@@ -330,7 +329,20 @@ class SemanticDeduplicator():
             })
 
         return merges
-    
+    def _dedup_df(self, df, clusters):
+
+        # build drop-set ONCE
+        to_drop = set()
+        for c in clusters:
+            to_drop.update(c["duplicate_ids"])
+
+        def _filter(pdf):
+            return pdf.loc[~pdf.index.isin(to_drop)]
+
+        return df.map_partitions(
+            _filter,
+            meta=df._meta
+        )
     def __call__(self, df:dd.DataFrame):
         df = df.reset_index(drop=True)
 
@@ -366,7 +378,12 @@ class SemanticDeduplicator():
         merges = self._parse_llm_outputs(
             llm_outputs, clusters
         )
-
+        if self.return_df:
+            
+            deduped_df = self._dedup_df(df, merges)
+            deduped_df = deduped_df.drop(columns=["serialized_input_column"])
+            return deduped_df
+        
         return merges
 
 
