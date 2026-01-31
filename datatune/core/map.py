@@ -12,7 +12,7 @@ def _is_dask_df(obj):
     except ImportError:
         return False
 
-def map(*, prompt, output_fields, input_fields=None):
+def map(*, prompt, output_fields, input_fields=None, clusters=None):
     def apply(llm, data):
         
         if _is_dask_df(data):
@@ -21,6 +21,7 @@ def map(*, prompt, output_fields, input_fields=None):
                 prompt=prompt,
                 output_fields=output_fields,
                 input_fields=input_fields,
+                clusters=clusters
             )(llm, data)
         elif _is_ibis_table(data):
             from .ibis.map_ibis import _map_ibis

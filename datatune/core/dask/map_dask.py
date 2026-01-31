@@ -28,6 +28,7 @@ def input_as_string(
         pd.DataFrame: DataFrame with the added serialized input column.
     """
     df_inputs = df[input_fields] if input_fields else df
+    df_inputs = df_inputs.where(df_inputs.notna(), None)
     df[serialized_input_column] = [
         str(row.to_dict()) for _, row in df_inputs.iterrows()
     ]
@@ -40,6 +41,7 @@ def llm_batch_inference(
     prompt: str,
     serialized_input_column: str,
     expected_new_fields: List[str],
+    clusters: List[dict],
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
@@ -71,15 +73,36 @@ def llm_batch_inference(
         "'index=<row_index>|{key1: value1, key2: value2, ...}'  with added keys of expected new fields if any."
          
         "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW." \
-        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None" \
+        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO null" \
         "'index=<row_index>|{key1: None, key2: value2, ...}'"
     )
+    input_series = df[serialized_input_column]
 
-    df[llm_output_column] = llm(
-        df[serialized_input_column], prefix, prompt, suffix, optimized=True
+    dup_to_canon = {
+        dup: c["canonical_id"]
+        for c in clusters
+        for dup in c["duplicate_ids"]
+    }
+
+    canonical_idx = input_series.index.difference(dup_to_canon.keys())
+
+
+    canonical_input = input_series.loc[canonical_idx]
+
+    llm_out = llm(
+        canonical_input,
+        prefix,
+        prompt,
+        suffix,
+        optimized=True
     )
-    return df
 
+    df.loc[canonical_idx, llm_output_column] = llm_out
+
+    for dup, canon in dup_to_canon.items():
+        df.loc[dup, llm_output_column] = df.loc[canon, llm_output_column]
+
+    return df
 
 def parse_llm_output(llm_output: Union[str, Exception]) -> Union[Dict, Exception]:
     """
@@ -190,11 +213,13 @@ class _map_dask(Op):
         input_fields: Optional[List] = None,
         output_fields: Optional[List] = None,
         name: Optional[str] = None,
+        clusters: List[dict] = None,
     ):
         super().__init__(name=name)
         self.prompt = prompt
         self.input_fields = input_fields
         self.output_fields = output_fields
+        self.clusters = clusters or []
         self.serialized_input_column = f"{self.name}_SERIALIZED_INPUT__DATATUNE__"
         self.prompt_column = f"{self.name}_MAP_PROMPT__DATATUNE__"
         self.llm_output_column = f"{self.name}_LLM_OUTPUT__DATATUNE__"
@@ -234,6 +259,7 @@ class _map_dask(Op):
                 self.prompt,
                 self.serialized_input_column,
                 self.output_fields,
+                self.clusters
             ),
             meta=meta_dict,
         )
