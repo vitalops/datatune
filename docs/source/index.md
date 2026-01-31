@@ -137,10 +137,12 @@ Map.md
 Op.md
 LLM.md
 Agent.md
+Reduce.md
 build/html/_sources/DataLoaders.md
 build/html/_sources/Filter.md
 build/html/_sources/Map.md
 build/html/_sources/Op.md
 build/html/_sources/LLM.md
 build/html/_sources/Agent.md
+build/html/_sources/Reduce.md
 ```
