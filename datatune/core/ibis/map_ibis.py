@@ -26,59 +26,74 @@ def add_serialized_col(table, target_col: str, input_fields: Optional[List[str]]
 
 def llm_batch_inference(
     table,
-    llm: Callable, 
-    input_col: str, 
-    output_col: str,  
+    llm: Callable,
+    input_col: str,
+    output_col: str,
     prompt: str,
-    expected_new_fields: list[str] = []
+    expected_new_fields: list[str] = None,
+    batch_size: int = 50,
 ):
+
+    expected_new_fields = expected_new_fields or []
+
     prefix = (
         f"Map and transform the input according to the mapping criteria below.{os.linesep}"
         f""" Replace or Create new fields or values as per the prompt.
         {f"Expected new fields: {expected_new_fields}." if expected_new_fields else ""}
         """
     )
+
     mapping_prompt = f"MAPPING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
 
     suffix = (
         f"{os.linesep}{os.linesep}"
-        "Your response MUST be the entire input record as a valid Python dictionary in the format"
-        "'index=<row_index>|{key1: value1, key2: value2, ...}'  with added keys of expected new fields if any."
-         
-        "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW." \
-        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None" \
+        "Your response MUST be the entire input record as a valid Python dictionary in the format "
+        "'index=<row_index>|{key1: value1, key2: value2, ...}' with added keys of expected new fields if any. "
+        "ALWAYS START YOUR RESPONSE WITH 'index=<row_index>|' WHERE <row_index> IS THE INDEX OF THE ROW. "
+        "IF A VALUE FOR A COLUMN DOES NOT EXIST SET IT TO None "
         "'index=<row_index>|{key1: None, key2: value2, ...}'"
     )
 
-    indexed_table = table.mutate(_ROW_ID_=ibis.row_number().cast("int64"))
+    indexed_table = table.mutate(
+        _ROW_ID_=ibis.row_number().over(order_by=table.columns).cast("int64")
+    )
 
-    local_data = indexed_table.select("_ROW_ID_", input_col).execute()
-    
-    input_list = local_data[input_col].tolist()
-    
-    raw_results = llm(input_list, prefix, mapping_prompt, suffix, optimized=True)
-    
-    processed_results = []
-    for res in raw_results:
-        try:
-            py_dict = ast.literal_eval(str(res).strip())
-            processed_results.append(json.dumps(py_dict))
-        except Exception:
-            processed_results.append("{}")
+    expr = indexed_table.select("_ROW_ID_", input_col)
+
+    all_ids = []
+    all_outputs = []
+
+    for batch in expr.to_pyarrow_batches(chunk_size=batch_size):
+        df = batch.to_pandas()
+
+        input_list = df[input_col].tolist()
+        row_ids = df["_ROW_ID_"].tolist()
+
+        raw_results = llm(input_list, prefix, mapping_prompt, suffix, optimized=True)
+
+        for res in raw_results:
+            try:
+                py_dict = ast.literal_eval(str(res).strip())
+                all_outputs.append(json.dumps(py_dict))
+            except Exception:
+                all_outputs.append("{}")
+
+        all_ids.extend(row_ids)
 
     mapping_df = pd.DataFrame({
-        "_ROW_ID_": local_data["_ROW_ID_"].values, 
-        output_col: processed_results
+        "_ROW_ID_": all_ids,
+        output_col: all_outputs
     })
+
     mapping_table = ibis.memtable(mapping_df)
 
     joined = indexed_table.join(
-        mapping_table, 
+        mapping_table,
         indexed_table["_ROW_ID_"] == mapping_table["_ROW_ID_"]
     )
-    
+
     final_cols = list(table.columns) + [output_col]
-    
+
     return joined.select(final_cols)
 
 
