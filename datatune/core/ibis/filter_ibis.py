@@ -138,7 +138,7 @@ class _filter_ibis:
         if c not in {
             self.llm_output_column,
             self.serialized_input_column,
-             "ROW_ID_",
+             "_ROW_ID_",
             "_ROW_ID__right"
         }
     ]
