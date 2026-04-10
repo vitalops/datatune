@@ -30,12 +30,20 @@ class LLM:
                 logger.warning(
                     f"TOKENS-PER-MINUTE limits for model '{model_name}' not found. Defaulting to '{DEFAULT_MODEL}' limits: {model_limits['tpm']} TPM. Set limits by passing tpm,rpm arguments to your llm "
                 )
+        if "max_tokens" not in kwargs:
+            kwargs["max_tokens"] = self.get_max_tokens()
+
 
         self.MAX_RPM = kwargs.get("rpm", model_limits["rpm"])
         self.MAX_TPM = kwargs.get("tpm", model_limits["tpm"])
+        self.max_tokens = kwargs.pop("max_tokens")
+
 
         if "temperature" not in kwargs:
             self.kwargs["temperature"] = 0.0
+
+        logger.info(f"Max tokens for model '{model_name}': {self.max_tokens}")
+        logger.info(f"Rate limits for model '{model_name}': {self.MAX_RPM} RPM, {self.MAX_TPM} TPM\n")
 
     def _completion(self, prompt: str) -> Union[str, Exception]:
         messages = [{"role": "user", "content": prompt}]
@@ -91,7 +99,7 @@ class LLM:
 
 
 
-        max_tokens = self.get_max_tokens()
+        #max_tokens = self.get_max_tokens()
         model_name = self._base_model_name
 
         batch = ""
@@ -111,7 +119,7 @@ class LLM:
             ntokens = token_counter(
                 model_name, messages=[{"role": "user", "content": q}]
             )
-            if total_ntokens + ntokens < max_tokens:
+            if total_ntokens + ntokens < self.max_tokens:
                 count += 1
                 total_ntokens += ntokens
             else:
@@ -206,6 +214,9 @@ class LLM:
                 responses = batch_completion(
                     model=self.model_name, messages=messages, **self.kwargs
                 )
+                if isinstance(responses, Exception):
+                    logger.error(f"❌ Batch request failed with error: {responses}")
+                    raise responses
             except KeyboardInterrupt:
                 logger.warning("⚠️ Aborting...")
                 raise  
@@ -318,6 +329,32 @@ class OpenAI(LLM):
         kwargs.update({"api_key": api_key})
         super().__init__(model_name=f"openai/{model_name}", **kwargs)
 
+class VLLM(LLM):
+
+    
+
+    def __init__(
+        self,
+        model_name: str,
+        api_base: str = "http://localhost:8000/v1",
+        **kwargs
+    ):
+        import httpx
+
+        resp = httpx.get(f"{api_base}/models")
+        max_model_len = resp.json()["data"][0]["max_model_len"]
+        
+        kwargs.update({
+            "api_base": api_base,
+            "api_key": "dummy",
+            "max_tokens": max_model_len
+
+        })
+
+        super().__init__(
+            model_name=f"openai/{model_name}",
+            **kwargs
+        )
 
 class Azure(LLM):
     def __init__(
