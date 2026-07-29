@@ -329,32 +329,27 @@ class OpenAI(LLM):
         kwargs.update({"api_key": api_key})
         super().__init__(model_name=f"openai/{model_name}", **kwargs)
 
+
 class VLLM(LLM):
-
-    
-
-    def __init__(
-        self,
-        model_name: str,
-        api_base: str = "http://localhost:8000/v1",
-        **kwargs
+    def __init__(self,
+                model_name: str,
+                api_base: str = "http://localhost:8000/v1",
+                max_tokens: int = 4096,
+                **kwargs
     ):
-        import httpx
-
-        resp = httpx.get(f"{api_base}/models")
-        max_model_len = resp.json()["data"][0]["max_model_len"]
         
         kwargs.update({
             "api_base": api_base,
             "api_key": "dummy",
-            "max_tokens": max_model_len
-
+            "max_tokens": max_tokens
         })
-
         super().__init__(
             model_name=f"openai/{model_name}",
             **kwargs
         )
+        self.api_base = api_base
+        self._model_name = model_name
+
 
 class Azure(LLM):
     def __init__(
