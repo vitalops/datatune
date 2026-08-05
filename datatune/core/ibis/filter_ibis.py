@@ -26,16 +26,20 @@ def add_serialized_col(table, target_col: str, input_fields: Optional[List[str]]
 
 def llm_batch_inference(
     table,
-    llm: Callable, 
-    input_col: str, 
-    output_col: str,   
+    llm,
+    input_col: str,
+    output_col: str,
     prompt: str,
+    batch_size: int = 50,
 ):
+
     prefix = (
         f"You are filtering a dataset. Your task is to determine whether each data record should be KEPT or REMOVED based on the filtering criteria below.{os.linesep}"
         f"Return the entire input data record with an added key called '__filter__' with value either True to KEEP the record or False to REMOVE it.{os.linesep}{os.linesep}"
     )
+
     filtering_prompt = f"FILTERING CRITERIA:{os.linesep}{prompt}{os.linesep}{os.linesep}"
+
     suffix = (
         f"{os.linesep}{os.linesep}"
         "DECISION:Your response MUST be the entire input record as  Python dictionary in the format: index=<row_index>|{key1: value1, key2: value2, ...}<endofrow> with added key called '__filter__' with value either True to KEEP the record or False to REMOVE it."
@@ -46,38 +50,47 @@ def llm_batch_inference(
 
     indexed_table = table.mutate(_ROW_ID_=ibis.row_number().cast("int64"))
 
-    local_data = indexed_table.select("_ROW_ID_", input_col).execute()
-    
-    input_list = local_data[input_col].tolist()
-    
-    results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
+    expr = indexed_table.select("_ROW_ID_", input_col)
 
-    out_bools = []
-    for res in results:
-        try:
-            d = ast.literal_eval(str(res).strip())
-            if d:
-                last_key = list(d.keys())[-1]
-                flag = d[last_key]
-                out_bools.append(True if str(flag).lower() == "true" else False)
-            else:
-                out_bools.append(False)
-        except Exception:
-            out_bools.append(False)
+    all_ids = []
+    all_flags = []
+
+    for batch in expr.to_pyarrow_batches(chunk_size=batch_size):
+        df = batch.to_pandas()
+
+        input_list = df[input_col].tolist()
+        row_ids = df["_ROW_ID_"].tolist()
+
+        results = llm(input_list, prefix, filtering_prompt, suffix, optimized=True)
+
+        for res in results:
+            try:
+                d = ast.literal_eval(str(res).strip())
+                if d:
+                    last_key = list(d.keys())[-1]
+                    flag = d[last_key]
+                    all_flags.append(True if str(flag).lower() == "true" else False)
+                else:
+                    all_flags.append(False)
+            except Exception:
+                all_flags.append(False)
+
+        all_ids.extend(row_ids)
 
     filter_df = pd.DataFrame({
-        "_ROW_ID_": local_data["_ROW_ID_"].values,
-        output_col: out_bools
+        "_ROW_ID_": all_ids,
+        output_col: all_flags
     })
+
     filter_memtable = ibis.memtable(filter_df)
 
     joined = indexed_table.join(
-        filter_memtable, 
+        filter_memtable,
         indexed_table["_ROW_ID_"] == filter_memtable["_ROW_ID_"]
     )
-    
+
     final_cols = list(table.columns) + [output_col]
-    
+
     return joined.select(final_cols)
 
 def apply_llm_filter(table, llm_output_col):
